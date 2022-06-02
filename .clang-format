@@ -1,0 +1,33 @@
+Language: Cpp
+BasedOnStyle: Google
+AlignEscapedNewlines: Right
+AllowShortFunctionsOnASingleLine: Empty
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+IncludeCategories:
+  - Regex: '^<[^\/]*\.h>'
+    Priority: 1
+  - Regex: '^<[^\/]*>'
+    Priority: 2
+  - Regex: '^<.*>'
+    Priority: 3
+  - Regex: '.*'
+    Priority: 4
+IndentWidth: 2
+IndentWrappedFunctionNames: true
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 2
+SpacesInContainerLiterals: false

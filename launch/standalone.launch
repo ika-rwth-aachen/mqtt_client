@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="load_params" default="true" />
+  <arg name="params_file" default="$(find mqtt_client)/launch/params.yaml" />
+
+  <node pkg="nodelet" type="nodelet" name="mqtt_client" args="standalone mqtt_client/MqttClient" output="screen">
+    <rosparam command="delete" param="" if="$(arg load_params)" />
+    <rosparam command="load" file="$(arg params_file)" if="$(arg load_params)" />
+  </node>
+  
+</launch>
