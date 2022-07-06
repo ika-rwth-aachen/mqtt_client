@@ -1,22 +1,45 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 project(mqtt_client)
 
+# Add support for C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+
 ## Compile as C++17
 add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  message_generation
-  nodelet
-  roscpp
-  std_msgs
-  topic_tools
-)
 
-## System dependencies are found with CMake's conventions
+find_package(ament_cmake REQUIRED)
+## find_package(REQUIRED REQUIRED)
 find_package(PahoMqttCpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+## find_package(topic_tools REQUIRED)
+find_package(rclcpp REQUIRED)
+set(INCLUDE_DIRS ${ament_cmake_INCLUDE_DIRS} ${REQUIRED_INCLUDE_DIRS}
+  ${PahoMqttCpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS}
+  ${rosidl_default_generators_INCLUDE_DIRS}
+  ${rclcpp_INCLUDE_DIRS})
+include_directories(
+  include 
+  ${INCLUDE_DIRS}
+)
+set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${REQUIRED_LIBRARIES}
+  ${PahoMqttCpp_LIBRARIES} ${std_msgs_LIBRARIES}
+  ${rosidl_default_generators_LIBRARIES}
+  ${rclcpp_LIBRARIES})
+set(LIBS ${ament_cmake_LIBRARIES} ${REQUIRED_LIBRARIES} ${PahoMqttCpp_LIBRARIES}
+  ${std_msgs_LIBRARIES} ${rosidl_default_generators_LIBRARIES}
+  ${rclcpp_LIBRARIES})
+rosidl_generate_interfaces(${PROJECT_NAME} "msg/RosMsgType.msg"
+  "srv/IsConnected.srv"
+  DEPENDENCIES builtin_interfaces std_msgs)
+## System dependencies are found with CMake's conventions
 set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 
 
@@ -50,16 +73,8 @@ set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  RosMsgType.msg
-)
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  IsConnected.srv
-)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -69,10 +84,6 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -102,17 +113,6 @@ generate_messages(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS
-    message_runtime
-    nodelet
-    roscpp
-    std_msgs
-    topic_tools
-  DEPENDS PahoMqttCpp
-)
 
 ###########
 ## Build ##
@@ -120,15 +120,16 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
-  src/MqttClient.cpp
-)
+add_library(mqtt_client_lib src/MqttClient.cpp)
+target_link_libraries(mqtt_client_lib ${LIBS})
+
+rosidl_target_interfaces(mqtt_client_lib
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
+
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -148,13 +149,13 @@ add_library(${PROJECT_NAME}
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+## add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+ament_target_dependencies(mqtt_client_lib rclcpp std_msgs PahoMqttCpp)
+
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-  ${PahoMqttCpp_LIBRARIES}
-)
 
 #############
 ## Install ##
@@ -167,31 +168,57 @@ target_link_libraries(${PROJECT_NAME}
 ## in contrast to setup.py, you can choose the destination
 # install(PROGRAMS
 #   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#   DESTINATION bin
 # )
 
-## Mark executables and/or libraries for installation
-install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# ## Mark executables and/or libraries for installation
+# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}
+#   ARCHIVE DESTINATION lib
+#   LIBRARY DESTINATION lib
+#   RUNTIME DESTINATION bin)
+
+# ## Mark cpp header files for installation
+# install(DIRECTORY include/${PROJECT_NAME}/
+#   DESTINATION include/${PROJECT_NAME}  #   FILES_MATCHING PATTERN "*.h"
+# #   PATTERN ".svn" EXCLUDE
+#   )
+
+# ## Mark other files for installation (e.g. launch and bag files, etc.)
+# install(FILES nodelet_plugins.xml
+#   DESTINATION share/${PROJECT_NAME})
+# install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
+install(
+  DIRECTORY cmake
+  DESTINATION share/${PROJECT_NAME}
+)
+install(
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION include
 )
 
-## Mark cpp header files for installation
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
+install(
+  DIRECTORY srv
+  DESTINATION share/${PROJECT_NAME}
 )
 
-## Mark other files for installation (e.g. launch and bag files, etc.)
-install(FILES
-  nodelet_plugins.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+install(
+  TARGETS mqtt_client_lib
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
-install(DIRECTORY
-  launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+
+install(
+  FILES nodelet_plugins.xml
+  DESTINATION share/${PROJECT_NAME}
+  FILES IsConnected.srv
+  DESTINATION srv
+)
+
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #############
@@ -212,3 +239,18 @@ install(DIRECTORY
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+ament_export_dependencies(ament_cmake)
+ament_export_dependencies(REQUIRED)
+ament_export_dependencies(PahoMqttCpp)
+ament_export_dependencies(std_msgs)
+ament_export_dependencies(rosidl_default_generators)
+ament_export_dependencies(rosidl_default_runtime)
+## ament_export_dependencies(topic_tools)
+ament_export_dependencies(rclcpp)
+ament_export_include_directories(${INCLUDE_DIRS})
+## ament_export_include_directories(include)
+ament_export_libraries(mqtt_client_lib)
+## ament_export_libraries(${PROJECT_NAME} ${LIBS})
+
+ament_package()

@@ -31,12 +31,23 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <string>
+#include <type_traits>
 
 #include <mqtt/async_client.h>
-#include <mqtt_client/IsConnected.h>
-#include <nodelet/nodelet.h>
-#include <ros/ros.h>
-#include <topic_tools/shape_shifter.h>
+//#include <mqtt_client/srv/IsConnected.hpp> //TODO where is the header file
+//#include "mqtt_client/IsConnectedRequest.h"
+//#include "mqtt_client/IsConnectedResponse.h"
+#include "mqtt_client/srv/is_connected.hpp"
+//#include <nodelet/nodelet.h>
+#include <rclcpp/rclcpp.hpp>
+//#include <ros/ros.h>
+// #include <topic_tools/shape_shifter.h>
+#include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float64.hpp"
+
+#include "rclcpp/logger.hpp"
+#include "rcutils/logging_macros.h"
+#include "rcpputils/filesystem_helper.hpp"
 
 
 /**
@@ -54,9 +65,13 @@ namespace mqtt_client {
  * to specify the ROS message type for ROS messages you wish to
  * exchange via the MQTT broker.
  */
-class MqttClient : public nodelet::Nodelet,
+class MqttClient : public rclcpp::Node,
                    public virtual mqtt::callback,
                    public virtual mqtt::iaction_listener {
+
+ //public: MqttClient() : Node("mqtt_client"); //Constructor is needed
+ public:
+ MqttClient();
 
  protected:
   /**
@@ -64,7 +79,8 @@ class MqttClient : public nodelet::Nodelet,
    *
    * Overrides nodelet::Nodelet::onInit().
    */
-  virtual void onInit() override;
+  //virtual void onInit() override;
+  //virtual void onInit(); //TODO is omitted in ROS2?
 
   /**
    * Loads ROS parameters from parameter server.
@@ -134,7 +150,7 @@ class MqttClient : public nodelet::Nodelet,
    *
    * @return  std::filesystem::path  path variable
    */
-  std::filesystem::path resolvePath(const std::string& path_string);
+  rcpputils::fs::path resolvePath(const std::string& path_string);
 
   /**
    * Initializes broker connection and subscriptions.
@@ -166,7 +182,7 @@ class MqttClient : public nodelet::Nodelet,
    * @param   ros_msg    generic ROS message
    * @param   ros_topic  ROS topic where the message was published
    */
-  void ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
+  void ros2mqtt(
                 const std::string& ros_topic);
 
   /**
@@ -223,8 +239,8 @@ class MqttClient : public nodelet::Nodelet,
    * @return true if client is connected to the broker
    * @return false if client is not connected to the broker
    */
-  bool isConnectedService(IsConnected::Request& request,
-                          IsConnected::Response& response);
+  bool isConnectedService(srv::IsConnected::Request& request,
+                          srv::IsConnected::Response& response);
 
   /**
    * Callback for when the client receives a MQTT message from the broker.
@@ -278,9 +294,20 @@ class MqttClient : public nodelet::Nodelet,
     std::string pass;  ///< password
     struct {
       bool enabled;  ///< whether to connect via SSL/TLS
-      std::filesystem::path
-        ca_certificate;  ///< public CA certificate trusted by client
+      rcpputils::fs::path ca_certificate;  ///< public CA certificate trusted by client
+      // std::string ca_certificate;
     } tls;               ///< SSL/TLS-related variables
+  };
+
+  /**
+   * Struct containing bridge parameters (Necessry because no xmlrcp in ROS2)
+   */
+  struct BridgeConfig {
+    std::string ros2mqtt_ros_topic;  ///< ros2mqtt ros topic
+    std::string ros2mqtt_mqtt_topic;  ///< ros2mqtt mqtt topic
+    std::string mqtt2ros_mqtt_topic;  ///< mqtt2ros mqtt topic
+    std::string mqtt2ros_ros_topic;  ///< mqtt2ros ros topic
+    bool ros2mqtt_inject_timestamp;  ///< wheter timestamp injected
   };
 
   /**
@@ -291,7 +318,7 @@ class MqttClient : public nodelet::Nodelet,
     struct {
       bool enabled;                     ///< whether client buffer is enabled
       int size;                         ///< client buffer size
-      std::filesystem::path directory;  ///< client buffer directory
+      rcpputils::fs::path directory;  ///< client buffer directory
     } buffer;                           ///< client buffer-related variables
     struct {
       std::string topic;         ///< last-will topic
@@ -303,8 +330,12 @@ class MqttClient : public nodelet::Nodelet,
     double keep_alive_interval;  ///< keep-alive interval
     int max_inflight;            ///< maximum number of inflight messages
     struct {
-      std::filesystem::path certificate;  ///< client certificate
-      std::filesystem::path key;          ///< client private keyfile
+      // std::filesystem::path certificate;  ///< client certificate
+      rcpputils::fs::path certificate;
+      // std::string certificate;
+      // std::filesystem::path key;          ///< client private keyfile
+      rcpputils::fs::path key;
+      // std::string key;
       std::string password;  ///< decryption password for private key
     } tls;                   ///< SSL/TLS-related variables
   };
@@ -314,7 +345,8 @@ class MqttClient : public nodelet::Nodelet,
    */
   struct Ros2MqttInterface {
     struct {
-      ros::Subscriber subscriber;  ///< generic ROS subscriber
+      //ros::Subscriber subscriber;  ///< generic ROS subscriber
+      rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber;
       int queue_size = 1;          ///< ROS subscriber queue size
     } ros;                         ///< ROS-related variables
     struct {
@@ -334,9 +366,11 @@ class MqttClient : public nodelet::Nodelet,
     } mqtt;         ///< MQTT-related variables
     struct {
       std::string topic;                        ///< ROS topic
-      ros::Publisher publisher;                 ///< generic ROS subscriber
-      topic_tools::ShapeShifter shape_shifter;  ///< ROS msg type ShapeShifter
-      ros::Publisher latency_publisher;         ///< ROS publisher for latency
+      //ros::Publisher publisher;                 ///< generic ROS subscriber
+      //topic_tools::ShapeShifter shape_shifter;  ///< ROS msg type ShapeShifter
+      //ros::Publisher latency_publisher;         ///< ROS publisher for latency
+      rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher;
+      rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr latency_publisher;
       int queue_size = 1;                       ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
     } ros;                   ///< ROS-related variables
@@ -360,17 +394,21 @@ class MqttClient : public nodelet::Nodelet,
   /**
    * ROS node handle
    */
-  ros::NodeHandle node_handle_;
+  //ros::NodeHandle node_handle_;
+  rclcpp::Node node_handle_;
 
   /**
    * Private ROS node handle
    */
-  ros::NodeHandle private_node_handle_;
+  //ros::NodeHandle private_node_handle_;
+  rclcpp::Node private_node_handle_;
 
   /**
    * ROS Service server for providing connection status
    */
-  ros::ServiceServer is_connected_service_;
+  //ros::ServiceServer is_connected_service_;
+  //rclcpp::Service< isConnected.srv >::SharedPtr is_connected_service_; //TODO how to declare a service?!
+  std::shared_ptr<rclcpp::Node> is_connected_service = rclcpp::Node::make_shared("is_connected_service_");
 
   /**
    * Status variable keeping track of connection status to broker
@@ -381,6 +419,11 @@ class MqttClient : public nodelet::Nodelet,
    * Broker parameters
    */
   BrokerConfig broker_config_;
+
+  /**
+   * Broker parameters
+   */
+  BridgeConfig bridge_config_;
 
   /**
    * Client parameters
@@ -411,9 +454,10 @@ class MqttClient : public nodelet::Nodelet,
 
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, T& value) {
-  bool found = private_node_handle_.getParam(key, value);
+  //bool found = private_node_handle_.getParam(key, value);
+  bool found = private_node_handle_.get_parameter(key, value);
   if (found)
-    NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(),
                   std::to_string(value).c_str());
   return found;
 }
@@ -422,12 +466,14 @@ bool MqttClient::loadParameter(const std::string& key, T& value) {
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, T& value,
                                const T& default_value) {
-  bool found = private_node_handle_.param<T>(key, value, default_value);
+  //bool found = private_node_handle_.param<T>(key, value, default_value);
+  //bool found = rclcpp::Node::get_parameter_or(key, value, default_value);
+  bool found = private_node_handle_.get_parameter_or(key, value, default_value);
   if (!found)
-    NODELET_WARN("Parameter '%s' not set, defaulting to '%s'", key.c_str(),
+    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                  std::to_string(default_value).c_str());
   if (found)
-    NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(),
                   std::to_string(value).c_str());
   return found;
 }

@@ -2,9 +2,8 @@ broker:
   host: localhost
   port: 1883
 bridge:
-  ros2mqtt:
-    - ros_topic: /ping
-      mqtt_topic: pingpong
-  mqtt2ros:
-    - mqtt_topic: pingpong
-      ros_topic: /pong
+  ros2mqtt_ros_topic: /ping
+  ros2mqtt_mqtt_topic: pingpong
+  ros2mqtt_inject_timestamp: false
+  mqtt2ros_mqtt_topic: pingpong
+  mqtt2ros_ros_topic: /pong
