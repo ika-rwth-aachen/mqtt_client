@@ -45,7 +45,7 @@ SOFTWARE.
 // PLUGINLIB_EXPORT_CLASS(mqtt_client::MqttClient, rclcpp::Node)
 
 
-namespace mqtt_client {
+namespace mqtt_client{
 
 
 const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
@@ -54,7 +54,7 @@ const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
 const std::string MqttClient::kLatencyRosTopicPrefix = "latencies/";
 
 
-MqttClient::MqttClient() : MqttClient::Node("mqtt_client") {
+MqttClient::MqttClient() : Node("mqtt_client"){  //compiler says that 0 arguments are provided eventhough string is given
 
   // get nodehandles
   //node_handle_ = this->getMTNodeHandle();
@@ -251,7 +251,7 @@ void MqttClient::loadParameters() {
 
 
 bool MqttClient::loadParameter(const std::string& key, std::string& value) {
-  bool found = private_node_handle_.get_parameter(key, value);
+  bool found = MqttClient().get_parameter(key, value);
   if (found)
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(),
                   value.c_str());
@@ -262,7 +262,7 @@ bool MqttClient::loadParameter(const std::string& key, std::string& value) {
 bool MqttClient::loadParameter(const std::string& key, std::string& value,
                                const std::string& default_value) {
   bool found =
-    private_node_handle_.get_parameter_or(key, value, default_value);
+    MqttClient().get_parameter_or(key, value, default_value);
   if (!found)
     RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                  default_value.c_str());
@@ -306,8 +306,9 @@ void MqttClient::setup() {
   /*is_connected_service_ = private_node_handle_.advertiseService(
     "is_connected", &MqttClient::isConnectedService, this);*/
   
-  rclcpp::Service<srv::IsConnected>::SharedPtr service =
-    is_connected_service_->create_service<srv::IsConnected>("is_connected", &MqttClient::isConnectedService);
+  // TODO Problem with Service
+  //rclcpp::Service<srv::IsConnected>::SharedPtr service =
+  //  is_connected_service_->create_service<srv::IsConnected>("is_connected", &MqttClient::isConnectedService);
 
   // create ROS subscribers
   for (auto& ros2mqtt_p : ros2mqtt_) {
@@ -319,7 +320,8 @@ void MqttClient::setup() {
         ros_topic, ros2mqtt.ros.queue_size,
         std::bind(&MqttClient::ros2mqtt, this, std::placeholder::_1, ros_topic));
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'", ros_topic.c_str());*/
-    ros2mqtt.ros.subscriber = create_subscription<std_msgs::msg::String>(ros_topic, rclcpp::QoS(), std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic)); //TODO qos value
+    // TODO Problem with subscriber
+    // ros2mqtt.ros.subscriber = this->create_subscription<std_msgs::msg::String>(ros_topic, 10, std::bind(&MqttClient::ros2mqtt, this, ros_topic));
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'", ros_topic.c_str());
   }
 }
@@ -348,7 +350,6 @@ void MqttClient::setupClient() {
   }
 
   // SSL/TLS
-  //TODO why is tls.key used and not keys
   if (broker_config_.tls.enabled) {
     mqtt::ssl_options ssl;
     ssl.set_trust_store(broker_config_.tls.ca_certificate.string());
@@ -666,10 +667,11 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(IsConnected::Request& request,
-                                    IsConnected::Response& response) { //TODO Problem is the missing header in MqttClient.h
+bool MqttClient::isConnectedService(const std::shared_ptr<srv::IsConnected::Request> request,
+                                          std::shared_ptr<srv::IsConnected::Response> response) {
 
-  response.connected = isConnected();
+  // response.connected = isConnected();
+  response->connected = true;
   return true;
 }
 

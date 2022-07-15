@@ -67,11 +67,11 @@ namespace mqtt_client {
  */
 class MqttClient : public rclcpp::Node,
                    public virtual mqtt::callback,
-                   public virtual mqtt::iaction_listener {
+                   public virtual mqtt::iaction_listener{
 
  //public: MqttClient() : Node("mqtt_client"); //Constructor is needed
  public:
- MqttClient();
+  MqttClient();
 
  protected:
   /**
@@ -239,8 +239,8 @@ class MqttClient : public rclcpp::Node,
    * @return true if client is connected to the broker
    * @return false if client is not connected to the broker
    */
-  bool isConnectedService(srv::IsConnected::Request& request,
-                          srv::IsConnected::Response& response);
+  bool isConnectedService(std::shared_ptr<srv::IsConnected::Request> request,
+                          std::shared_ptr<srv::IsConnected::Response> response);
 
   /**
    * Callback for when the client receives a MQTT message from the broker.
@@ -395,20 +395,20 @@ class MqttClient : public rclcpp::Node,
    * ROS node handle
    */
   //ros::NodeHandle node_handle_;
-  rclcpp::Node node_handle_;
+  //-- rclcpp::Node node_handle_;
 
   /**
    * Private ROS node handle
    */
   //ros::NodeHandle private_node_handle_;
-  rclcpp::Node private_node_handle_;
+  //-- rclcpp::Node private_node_handle_;
 
   /**
    * ROS Service server for providing connection status
    */
   //ros::ServiceServer is_connected_service_;
   //rclcpp::Service< isConnected.srv >::SharedPtr is_connected_service_; //TODO how to declare a service?!
-  std::shared_ptr<rclcpp::Node> is_connected_service = rclcpp::Node::make_shared("is_connected_service_");
+  std::shared_ptr<rclcpp::Node> is_connected_service_ = rclcpp::Node::make_shared("is_connected_service_");
 
   /**
    * Status variable keeping track of connection status to broker
@@ -455,7 +455,7 @@ class MqttClient : public rclcpp::Node,
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, T& value) {
   //bool found = private_node_handle_.getParam(key, value);
-  bool found = private_node_handle_.get_parameter(key, value);
+  bool found = MqttClient().get_parameter(key, value);
   if (found)
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(),
                   std::to_string(value).c_str());
@@ -468,7 +468,7 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
                                const T& default_value) {
   //bool found = private_node_handle_.param<T>(key, value, default_value);
   //bool found = rclcpp::Node::get_parameter_or(key, value, default_value);
-  bool found = private_node_handle_.get_parameter_or(key, value, default_value);
+  bool found = MqttClient().get_parameter_or(key, value, default_value);
   if (!found)
     RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                  std::to_string(default_value).c_str());

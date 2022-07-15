@@ -36,9 +36,11 @@ set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${REQUIRED_LIBRARIES}
 set(LIBS ${ament_cmake_LIBRARIES} ${REQUIRED_LIBRARIES} ${PahoMqttCpp_LIBRARIES}
   ${std_msgs_LIBRARIES} ${rosidl_default_generators_LIBRARIES}
   ${rclcpp_LIBRARIES})
-rosidl_generate_interfaces(${PROJECT_NAME} "msg/RosMsgType.msg"
+rosidl_generate_interfaces(${PROJECT_NAME} 
+  "msg/RosMsgType.msg"
   "srv/IsConnected.srv"
-  DEPENDENCIES builtin_interfaces std_msgs)
+  DEPENDENCIES builtin_interfaces std_msgs
+)
 ## System dependencies are found with CMake's conventions
 set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 
@@ -139,7 +141,7 @@ rosidl_target_interfaces(mqtt_client_lib
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/hx_testmanager_node.cpp)
+## add_executable(src/MqttClient.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -188,10 +190,10 @@ ament_target_dependencies(mqtt_client_lib rclcpp std_msgs PahoMqttCpp)
 #   DESTINATION share/${PROJECT_NAME})
 # install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
-install(
-  DIRECTORY cmake
-  DESTINATION share/${PROJECT_NAME}
-)
+##install(
+##  DIRECTORY cmake
+##  DESTINATION share/${PROJECT_NAME}
+##)
 install(
   DIRECTORY include/${PROJECT_NAME}/
   DESTINATION include
@@ -210,9 +212,10 @@ install(
 )
 
 install(
-  FILES nodelet_plugins.xml
-  DESTINATION share/${PROJECT_NAME}
-  FILES IsConnected.srv
+  #FILES nodelet_plugins.xml
+  #DESTINATION share/${PROJECT_NAME}
+  #FILES IsConnected.srv
+  FILES srv/IsConnected.srv
   DESTINATION srv
 )
 
