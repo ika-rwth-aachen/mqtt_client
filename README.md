@@ -1,5 +1,12 @@
 # mqtt_client
 
+<p align="center">
+  <img src="https://img.shields.io/badge/ROS1-noetic-green"/></a>
+  <img src="https://img.shields.io/github/v/release/ika-rwth-aachen/mqtt_client"/></a>
+  <img src="https://img.shields.io/github/license/ika-rwth-aachen/mqtt_client"/></a>
+  <img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
+</p>
+
 The *mqtt_client* package provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types.
 
 - [Installation](#installation)
