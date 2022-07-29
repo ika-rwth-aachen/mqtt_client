@@ -21,7 +21,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/hx_testmanager</url> -->
+  <url type="website">http://wiki.ros.org/mqtt_client</url>
   <url type="repository">https://github.com/ika-rwth-aachen/mqtt_client</url>
 
 
