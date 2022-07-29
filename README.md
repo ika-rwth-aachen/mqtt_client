@@ -2,7 +2,7 @@
 
 The *mqtt_client* package provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types.
 
-- [Dependencies](#dependencies)
+- [Installation](#installation)
 - [Usage](#usage)
   - [Quick Start](#quick-start)
   - [Launch](#launch)
@@ -11,9 +11,15 @@ The *mqtt_client* package provides a ROS nodelet that enables connected ROS-base
 - [Package Summary](#package-summary)
 - [How It Works](#how-it-works)
 
-## Dependencies
+## Installation
 
-After cloning this repository into a ROS workspace, all dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
+The *mqtt_client* package is released as an official ROS Noetic package and can easily be installed via a package manager.
+
+```bash
+sudo apt install ros-noetic-mqtt-client
+```
+
+If you would like to install *mqtt_client* from source, simply clone this repository into your ROS workspace. All dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
 
 ```bash
 # mqtt_client$
