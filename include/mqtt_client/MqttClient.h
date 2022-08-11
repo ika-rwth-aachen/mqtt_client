@@ -40,13 +40,13 @@ SOFTWARE.
 
 
 /**
- * Namespace for the mqtt_client package
+ * @brief Namespace for the mqtt_client package
  */
 namespace mqtt_client {
 
 
 /**
- * ROS Nodelet for sending and receiving ROS messages via MQTT
+ * @brief ROS Nodelet for sending and receiving ROS messages via MQTT
  *
  * The MqttClient enables connected ROS-based devices or robots to
  * exchange ROS messages via an MQTT broker using the MQTT protocol.
@@ -60,19 +60,19 @@ class MqttClient : public nodelet::Nodelet,
 
  protected:
   /**
-   * Initializes nodelet when nodelet is loaded.
+   * @brief Initializes nodelet when nodelet is loaded.
    *
    * Overrides nodelet::Nodelet::onInit().
    */
   virtual void onInit() override;
 
   /**
-   * Loads ROS parameters from parameter server.
+   * @brief Loads ROS parameters from parameter server.
    */
   void loadParameters();
 
   /**
-   * Loads requested ROS parameter from parameter server.
+   * @brief Loads requested ROS parameter from parameter server.
    *
    * @param[in]   key      parameter name
    * @param[out]  value    variable where to store the retrieved parameter
@@ -83,7 +83,8 @@ class MqttClient : public nodelet::Nodelet,
   bool loadParameter(const std::string& key, std::string& value);
 
   /**
-   * Loads requested ROS parameter from parameter server, allows default value.
+   * @brief Loads requested ROS parameter from parameter server, allows default
+   * value.
    *
    * @param[in]   key            parameter name
    * @param[out]  value          variable where to store the retrieved parameter
@@ -96,7 +97,7 @@ class MqttClient : public nodelet::Nodelet,
                      const std::string& default_value);
 
   /**
-   * Loads requested ROS parameter from parameter server.
+   * @brief Loads requested ROS parameter from parameter server.
    *
    * @tparam  T            type (one of int, double, bool)
    *
@@ -110,7 +111,8 @@ class MqttClient : public nodelet::Nodelet,
   bool loadParameter(const std::string& key, T& value);
 
   /**
-   * Loads requested ROS parameter from parameter server, allows default value.
+   * @brief Loads requested ROS parameter from parameter server, allows default
+   * value.
    *
    * @tparam  T            type (one of int, double, bool)
    *
@@ -125,7 +127,8 @@ class MqttClient : public nodelet::Nodelet,
   bool loadParameter(const std::string& key, T& value, const T& default_value);
 
   /**
-   * Converts a string to a path object resolving paths relative to ROS_HOME.
+   * @brief Converts a string to a path object resolving paths relative to
+   * ROS_HOME.
    *
    * Resolves relative to CWD, if ROS_HOME is not set.
    * Returns empty path, if argument is empty.
@@ -137,22 +140,23 @@ class MqttClient : public nodelet::Nodelet,
   std::filesystem::path resolvePath(const std::string& path_string);
 
   /**
-   * Initializes broker connection and subscriptions.
+   * @brief Initializes broker connection and subscriptions.
    */
   void setup();
 
   /**
-   * Sets up the client connection options and initializes the client object.
+   * @brief Sets up the client connection options and initializes the client
+   * object.
    */
   void setupClient();
 
   /**
-   * Connects to the broker using the member client and options.
+   * @brief Connects to the broker using the member client and options.
    */
   void connect();
 
   /**
-   * Serializes and publishes a generic ROS message to the MQTT broker.
+   * @brief Serializes and publishes a generic ROS message to the MQTT broker.
    *
    * Before serializing the ROS message and publishing it to the MQTT broker,
    * metadata on the ROS message type is extracted. This type information is
@@ -170,7 +174,7 @@ class MqttClient : public nodelet::Nodelet,
                 const std::string& ros_topic);
 
   /**
-   * Publishes a ROS message received via MQTT to ROS.
+   * @brief Publishes a ROS message received via MQTT to ROS.
    *
    * This utilizes the ShapeShifter stored for the MQTT topic on which the
    * message was received. The ShapeShifter has to be configured to the ROS
@@ -189,7 +193,8 @@ class MqttClient : public nodelet::Nodelet,
   void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
 
   /**
-   * Callback for when the client has successfully connected to the broker.
+   * @brief Callback for when the client has successfully connected to the
+   * broker.
    *
    * Overrides mqtt::callback::connected(const std::string&).
    *
@@ -198,7 +203,7 @@ class MqttClient : public nodelet::Nodelet,
   void connected(const std::string& cause) override;
 
   /**
-   * Callback for when the client has lost connection to the broker.
+   * @brief Callback for when the client has lost connection to the broker.
    *
    * Overrides mqtt::callback::connection_lost(const std::string&).
    *
@@ -227,7 +232,8 @@ class MqttClient : public nodelet::Nodelet,
                           IsConnected::Response& response);
 
   /**
-   * Callback for when the client receives a MQTT message from the broker.
+   * @brief Callback for when the client receives a MQTT message from the
+   * broker.
    *
    * Overrides mqtt::callback::message_arrived(mqtt::const_message_ptr).
    * If the received MQTT message contains information about a ROS message type,
@@ -239,7 +245,7 @@ class MqttClient : public nodelet::Nodelet,
   void message_arrived(mqtt::const_message_ptr mqtt_msg) override;
 
   /**
-   * Callback for when delivery for a MQTT message has been completed.
+   * @brief Callback for when delivery for a MQTT message has been completed.
    *
    * Overrides mqtt::callback::delivery_complete(mqtt::delivery_token_ptr).
    *
@@ -248,7 +254,7 @@ class MqttClient : public nodelet::Nodelet,
   void delivery_complete(mqtt::delivery_token_ptr token) override;
 
   /**
-   * Callback for when a MQTT action succeeds.
+   * @brief Callback for when a MQTT action succeeds.
    *
    * Overrides mqtt::iaction_listener::on_success(const mqtt::token&).
    * Does nothing.
@@ -258,7 +264,7 @@ class MqttClient : public nodelet::Nodelet,
   void on_success(const mqtt::token& token) override;
 
   /**
-   * Callback for when a MQTT action fails.
+   * @brief Callback for when a MQTT action fails.
    *
    * Overrides mqtt::iaction_listener::on_failure(const mqtt::token&).
    * Logs error.
@@ -269,7 +275,7 @@ class MqttClient : public nodelet::Nodelet,
 
  protected:
   /**
-   * Struct containing broker parameters
+   * @brief Struct containing broker parameters
    */
   struct BrokerConfig {
     std::string host;  ///< broker host
@@ -284,7 +290,7 @@ class MqttClient : public nodelet::Nodelet,
   };
 
   /**
-   * Struct containing client parameters
+   * @brief Struct containing client parameters
    */
   struct ClientConfig {
     std::string id;  ///< client unique ID
@@ -310,7 +316,7 @@ class MqttClient : public nodelet::Nodelet,
   };
 
   /**
-   * Struct containing variables related to a ROS2MQTT connection.
+   * @brief Struct containing variables related to a ROS2MQTT connection.
    */
   struct Ros2MqttInterface {
     struct {
@@ -326,7 +332,7 @@ class MqttClient : public nodelet::Nodelet,
   };
 
   /**
-   * Struct containing variables related to a MQTT2ROS connection.
+   * @brief Struct containing variables related to a MQTT2ROS connection.
    */
   struct Mqtt2RosInterface {
     struct {
@@ -344,66 +350,67 @@ class MqttClient : public nodelet::Nodelet,
 
  protected:
   /**
-   * MQTT topic prefix under which ROS message type information is published
+   * @brief MQTT topic prefix under which ROS message type information is
+   * published
    *
    * Must contain trailing '/'.
    */
   static const std::string kRosMsgTypeMqttTopicPrefix;
 
   /**
-   * ROS topic prefix under which ROS2MQTT2ROS latencies are published
+   * @brief ROS topic prefix under which ROS2MQTT2ROS latencies are published
    *
    * Must contain trailing '/'.
    */
   static const std::string kLatencyRosTopicPrefix;
 
   /**
-   * ROS node handle
+   * @brief ROS node handle
    */
   ros::NodeHandle node_handle_;
 
   /**
-   * Private ROS node handle
+   * @brief Private ROS node handle
    */
   ros::NodeHandle private_node_handle_;
 
   /**
-   * ROS Service server for providing connection status
+   * @brief ROS Service server for providing connection status
    */
   ros::ServiceServer is_connected_service_;
 
   /**
-   * Status variable keeping track of connection status to broker
+   * @brief Status variable keeping track of connection status to broker
    */
   bool is_connected_ = false;
 
   /**
-   * Broker parameters
+   * @brief Broker parameters
    */
   BrokerConfig broker_config_;
 
   /**
-   * Client parameters
+   * @brief Client parameters
    */
   ClientConfig client_config_;
 
   /**
-   * MQTT client variable
+   * @brief MQTT client variable
    */
   std::shared_ptr<mqtt::async_client> client_;
 
   /**
-   * MQTT client connection options
+   * @brief MQTT client connection options
    */
   mqtt::connect_options connect_options_;
 
   /**
-   * ROS2MQTT connection variables sorted by ROS topic
+   * @brief ROS2MQTT connection variables sorted by ROS topic
    */
   std::map<std::string, Ros2MqttInterface> ros2mqtt_;
 
   /**
-   * MQTT2ROS connection variables sorted by MQTT topic
+   * @brief MQTT2ROS connection variables sorted by MQTT topic
    */
   std::map<std::string, Mqtt2RosInterface> mqtt2ros_;
 };
