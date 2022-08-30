@@ -57,8 +57,8 @@ ament_target_dependencies(mqtt_client_lib rclcpp std_msgs PahoMqttCpp)
 #   include/mqtt_client/MqttClient.h
 # )
 
-# add_executable(src/MqttClient.cpp)
-# ament_target_dependencies(rclcpp std_msgs)
+add_executable(${PROJECT_NAME} src/MqttClient.cpp)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs)
 
 #############
 ## Install ##
@@ -75,6 +75,11 @@ install(DIRECTORY
 )
 
 install(DIRECTORY 
+  config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY 
   srv
   DESTINATION share/${PROJECT_NAME}
 )
@@ -84,6 +89,7 @@ install(FILES
   DESTINATION srv)
 
 install(TARGETS
+  ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
