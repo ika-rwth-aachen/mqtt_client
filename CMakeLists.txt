@@ -14,21 +14,22 @@ find_package(PahoMqttCpp REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
+set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
+
 set(INCLUDE_DIRS ${ament_cmake_INCLUDE_DIRS} ${REQUIRED_INCLUDE_DIRS}
-  ${PahoMqttCpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS}
+  ${PahoMqttCpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS} ${sensor_msgs_INCLUDE_DIRS} 
   ${rosidl_default_generators_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS})
 set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${REQUIRED_LIBRARIES}
-  ${PahoMqttCpp_LIBRARIES} ${std_msgs_LIBRARIES}
+  ${PahoMqttCpp_LIBRARIES} ${std_msgs_LIBRARIES} ${sensor_msgs_LIBRARIES} 
   ${rosidl_default_generators_LIBRARIES}
   ${rclcpp_LIBRARIES})
 set(LIBS ${ament_cmake_LIBRARIES} ${REQUIRED_LIBRARIES} ${PahoMqttCpp_LIBRARIES}
-  ${std_msgs_LIBRARIES} ${rosidl_default_generators_LIBRARIES}
+  ${std_msgs_LIBRARIES} ${sensor_msgs_LIBRARIES} ${rosidl_default_generators_LIBRARIES}
   ${rclcpp_LIBRARIES})
-
-set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -49,7 +50,7 @@ add_library(mqtt_client_lib src/MqttClient.cpp)
 target_link_libraries(mqtt_client_lib ${LIBS})
 # rosidl_target_interfaces(mqtt_client_lib
 #   ${PROJECT_NAME} "rosidl_typesupport_cpp")
-ament_target_dependencies(mqtt_client_lib rclcpp std_msgs PahoMqttCpp)
+ament_target_dependencies(mqtt_client_lib rclcpp std_msgs sensor_msgs PahoMqttCpp)
 
 
 # add_library(${PROJECT_NAME}
@@ -58,7 +59,7 @@ ament_target_dependencies(mqtt_client_lib rclcpp std_msgs PahoMqttCpp)
 # )
 
 add_executable(${PROJECT_NAME} src/MqttClient.cpp)
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs sensor_msgs PahoMqttCpp)
 
 #############
 ## Install ##

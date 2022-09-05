@@ -78,6 +78,12 @@ public:
 
   rcpputils::fs::path resolvePath(const std::string& path_string);
 
+  void ros2mqtt(const std::string& ros_topic);
+
+  void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
+
+  void message_arrived(mqtt::const_message_ptr mqtt_msg); //override
+
  protected:
   
   struct BrokerConfig {
