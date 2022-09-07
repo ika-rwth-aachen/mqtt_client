@@ -40,6 +40,7 @@ SOFTWARE.
 #include "rcpputils/get_env.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
 
 
 /**
@@ -57,7 +58,7 @@ namespace mqtt_client {
  * to specify the ROS message type for ROS messages you wish to
  * exchange via the MQTT broker.
  */
-class MqttClient : public rclcpp::Node {
+class MqttClient : public rclcpp::Node, public virtual mqtt::callback {
 
 public:
   MqttClient();
@@ -78,7 +79,11 @@ public:
 
   rcpputils::fs::path resolvePath(const std::string& path_string);
 
-  void ros2mqtt(const std::string& ros_topic);
+  void setup();
+
+  void setupClient();
+
+  void ros2mqtt(const sensor_msgs::msg::PointCloud2, const std::string& ros_topic);
 
   void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
 
@@ -122,7 +127,7 @@ public:
 
   struct Ros2MqttInterface {
     struct {
-      rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber;
+      rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription;
       int queue_size = 1;
     } ros;
     struct{
@@ -157,10 +162,13 @@ public:
 
   ClientConfig client_config_;
 
+  std::shared_ptr<mqtt::async_client> client_;
+
+  mqtt::connect_options connect_options_;
+
   std::map<std::string, Ros2MqttInterface> ros2mqtt_;
 
   std::map<std::string, Mqtt2RosInterface> mqtt2ros_;
-
 
 };
 
