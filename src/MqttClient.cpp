@@ -43,26 +43,16 @@ namespace mqtt_client{
 
 MqttClient::MqttClient() : Node("mqtt_client", rclcpp::NodeOptions()){
 
- //constructor
- declare_parameter("broker.host");
- declare_parameter("broker.port");
- declare_parameter("bridge.ros2mqtt.ros_topic");
- declare_parameter("bridge.ros2mqtt.mqtt_topic");
- declare_parameter("bridge.mqtt2ros.mqtt_topic");
- declare_parameter("bridge.mqtt2ros.ros_topic");
-
-//  auto broker_host = get_parameter("broker.host").as_string();
-//  auto broker_port = get_parameter("broker.port").as_int();
-//  auto ros2mqtt_ros_topic = get_parameter("bridge.ros2mqtt.ros_topic").as_string();
-//  auto ros2mqtt_mqtt_topic = get_parameter("bridge.ros2mqtt.mqtt_topic").as_string();
-//  auto mqtt2ros_mqtt_topic = get_parameter("bridge.mqtt2ros.mqtt_topic").as_string();
-//  auto mqtt2ros_ros_topic = get_parameter("bridge.mqtt2ros.ros_topic").as_string();
+  //constructor
+  this->declare_parameter("broker.host");
+  this->declare_parameter("broker.port");
+  this->declare_parameter("bridge.ros2mqtt.ros_topic");
+  this->declare_parameter("bridge.ros2mqtt.mqtt_topic");
+  this->declare_parameter("bridge.mqtt2ros.mqtt_topic");
+  this->declare_parameter("bridge.mqtt2ros.ros_topic");
 
   loadParameters();
   setup();
-
-
-
 }
 
 // Parameter
@@ -76,40 +66,40 @@ void MqttClient::loadParameters(){
   
   // load broker parameters from parameter server
   std::string broker_tls_ca_certificate;
-  loadParameter("broker/host", broker_config_.host, "localhost");
-  loadParameter("broker/port", broker_config_.port, 1883);
-  if (loadParameter("broker/user", broker_config_.user)) {
-    loadParameter("broker/pass", broker_config_.pass, "");
+  loadParameter("broker.host", broker_config_.host, "localhost");
+  loadParameter("broker.port", broker_config_.port, 1883);
+  if (loadParameter("broker.user", broker_config_.user)) {
+    loadParameter("broker.pass", broker_config_.pass, "");
   }
-  if (loadParameter("broker/tls/enabled", broker_config_.tls.enabled, false)) {
-    loadParameter("broker/tls/ca_certificate", broker_tls_ca_certificate, "/etc/ssl/certs/ca-certificates.crt");
+  if (loadParameter("broker.tls.enabled", broker_config_.tls.enabled, false)) {
+    loadParameter("broker.tls.ca_certificate", broker_tls_ca_certificate, "/etc/ssl/certs/ca-certificates.crt");
   }
 
   // load client parameters from parameter server
   std::string client_buffer_directory, client_tls_certificate, client_tls_key;
-  loadParameter("client/id", client_config_.id, "");
+  loadParameter("client.id", client_config_.id, "");
   client_config_.buffer.enabled = !client_config_.id.empty();
   if (client_config_.buffer.enabled) {
-    loadParameter("client/buffer/size", client_config_.buffer.size, 0);
-    loadParameter("client/buffer/directory", client_buffer_directory, "buffer");
+    loadParameter("client.buffer.size", client_config_.buffer.size, 0);
+    loadParameter("client.buffer.directory", client_buffer_directory, "buffer");
   } else {
     RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Client buffer can not be enabled when client ID is empty");
   }
-  if (loadParameter("client/last_will/topic", client_config_.last_will.topic)) {
-    loadParameter("client/last_will/message", client_config_.last_will.message,
+  if (loadParameter("client.last_will.topic", client_config_.last_will.topic)) {
+    loadParameter("client.last_will.message", client_config_.last_will.message,
                   "offline");
-    loadParameter("client/last_will/qos", client_config_.last_will.qos, 0);
-    loadParameter("client/last_will/retained",
+    loadParameter("client.last_will.qos", client_config_.last_will.qos, 0);
+    loadParameter("client.last_will.retained",
                   client_config_.last_will.retained, false);
   }
-  loadParameter("client/clean_session", client_config_.clean_session, true);
-  loadParameter("client/keep_alive_interval",
+  loadParameter("client.clean_session", client_config_.clean_session, true);
+  loadParameter("client.keep_alive_interval",
                 client_config_.keep_alive_interval, 60.0);
-  loadParameter("client/max_inflight", client_config_.max_inflight, 65535);
+  loadParameter("client.max_inflight", client_config_.max_inflight, 65535);
   if (broker_config_.tls.enabled) {
-    if (loadParameter("client/tls/certificate", client_tls_certificate)) {
-      loadParameter("client/tls/key", client_tls_key);
-      loadParameter("client/tls/password", client_config_.tls.password);
+    if (loadParameter("client.tls.certificate", client_tls_certificate)) {
+      loadParameter("client.tls.key", client_tls_key);
+      loadParameter("client.tls.password", client_config_.tls.password);
     }
   }
 
@@ -234,16 +224,15 @@ void MqttClient::setup() {
 
   setupClient();
 
-  //connect();
+  connect();
 
   for (auto& ros2mqtt_p : ros2mqtt_) {
     const std::string& ros_topic = ros2mqtt_p.first;
     Ros2MqttInterface& ros2mqtt = ros2mqtt_p.second;
     //const std::string& mqtt_topic = ros2mqtt.mqtt.topic;
 
-    // std::function<void(const std_msgs::msg::String::SharedPtr msg)> bound_callback_func = std::bind(&MqttClient::ros2mqtt, this, _1, ros_topic);
-    // ros2mqtt.ros.subscription = create_subscription<sensor_msgs::msg::PointCloud2>(ros_topic, ros2mqtt.ros.queue_size, bound_callback_func);
-    //ros2mqtt.ros.subscription = create_subscription<sensor_msgs::msg::PointCloud2>(ros_topic, ros2mqtt.ros.queue_size, std::bind(&MqttClient::ros2mqtt, this, _1, ros_topic));
+    std::function<void(const sensor_msgs::msg::PointCloud2::SharedPtr msg)> bound_callback_func = std::bind(&MqttClient::ros2mqtt, this, _1, ros_topic);
+    ros2mqtt.ros.subscription = create_subscription<sensor_msgs::msg::PointCloud2>(ros_topic, ros2mqtt.ros.queue_size, bound_callback_func);
     
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'", ros_topic.c_str());
   }
@@ -300,10 +289,24 @@ void MqttClient::setupClient() {
 
   // setup MQTT callbacks
   client_->set_callback(*this);
-
 }
 
-void MqttClient::ros2mqtt(const sensor_msgs::msg::PointCloud2 ros_msg, const std::string& ros_topic){
+void MqttClient::connect() {
+
+  std::string as_client = client_config_.id.empty()
+    ? ""
+    : std::string(" as '") + client_config_.id + std::string("'");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Connecting to broker at '%s'%s ...", client_->get_server_uri().c_str(), as_client.c_str());
+
+  try {
+    client_->connect(connect_options_, nullptr, *this);
+  } catch (const mqtt::exception& e) {
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Connection to broker failed: %s", e.what());
+    exit(EXIT_FAILURE);
+  }
+}
+
+void MqttClient::ros2mqtt(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg, const std::string& ros_topic){
   
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
   std::string mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
@@ -405,7 +408,16 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
   }
 }
 
+void MqttClient::delivery_complete(mqtt::delivery_token_ptr token) {}
 
+void MqttClient::on_success(const mqtt::token& token) {}
+
+void MqttClient::on_failure(const mqtt::token& token) {
+
+  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Connection to broker failed (return code %d), will automatically "
+  "retry...",
+  token.get_return_code());
+}
 
 } //Namespace
 

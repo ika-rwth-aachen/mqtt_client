@@ -58,7 +58,7 @@ namespace mqtt_client {
  * to specify the ROS message type for ROS messages you wish to
  * exchange via the MQTT broker.
  */
-class MqttClient : public rclcpp::Node, public virtual mqtt::callback {
+class MqttClient : public rclcpp::Node, public virtual mqtt::callback, public virtual mqtt::iaction_listener {
 
 public:
   MqttClient();
@@ -83,11 +83,19 @@ public:
 
   void setupClient();
 
-  void ros2mqtt(const sensor_msgs::msg::PointCloud2, const std::string& ros_topic);
+  void connect();
+
+  void ros2mqtt(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg, const std::string& ros_topic);
 
   void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
 
-  void message_arrived(mqtt::const_message_ptr mqtt_msg); //override
+  void message_arrived(mqtt::const_message_ptr mqtt_msg) override;
+
+  void delivery_complete(mqtt::delivery_token_ptr token) override;
+
+  void on_success(const mqtt::token& token) override;
+
+  void on_failure(const mqtt::token& token) override;
 
  protected:
   
@@ -172,8 +180,8 @@ public:
 
 };
 
-template <typename T>
-bool MqttClient::loadParameter(const std::string& key, T& value) {
+template <typename ParameterT>
+bool MqttClient::loadParameter(const std::string& key, ParameterT& value) {
   bool found = MqttClient::get_parameter(key, value);
   if (found)
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(), std::to_string(value).c_str());
@@ -181,8 +189,8 @@ bool MqttClient::loadParameter(const std::string& key, T& value) {
   return found;
 }
 
-template <typename T>
-bool MqttClient::loadParameter(const std::string& key, T& value, const T& default_value) {
+template <typename ParameterT>
+bool MqttClient::loadParameter(const std::string& key, ParameterT& value, const ParameterT& default_value) {
   bool found = MqttClient::get_parameter_or(key, value, default_value);
   if (!found)
     RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter '%s' not set, defaulting to '%s'", key.c_str(), std::to_string(default_value).c_str());
