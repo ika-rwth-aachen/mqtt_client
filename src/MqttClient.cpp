@@ -43,7 +43,6 @@ namespace mqtt_client{
 
 MqttClient::MqttClient() : Node("mqtt_client", rclcpp::NodeOptions()){
 
-  //constructor
   this->declare_parameter("broker.host");
   this->declare_parameter("broker.port");
   this->declare_parameter("bridge.ros2mqtt.ros_topic");
@@ -55,13 +54,11 @@ MqttClient::MqttClient() : Node("mqtt_client", rclcpp::NodeOptions()){
   setup();
 }
 
-// Parameter
 const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
   "mqtt_client/ros_msg_type/";
 
 const std::string MqttClient::kLatencyRosTopicPrefix = "latencies/";
 
-// functions
 void MqttClient::loadParameters(){
   
   // load broker parameters from parameter server
@@ -229,7 +226,6 @@ void MqttClient::setup() {
   for (auto& ros2mqtt_p : ros2mqtt_) {
     const std::string& ros_topic = ros2mqtt_p.first;
     Ros2MqttInterface& ros2mqtt = ros2mqtt_p.second;
-    //const std::string& mqtt_topic = ros2mqtt.mqtt.topic;
 
     std::function<void(const sensor_msgs::msg::PointCloud2::SharedPtr msg)> bound_callback_func = std::bind(&MqttClient::ros2mqtt, this, _1, ros_topic);
     ros2mqtt.ros.subscription = create_subscription<sensor_msgs::msg::PointCloud2>(ros_topic, ros2mqtt.ros.queue_size, bound_callback_func);
@@ -316,14 +312,18 @@ void MqttClient::ros2mqtt(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg
   // serialize ROS message to buffer
   //sensor_msgs::msg::PointCloud2 ros_msg;
   rclcpp::SerializedMessage serialized_msg; 
-  uint32_t msg_length = static_cast<size_t>(sizeof(ros_msg));
-  std::vector<uint8_t> msg_buffer;
-  msg_buffer.resize(msg_length);
+  // uint32_t msg_length = static_cast<size_t>(sizeof(ros_msg));
+  // std::vector<uint8_t> msg_buffer;
+  // msg_buffer.resize(msg_length);
 
-  serialized_msg.reserve(msg_length);
+  // serialized_msg.reserve(msg_length);
 
   static rclcpp::Serialization<sensor_msgs::msg::PointCloud2> serializer;
-  serializer.serialize_message(msg_buffer.data(), &serialized_msg);
+  serializer.serialize_message(ros_msg.get(), &serialized_msg);
+
+  uint32_t msg_length = serialized_msg.get_rcl_serialized_message().buffer_length;
+  // serialized_msg.get_rcl_serialized_msg().buffer;
+  std::vector<uint8_t> msg_buffer(serialized_msg.get_rcl_serialized_message().buffer, serialized_msg.get_rcl_serialized_message().buffer+msg_length);
 
   // build MQTT payload for ROS message (R) as [0, R]
   uint32_t payload_length = 1 + msg_length; 
@@ -371,23 +371,63 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
   std::vector<uint8_t> msg_buffer;
   msg_buffer.resize(msg_length);
   std::memcpy(msg_buffer.data(), &(payload[msg_offset]), msg_length);
-  
-  rclcpp::SerializedMessage serialized_msg; 
-  serialized_msg.reserve(msg_length);
 
-  RCLCPP_DEBUG(rclcpp::get_logger("rclcppp"), "Sending ROS message from MQTT broker to ROS topic '%s' ...", mqtt2ros.ros.topic.c_str());
+  rcutils_uint8_array_t msg_array;
+  msg_array.buffer = &msg_buffer[0];
+  msg_array.buffer_length = msg_buffer.size();
+  msg_array.buffer_capacity = msg_buffer.capacity();
+  // rclcpp::SerializedMessage serialized_msg;
+
+  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Sending ROS message from MQTT broker to ROS topic '%s' ...", mqtt2ros.ros.topic.c_str());
 
   static rclcpp::Serialization<sensor_msgs::msg::PointCloud2> serializer;
-  serializer.serialize_message(msg_buffer.data(), &serialized_msg);
+  sensor_msgs::msg::PointCloud2 ros_msg;
+  // serializer.deserialize_message(&serialized_msg, &ros_msg);
+  auto pc2_ts = rosidl_typesupport_cpp::get_message_type_support_handle<sensor_msgs::msg::PointCloud2>();
+  auto ret = rmw_deserialize(&msg_array, pc2_ts, &ros_msg);
 
-  mqtt2ros.ros.publisher = create_publisher<std_msgs::msg::String>(mqtt2ros.ros.topic, mqtt2ros.ros.queue_size); //TODO: pub definition in constructor or setup func?
-  mqtt2ros.ros.publisher->publish(serialized_msg);
+  mqtt2ros.ros.publisher = create_publisher<sensor_msgs::msg::PointCloud2>(mqtt2ros.ros.topic, mqtt2ros.ros.queue_size);
+  mqtt2ros.ros.publisher->publish(ros_msg);
+}
+
+void MqttClient::connected(const std::string& cause) {
+  
+  is_connected_ = true;
+  std::string as_client = client_config_.id.empty() 
+    ? "" 
+    : std::string(" as '") + client_config_.id + std::string("'");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Connected to broker at '%s'%s", client_->get_server_uri().c_str(), as_client.c_str());
+
+  for (auto& mqtt2ros_p : mqtt2ros_) {
+    Mqtt2RosInterface& mqtt2ros = mqtt2ros_p.second;
+    std::string mqtt_topic = mqtt2ros_p.first;
+    client_->subscribe(mqtt_topic, mqtt2ros.mqtt.qos);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subscribed MQTT topic '%s'", mqtt_topic.c_str());
+  }
+}
+
+void MqttClient::connection_lost(const std::string& cause) {
+
+  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Connection to broker lost, will try to reconnect...");
+  is_connected_ = false;
+  connect();
+}
+
+bool MqttClient::isConnected() {
+
+  return is_connected_;
+}
+
+bool MqttClient::isConnectedService(mqtt_client::srv::IsConnected::Request& request, mqtt_client::srv::IsConnected::Response& response) {
+
+  response.connected = isConnected();
+  return true;
 }
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
   std::string mqtt_topic = mqtt_msg->get_topic();
-  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Received MQTT message on topic '%s'", mqtt_topic.c_str());
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received MQTT message on topic '%s'", mqtt_topic.c_str());
   // auto& payload = mqtt_msg->get_payload_ref();
   // uint32_t payload_length = static_cast<uint32_t>(payload.size());
 
@@ -398,7 +438,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     exit(EXIT_FAILURE);
   } else {
 
-    if (mqtt2ros_[mqtt_topic].ros.publisher->get_topic_name() && !mqtt2ros_[mqtt_topic].ros.publisher->get_topic_name()[0]){
+    if (!mqtt2ros_[mqtt_topic].ros.topic.empty()){
       mqtt2ros(mqtt_msg);
     } else {
       RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "ROS publisher for data from MQTT topic '%s' is not yet initialized: "

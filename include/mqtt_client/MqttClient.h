@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <mqtt/async_client.h>
 #include "rclcpp/rclcpp.hpp"
+#include "mqtt_client/srv/is_connected.hpp"
 
 #include "rclcpp/logger.hpp"
 #include "rcutils/logging_macros.h"
@@ -49,15 +50,6 @@ SOFTWARE.
 namespace mqtt_client {
 
 
-/**
- * ROS Nodelet for sending and receiving ROS messages via MQTT
- *
- * The MqttClient enables connected ROS-based devices or robots to
- * exchange ROS messages via an MQTT broker using the MQTT protocol.
- * This works generically for any ROS message, i.e. there is no need
- * to specify the ROS message type for ROS messages you wish to
- * exchange via the MQTT broker.
- */
 class MqttClient : public rclcpp::Node, public virtual mqtt::callback, public virtual mqtt::iaction_listener {
 
 public:
@@ -88,6 +80,14 @@ public:
   void ros2mqtt(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg, const std::string& ros_topic);
 
   void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
+
+  void connected(const std::string& cause) override;
+
+  void connection_lost(const std::string& cause) override;
+
+  bool isConnected();
+
+  bool isConnectedService(mqtt_client::srv::IsConnected::Request& request, mqtt_client::srv::IsConnected::Response& response);
 
   void message_arrived(mqtt::const_message_ptr mqtt_msg) override;
 
@@ -152,7 +152,7 @@ public:
     } mqtt;
     struct {
       std::string topic;
-      rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher;
+      rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher;
       rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr latency_publisher;
       int queue_size = 1;
       bool latched = false;
@@ -165,6 +165,8 @@ public:
   static const std::string kRosMsgTypeMqttTopicPrefix;
 
   static const std::string kLatencyRosTopicPrefix;
+
+  bool is_connected_ = false;
 
   BrokerConfig broker_config_;
 
