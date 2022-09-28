@@ -368,24 +368,23 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
     exit(EXIT_FAILURE);
   }
 
+  // copy ROS message from MQTT message to buffer
   std::vector<uint8_t> msg_buffer;
   msg_buffer.resize(msg_length);
   std::memcpy(msg_buffer.data(), &(payload[msg_offset]), msg_length);
 
-  rcutils_uint8_array_t msg_array;
-  msg_array.buffer = &msg_buffer[0];
-  msg_array.buffer_length = msg_buffer.size();
-  msg_array.buffer_capacity = msg_buffer.capacity();
-  // rclcpp::SerializedMessage serialized_msg;
-
-  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Sending ROS message from MQTT broker to ROS topic '%s' ...", mqtt2ros.ros.topic.c_str());
-
-  static rclcpp::Serialization<sensor_msgs::msg::PointCloud2> serializer;
+  // deserialize buffer to ROS message object
+  rcl_serialized_message_t serialized_msg;
+  serialized_msg.buffer = &msg_buffer[0];
+  serialized_msg.buffer_length = msg_buffer.size();
+  serialized_msg.buffer_capacity = msg_buffer.capacity();
   sensor_msgs::msg::PointCloud2 ros_msg;
-  // serializer.deserialize_message(&serialized_msg, &ros_msg);
-  auto pc2_ts = rosidl_typesupport_cpp::get_message_type_support_handle<sensor_msgs::msg::PointCloud2>();
-  auto ret = rmw_deserialize(&msg_array, pc2_ts, &ros_msg);
+  auto ts_handle = rosidl_typesupport_cpp::get_message_type_support_handle<sensor_msgs::msg::PointCloud2>();
+  if (rmw_deserialize(&serialized_msg, ts_handle, &ros_msg) != RMW_RET_OK)
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to deserialize message");
 
+  // publish ROS message
+  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Sending ROS message from MQTT broker to ROS topic '%s' ...", mqtt2ros.ros.topic.c_str());
   mqtt2ros.ros.publisher = create_publisher<sensor_msgs::msg::PointCloud2>(mqtt2ros.ros.topic, mqtt2ros.ros.queue_size);
   mqtt2ros.ros.publisher->publish(ros_msg);
 }
