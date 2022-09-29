@@ -486,15 +486,14 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
   // if stamped, compute latency
   if (stamped) {
 
-    // copy timestamp from MQTT message to buffer
-    ros::Time stamp;
-    uint32_t stamp_length = ros::serialization::serializationLength(stamp);
-    std::vector<uint8_t> stamp_buffer;
-    stamp_buffer.resize(stamp_length);
-    std::memcpy(stamp_buffer.data(), &(payload[1]), stamp_length);
+    // create ROS message buffer on top of MQTT message payload
+    char* non_const_payload = const_cast<char*>(&payload[1]);
+    uint8_t* stamp_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
     // deserialize stamp
-    ros::serialization::IStream stamp_stream(stamp_buffer.data(), stamp_length);
+    ros::Time stamp;
+    uint32_t stamp_length = ros::serialization::serializationLength(stamp);
+    ros::serialization::IStream stamp_stream(stamp_buffer, stamp_length);
     ros::serialization::deserialize(stamp_stream, stamp);
 
     // compute ROS2MQTT latency
@@ -521,17 +520,16 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
     msg_offset += stamp_length;
   }
 
-  // copy ROS message from MQTT message to buffer
-  std::vector<uint8_t> msg_buffer;
-  msg_buffer.resize(msg_length);
-  std::memcpy(msg_buffer.data(), &(payload[msg_offset]), msg_length);
+  // create ROS message buffer on top of MQTT message payload
+  char* non_const_payload = const_cast<char*>(&payload[msg_offset]);
+  uint8_t* msg_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
+  ros::serialization::OStream msg_stream(msg_buffer, msg_length);
 
   // publish via ShapeShifter
   NODELET_DEBUG(
     "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
     mqtt2ros.ros.shape_shifter.getDataType().c_str(),
     mqtt2ros.ros.topic.c_str());
-  ros::serialization::OStream msg_stream(msg_buffer.data(), msg_length);
   mqtt2ros.ros.shape_shifter.read(msg_stream);
   mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
 }
@@ -590,14 +588,13 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     mqtt_topic.find(kRosMsgTypeMqttTopicPrefix) != std::string::npos;
   if (msg_contains_ros_msg_type) {
 
-    // copy ROS message type from MQTT message to buffer
-    RosMsgType ros_msg_type;
-    std::vector<uint8_t> msg_type_buffer;
-    msg_type_buffer.resize(payload_length);
-    std::memcpy(msg_type_buffer.data(), &(payload[0]), payload_length);
+    // create ROS message buffer on top of MQTT message payload
+    char* non_const_payload = const_cast<char*>(&payload[0]);
+    uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
     // deserialize ROS message type
-    ros::serialization::IStream msg_type_stream(msg_type_buffer.data(),
+    RosMsgType ros_msg_type;
+    ros::serialization::IStream msg_type_stream(msg_type_buffer,
                                                 payload_length);
     ros::serialization::deserialize(msg_type_stream, ros_msg_type);
 
