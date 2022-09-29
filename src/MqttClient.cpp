@@ -153,8 +153,9 @@ void MqttClient::loadParameters() {
             }
           }
 
-          NODELET_INFO("Bridging ROS topic '%s' to MQTT topic '%s'",
-                       ros_topic.c_str(), ros2mqtt.mqtt.topic.c_str());
+          NODELET_INFO("Bridging ROS topic '%s' to MQTT topic '%s' %s",
+                       ros_topic.c_str(), ros2mqtt.mqtt.topic.c_str(),
+                       ros2mqtt.stamped ? "and measuring latency" : "");
         } else {
           NODELET_WARN(
             "Parameter 'bridge/ros2mqtt[%d]' is missing subparameter "
