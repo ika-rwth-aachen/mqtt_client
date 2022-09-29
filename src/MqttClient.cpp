@@ -403,21 +403,34 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
       mqtt_topic.c_str(), e.what());
   }
 
-  // serialize ROS message to buffer
-  uint32_t msg_length = ros::serialization::serializationLength(*ros_msg);
-  std::vector<uint8_t> msg_buffer;
-  msg_buffer.resize(msg_length);
-  ros::serialization::OStream msg_stream(msg_buffer.data(), msg_length);
-  ros::serialization::serialize(msg_stream, *ros_msg);
-
   // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
   // where first item = 1 if timestamp (S) is included
+  uint32_t msg_length = ros::serialization::serializationLength(*ros_msg);
   uint32_t payload_length = 1 + msg_length;
+  uint32_t stamp_length = ros::serialization::serializationLength(ros::Time());
   uint32_t msg_offset = 1;
   std::vector<uint8_t> payload_buffer;
   if (ros2mqtt.stamped) {
+    // allocate buffer with appropriate size to hold [1, S, R]
+    msg_offset += stamp_length;
+    payload_length += stamp_length;
+    payload_buffer.resize(payload_length);
+    payload_buffer[0] = 1;
+  } else {
+    // allocate buffer with appropriate size to hold [0, R]
+    payload_buffer.resize(payload_length);
+    payload_buffer[0] = 0;
+  }
 
-    // serialize current timestamp
+  // serialize ROS message to payload [0/1, -, R]
+  ros::serialization::OStream msg_stream(&payload_buffer[msg_offset],
+                                         msg_length);
+  ros::serialization::serialize(msg_stream, *ros_msg);
+
+  // inject timestamp as final step
+  if (ros2mqtt.stamped) {
+
+    // take current timestamp
     ros::WallTime stamp_wall = ros::WallTime::now();
     ros::Time stamp(stamp_wall.sec, stamp_wall.nsec);
     if (stamp.isZero())
@@ -425,30 +438,11 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
         "Injected ROS time 0 into MQTT payload on topic %s, is a ROS clock "
         "running?",
         ros2mqtt.mqtt.topic.c_str());
-    uint32_t stamp_length = ros::serialization::serializationLength(stamp);
-    std::vector<uint8_t> stamp_buffer;
-    stamp_buffer.resize(stamp_length);
-    ros::serialization::OStream stamp_stream(stamp_buffer.data(), stamp_length);
+
+    // serialize timestamp to payload [1, S, R]
+    ros::serialization::OStream stamp_stream(&payload_buffer[1], stamp_length);
     ros::serialization::serialize(stamp_stream, stamp);
-
-    // inject timestamp into payload
-    payload_length += stamp_length;
-    msg_offset += stamp_length;
-    payload_buffer.resize(payload_length);
-    payload_buffer[0] = 1;
-    payload_buffer.insert(payload_buffer.begin() + 1,
-                          std::make_move_iterator(stamp_buffer.begin()),
-                          std::make_move_iterator(stamp_buffer.end()));
-
-  } else {
-
-    payload_buffer.resize(payload_length);
-    payload_buffer[0] = 0;
   }
-  // add ROS message to payload
-  payload_buffer.insert(payload_buffer.begin() + msg_offset,
-                        std::make_move_iterator(msg_buffer.begin()),
-                        std::make_move_iterator(msg_buffer.end()));
 
   // send ROS message to MQTT broker
   mqtt_topic = ros2mqtt.mqtt.topic;
