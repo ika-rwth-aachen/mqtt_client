@@ -186,11 +186,11 @@ class MqttClient : public nodelet::Nodelet,
    * - serialized timestamp (optional)
    * - serialized ROS message
    *
-   * The MQTT payload is expected to carry a serialized ROS message.
-   *
-   * @param   mqtt_msg     MQTT message
+   * @param   mqtt_msg       MQTT message
+   * @param   arrival_stamp  arrival timestamp used for latency computation
    */
-  void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
+  void mqtt2ros(mqtt::const_message_ptr mqtt_msg,
+                const ros::WallTime& arrival_stamp = ros::WallTime::now());
 
   /**
    * @brief Callback for when the client has successfully connected to the

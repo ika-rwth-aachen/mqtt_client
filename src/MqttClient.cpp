@@ -463,7 +463,8 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
 }
 
 
-void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
+void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
+                          const ros::WallTime& arrival_stamp) {
 
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
@@ -492,8 +493,7 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
     ros::serialization::deserialize(stamp_stream, stamp);
 
     // compute ROS2MQTT latency
-    ros::WallTime now_wall = ros::WallTime::now();
-    ros::Time now(now_wall.sec, now_wall.nsec);
+    ros::Time now(arrival_stamp.sec, arrival_stamp.nsec);
     if (now.isZero())
       NODELET_WARN(
         "Cannot compute latency for MQTT topic %s when ROS time is 0, is a ROS "
@@ -574,6 +574,9 @@ bool MqttClient::isConnectedService(IsConnected::Request& request,
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
+  // instantly take arrival timestamp
+  ros::WallTime arrival_stamp = ros::WallTime::now();
+
   std::string mqtt_topic = mqtt_msg->get_topic();
   NODELET_DEBUG("Received MQTT message on topic '%s'", mqtt_topic.c_str());
   auto& payload = mqtt_msg->get_payload_ref();
@@ -624,7 +627,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
     // publish ROS message, if publisher initialized
     if (!mqtt2ros_[mqtt_topic].ros.publisher.getTopic().empty()) {
-      mqtt2ros(mqtt_msg);
+      mqtt2ros(mqtt_msg, arrival_stamp);
     } else {
       NODELET_WARN(
         "ROS publisher for data from MQTT topic '%s' is not yet initialized: "
