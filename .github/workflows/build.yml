@@ -1,0 +1,19 @@
+name: Build
+
+on: push
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    container: rwthika/tensorflow-cc:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup catkin
+        uses: betwo/github-setup-catkin@master
+        with:
+          ros-version: melodic
+          build-tool: catkin_tools
+          workspace: $GITHUB_WORKSPACE
+      - name: Build ROS workspace
+        run: catkin build
