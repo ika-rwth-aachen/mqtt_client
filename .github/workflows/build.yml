@@ -3,16 +3,18 @@ name: Build
 on: push
 
 jobs:
-  build:
-    runs-on: ubuntu-20.04
+  industrial_ci:
+    name: ROS ${{ matrix.ROS_DISTRO }} (${{ matrix.ROS_REPO }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ROS_DISTRO:
+          - noetic
+        ROS_REPO:
+          - testing
+          - main
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Setup catkin
-        uses: betwo/github-setup-catkin@master
+      - uses: actions/checkout@v2
+      - uses: ros-industrial/industrial_ci@master
         with:
-          ros-version: noetic
-          build-tool: catkin_tools
-          workspace: $GITHUB_WORKSPACE
-      - name: Build ROS workspace
-        run: catkin build
+          config: ${{ toJSON(matrix) }}
