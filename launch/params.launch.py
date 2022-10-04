@@ -14,6 +14,6 @@ def generate_launch_description():
             name='mqtt_client',
             parameters=[os.path.join(
                 get_package_share_directory('mqtt_client'),
-                'config', 'params.yaml')],
+                'launch', 'params.yaml')],
             output='screen'),
     ])
