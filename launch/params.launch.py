@@ -10,7 +10,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='mqtt_client',
-            executable='mqtt_client',
+            executable='mqtt_client_exe',
             name='mqtt_client',
             parameters=[os.path.join(
                 get_package_share_directory('mqtt_client'),
