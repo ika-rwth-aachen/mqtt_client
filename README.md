@@ -1,8 +1,16 @@
 # mqtt_client
 
+<p align="center">
+  <img src="https://img.shields.io/badge/ROS1-noetic-green"/></a>
+  <img src="https://img.shields.io/github/v/release/ika-rwth-aachen/mqtt_client"/></a>
+  <img src="https://img.shields.io/github/license/ika-rwth-aachen/mqtt_client"/></a>
+  <a href="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/build.yml"><img src="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/build.yml/badge.svg"/></a>
+  <img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
+</p>
+
 The *mqtt_client* package provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types.
 
-- [Dependencies](#dependencies)
+- [Installation](#installation)
 - [Usage](#usage)
   - [Quick Start](#quick-start)
   - [Launch](#launch)
@@ -10,10 +18,17 @@ The *mqtt_client* package provides a ROS nodelet that enables connected ROS-base
 - [Latency Computation](#latency-computation)
 - [Package Summary](#package-summary)
 - [How It Works](#how-it-works)
+- [Acknowledgements](#acknowledgements)
 
-## Dependencies
+## Installation
 
-After cloning this repository into a ROS workspace, all dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
+The *mqtt_client* package is released as an official ROS Noetic package and can easily be installed via a package manager.
+
+```bash
+sudo apt install ros-noetic-mqtt-client
+```
+
+If you would like to install *mqtt_client* from source, simply clone this repository into your ROS workspace. All dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
 
 ```bash
 # mqtt_client$
@@ -270,3 +285,7 @@ To summarize, the dataflow is as follows:
   - depending on the first element of the message, it is decoded into the serialized ROS message and the serialized timestamp
   - if the message contained a timestamp, the latency is computed and published on ROS topic `~/latencies/<mqtt2ros_ros_topic>`
   - the serialized ROS message is published using the *ShapeShifter* on ROS topic `<mqtt2ros_ros_topic>`
+
+## Acknowledgements
+
+This research is accomplished within the projects [6GEM](https://6gem.de/) (FKZ 16KISK036K) and [UNICAR*agil*](https://www.unicaragil.de/) (FKZ 16EMO0284K). We acknowledge the financial support for the projects by the Federal Ministry of Education and Research of Germany (BMBF).

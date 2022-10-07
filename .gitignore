@@ -336,3 +336,5 @@ CATKIN_IGNORE
 .history
 
 # End of https://www.gitignore.io/api/ros,c++,linux,macos,python,pycharm,visualstudiocode
+
+!doc/mainpage.dox

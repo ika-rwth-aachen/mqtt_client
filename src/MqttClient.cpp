@@ -24,21 +24,22 @@ SOFTWARE.
 ==============================================================================
 */
 
+#include "mqtt_client/MqttClient.h"
+
 #include <vector>
 
-#include "mqtt_client/MqttClient.h"
+#include "rclcpp/serialization.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "rclcpp/serialization.hpp"
 
 
 using std::placeholders::_1;
 
 
-namespace mqtt_client{
+namespace mqtt_client {
 
 
-MqttClient::MqttClient() : Node("mqtt_client", rclcpp::NodeOptions()){
+MqttClient::MqttClient() : Node("mqtt_client", rclcpp::NodeOptions()) {
 
   this->declare_parameter("broker.host");
   this->declare_parameter("broker.port");
@@ -57,7 +58,7 @@ const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
 const std::string MqttClient::kLatencyRosTopicPrefix = "latencies/";
 
 void MqttClient::loadParameters() {
-  
+
   // load broker parameters from parameter server
   std::string broker_tls_ca_certificate;
   loadParameter("broker.host", broker_config_.host, "localhost");
@@ -66,7 +67,7 @@ void MqttClient::loadParameters() {
     loadParameter("broker.pass", broker_config_.pass, "");
   }
   if (loadParameter("broker.tls.enabled", broker_config_.tls.enabled, false)) {
-    loadParameter("broker.tls.ca_certificate", broker_tls_ca_certificate, 
+    loadParameter("broker.tls.ca_certificate", broker_tls_ca_certificate,
                   "/etc/ssl/certs/ca-certificates.crt");
   }
 
@@ -78,7 +79,8 @@ void MqttClient::loadParameters() {
     loadParameter("client.buffer.size", client_config_.buffer.size, 0);
     loadParameter("client.buffer.directory", client_buffer_directory, "buffer");
   } else {
-    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Client buffer can not be enabled when client ID is empty");
+    RCLCPP_WARN(rclcpp::get_logger("rclcpp"),
+                "Client buffer can not be enabled when client ID is empty");
   }
   if (loadParameter("client.last_will.topic", client_config_.last_will.topic)) {
     loadParameter("client.last_will.message", client_config_.last_will.message,
@@ -104,12 +106,13 @@ void MqttClient::loadParameters() {
   client_config_.tls.certificate = resolvePath(client_tls_certificate);
   client_config_.tls.key = resolvePath(client_tls_key);
 
-  try{
+  try {
 
     // ros2mqtt
     rclcpp::Parameter ros_topic;
     rclcpp::Parameter mqtt_topic;
-    if (get_parameter("bridge.ros2mqtt.ros_topic", ros_topic) && get_parameter("bridge.ros2mqtt.mqtt_topic", mqtt_topic)) {
+    if (get_parameter("bridge.ros2mqtt.ros_topic", ros_topic) &&
+        get_parameter("bridge.ros2mqtt.mqtt_topic", mqtt_topic)) {
 
       Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic.as_string()];
       ros2mqtt.mqtt.topic = mqtt_topic.as_string();
@@ -120,7 +123,8 @@ void MqttClient::loadParameters() {
       }
 
       rclcpp::Parameter queue_size;
-      if (get_parameter("bridge.ros2mqtt.advanced.ros.queue_size", queue_size)) {
+      if (get_parameter("bridge.ros2mqtt.advanced.ros.queue_size",
+                        queue_size)) {
         ros2mqtt.ros.queue_size = queue_size.as_int();
       }
 
@@ -134,15 +138,17 @@ void MqttClient::loadParameters() {
         ros2mqtt.mqtt.retained = retained.as_bool();
       }
 
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Bridging ROS topic '%s' to MQTT topic '%s'", 
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
+                  "Bridging ROS topic '%s' to MQTT topic '%s'",
                   ros_topic.as_string().c_str(), ros2mqtt.mqtt.topic.c_str());
     } else {
-      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter struct 'bridge.ros2mqtt' is missing subparameter "
-       "'ros_topic' or 'mqtt_topic', will be ignored");
+      RCLCPP_WARN(rclcpp::get_logger("rclcpp"),
+                  "Parameter struct 'bridge.ros2mqtt' is missing subparameter "
+                  "'ros_topic' or 'mqtt_topic', will be ignored");
     }
-    
+
     // mqtt2ros
-    if (get_parameter("bridge.mqtt2ros.ros_topic", ros_topic) && 
+    if (get_parameter("bridge.mqtt2ros.ros_topic", ros_topic) &&
         get_parameter("bridge.mqtt2ros.mqtt_topic", mqtt_topic)) {
 
       Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic.as_string()];
@@ -154,7 +160,8 @@ void MqttClient::loadParameters() {
       }
 
       rclcpp::Parameter queue_size;
-      if (get_parameter("bridge.mqtt2ros.advanced.ros.queue_size", queue_size)) {
+      if (get_parameter("bridge.mqtt2ros.advanced.ros.queue_size",
+                        queue_size)) {
         mqtt2ros.ros.queue_size = queue_size.as_int();
       }
 
@@ -163,19 +170,23 @@ void MqttClient::loadParameters() {
         mqtt2ros.ros.latched = latched.as_bool();
       }
 
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Bridging MQTT topic '%s' to ROS topic '%s'", 
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
+                  "Bridging MQTT topic '%s' to ROS topic '%s'",
                   mqtt_topic.as_string().c_str(), mqtt2ros.ros.topic.c_str());
     } else {
-      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter struct 'bridge.mqtt2ros' is missing subparameter "
-       "'mqtt_topic' or 'ros_topic', will be ignored");
-    }   
+      RCLCPP_WARN(rclcpp::get_logger("rclcpp"),
+                  "Parameter struct 'bridge.mqtt2ros' is missing subparameter "
+                  "'mqtt_topic' or 'ros_topic', will be ignored");
+    }
 
     if (ros2mqtt_.empty() && mqtt2ros_.empty()) {
-      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "No valid ROS-MQTT bridge found in parameter struct 'bridge'");
+      RCLCPP_ERROR(
+        rclcpp::get_logger("rclcpp"),
+        "No valid ROS-MQTT bridge found in parameter struct 'bridge'");
       exit(EXIT_FAILURE);
     }
 
-  } catch(const std::exception& e){
+  } catch (const std::exception& e) {
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Parameter could not be parsed");
     exit(EXIT_FAILURE);
   }
@@ -184,22 +195,22 @@ void MqttClient::loadParameters() {
 bool MqttClient::loadParameter(const std::string& key, std::string& value) {
   bool found = MqttClient::get_parameter(key, value);
   if (found)
-    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(), 
-                 value.c_str());
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"),
+                 "Retrieved parameter '%s' = '%s'", key.c_str(), value.c_str());
   return found;
 }
 
 
-bool MqttClient::loadParameter(const std::string& key, std::string& value, 
+bool MqttClient::loadParameter(const std::string& key, std::string& value,
                                const std::string& default_value) {
-  bool found = 
-    MqttClient::get_parameter_or(key, value, default_value);
+  bool found = MqttClient::get_parameter_or(key, value, default_value);
   if (!found)
-    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Parameter '%s' not set, defaulting to '%s'", key.c_str(), 
+    RCLCPP_WARN(rclcpp::get_logger("rclcpp"),
+                "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                 default_value.c_str());
   if (found)
-    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Retrieved parameter '%s' = '%s'", key.c_str(), 
-                 value.c_str());
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"),
+                 "Retrieved parameter '%s' = '%s'", key.c_str(), value.c_str());
   return found;
 }
 
@@ -211,14 +222,13 @@ rcpputils::fs::path MqttClient::resolvePath(const std::string& path_string) {
   if (!path.is_absolute()) {
     std::string ros_home;
     ros_home = rcpputils::get_env_var("ROS_HOME");
-    if (ros_home.empty())
-      ros_home = rcpputils::fs::current_path().string();
+    if (ros_home.empty()) ros_home = rcpputils::fs::current_path().string();
     path = rcpputils::fs::path(ros_home);
-    path.operator/=	(path_string);
+    path.operator/=(path_string);
   }
   if (!rcpputils::fs::exists(path))
-    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Requested path '%s' does not exist", 
-                path.string().c_str());
+    RCLCPP_WARN(rclcpp::get_logger("rclcpp"),
+                "Requested path '%s' does not exist", path.string().c_str());
   return path;
 }
 
@@ -232,18 +242,19 @@ void MqttClient::setup() {
   connect();
 
   // create ROS service server
-  //is_connected_service_ = create_service<mqtt_client::srv::IsConnected>(
+  // is_connected_service_ = create_service<mqtt_client::srv::IsConnected>(
   //    "is_connected", &MqttClient::isConnectedService);
 
   // create ROS subscribers
   for (auto& ros2mqtt_p : ros2mqtt_) {
     const std::string& ros_topic = ros2mqtt_p.first;
     Ros2MqttInterface& ros2mqtt = ros2mqtt_p.second;
-    std::function<void(const message_type::SharedPtr msg)> bound_callback_func = 
+    std::function<void(const message_type::SharedPtr msg)> bound_callback_func =
       std::bind(&MqttClient::ros2mqtt, this, _1, ros_topic);
-    ros2mqtt.ros.subscription = 
-      create_subscription<message_type>(ros_topic, ros2mqtt.ros.queue_size, bound_callback_func);
-    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'", ros_topic.c_str());
+    ros2mqtt.ros.subscription = create_subscription<message_type>(
+      ros_topic, ros2mqtt.ros.queue_size, bound_callback_func);
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'",
+                 ros_topic.c_str());
   }
 }
 
@@ -298,7 +309,8 @@ void MqttClient::setupClient() {
         new mqtt::async_client(uri, client_config_.id));
     }
   } catch (const mqtt::exception& e) {
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Client could not be initialized: %s", e.what());
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
+                 "Client could not be initialized: %s", e.what());
     exit(EXIT_FAILURE);
   }
 
@@ -309,70 +321,80 @@ void MqttClient::setupClient() {
 
 void MqttClient::connect() {
 
-  std::string as_client = 
+  std::string as_client =
     client_config_.id.empty()
-    ? ""
-    : std::string(" as '") + client_config_.id + std::string("'");
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Connecting to broker at '%s'%s ...", 
+      ? ""
+      : std::string(" as '") + client_config_.id + std::string("'");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
+              "Connecting to broker at '%s'%s ...",
               client_->get_server_uri().c_str(), as_client.c_str());
 
   try {
     client_->connect(connect_options_, nullptr, *this);
   } catch (const mqtt::exception& e) {
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Connection to broker failed: %s", e.what());
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
+                 "Connection to broker failed: %s", e.what());
     exit(EXIT_FAILURE);
   }
 }
 
 
-void MqttClient::ros2mqtt(const message_type::SharedPtr ros_msg, 
-                          const std::string& ros_topic){
-  
+void MqttClient::ros2mqtt(const message_type::SharedPtr ros_msg,
+                          const std::string& ros_topic) {
+
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
 
   // gather information on ROS message type in special ROS message
   std::string mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
-  
-  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Received ROS message on topic '%s'", 
-               ros_topic.c_str());
+
+  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"),
+               "Received ROS message on topic '%s'", ros_topic.c_str());
 
   // serialize ROS message to buffer
-  rclcpp::SerializedMessage serialized_msg; 
+  rclcpp::SerializedMessage serialized_msg;
   static rclcpp::Serialization<message_type> serializer;
   serializer.serialize_message(ros_msg.get(), &serialized_msg);
 
-  uint32_t msg_length = serialized_msg.get_rcl_serialized_message().buffer_length;
-  std::vector<uint8_t> msg_buffer(serialized_msg.get_rcl_serialized_message().buffer, 
-                                  serialized_msg.get_rcl_serialized_message().buffer+msg_length);
+  uint32_t msg_length =
+    serialized_msg.get_rcl_serialized_message().buffer_length;
+  std::vector<uint8_t> msg_buffer(
+    serialized_msg.get_rcl_serialized_message().buffer,
+    serialized_msg.get_rcl_serialized_message().buffer + msg_length);
 
   // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
   // where first item = 1 if timestamp (S) is included
-  uint32_t payload_length = 1 + msg_length; 
+  uint32_t payload_length = 1 + msg_length;
   uint32_t msg_offset = 1;
   std::vector<uint8_t> payload_buffer;
   if (ros2mqtt.stamped) {
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Timestamp injection is not supported in this application yet.");
+    RCLCPP_ERROR(
+      rclcpp::get_logger("rclcpp"),
+      "Timestamp injection is not supported in this application yet.");
   } else {
     payload_buffer.resize(payload_length);
     payload_buffer[0] = 0;
   }
   // add ROS message to payload
-  payload_buffer.insert(payload_buffer.begin() + msg_offset, 
-    std::make_move_iterator(msg_buffer.begin()), std::make_move_iterator(msg_buffer.end()));
-  
+  payload_buffer.insert(payload_buffer.begin() + msg_offset,
+                        std::make_move_iterator(msg_buffer.begin()),
+                        std::make_move_iterator(msg_buffer.end()));
+
   // send ROS message to MQTT broker
   mqtt_topic = ros2mqtt.mqtt.topic;
   try {
-    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), 
-                 "Sending ROS message of this type to MQTT broker on topic '%s' ...", 
-                 mqtt_topic.c_str());
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("rclcpp"),
+      "Sending ROS message of this type to MQTT broker on topic '%s' ...",
+      mqtt_topic.c_str());
     mqtt::message_ptr mqtt_msg =
       mqtt::make_message(mqtt_topic, payload_buffer.data(), payload_length,
                          ros2mqtt.mqtt.qos, ros2mqtt.mqtt.retained);
     client_->publish(mqtt_msg);
   } catch (const mqtt::exception& e) {
-    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Publishing ROS message type information to MQTT topic '%s' failed: %s", 
-                mqtt_topic.c_str(), e.what());
+    RCLCPP_WARN(
+      rclcpp::get_logger("rclcpp"),
+      "Publishing ROS message type information to MQTT topic '%s' failed: %s",
+      mqtt_topic.c_str(), e.what());
   }
 }
 
@@ -395,7 +417,9 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
   // if stamped, compute latency
   if (stamped) {
 
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Timestamp injection is not supported in this application yet.");
+    RCLCPP_ERROR(
+      rclcpp::get_logger("rclcpp"),
+      "Timestamp injection is not supported in this application yet.");
     exit(EXIT_FAILURE);
   }
 
@@ -410,14 +434,17 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
   serialized_msg.buffer_length = msg_buffer.size();
   serialized_msg.buffer_capacity = msg_buffer.capacity();
   message_type ros_msg;
-  auto ts_handle = rosidl_typesupport_cpp::get_message_type_support_handle<message_type>();
+  auto ts_handle =
+    rosidl_typesupport_cpp::get_message_type_support_handle<message_type>();
   if (rmw_deserialize(&serialized_msg, ts_handle, &ros_msg) != RMW_RET_OK)
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to deserialize message");
 
   // publish ROS message
-  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Sending ROS message from MQTT broker to ROS topic '%s' ...", 
+  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"),
+               "Sending ROS message from MQTT broker to ROS topic '%s' ...",
                mqtt2ros.ros.topic.c_str());
-  mqtt2ros.ros.publisher = create_publisher<message_type>(mqtt2ros.ros.topic, mqtt2ros.ros.queue_size);
+  mqtt2ros.ros.publisher =
+    create_publisher<message_type>(mqtt2ros.ros.topic, mqtt2ros.ros.queue_size);
   mqtt2ros.ros.publisher->publish(ros_msg);
 }
 
@@ -425,11 +452,11 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
 void MqttClient::connected(const std::string& cause) {
 
   is_connected_ = true;
-  std::string as_client = 
-    client_config_.id.empty() 
-    ? "" 
-    : std::string(" as '") + client_config_.id + std::string("'");
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Connected to broker at '%s'%s", 
+  std::string as_client =
+    client_config_.id.empty()
+      ? ""
+      : std::string(" as '") + client_config_.id + std::string("'");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Connected to broker at '%s'%s",
               client_->get_server_uri().c_str(), as_client.c_str());
 
   // subscribe MQTT topics
@@ -437,14 +464,16 @@ void MqttClient::connected(const std::string& cause) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_p.second;
     std::string mqtt_topic = mqtt2ros_p.first;
     client_->subscribe(mqtt_topic, mqtt2ros.mqtt.qos);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subscribed MQTT topic '%s'", mqtt_topic.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subscribed MQTT topic '%s'",
+                mqtt_topic.c_str());
   }
 }
 
 
 void MqttClient::connection_lost(const std::string& cause) {
 
-  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Connection to broker lost, will try to reconnect...");
+  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
+               "Connection to broker lost, will try to reconnect...");
   is_connected_ = false;
   connect();
 }
@@ -456,8 +485,9 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(mqtt_client::srv::IsConnected::Request& request, 
-                                    mqtt_client::srv::IsConnected::Response& response) {
+bool MqttClient::isConnectedService(
+  mqtt_client::srv::IsConnected::Request& request,
+  mqtt_client::srv::IsConnected::Response& response) {
 
   response.connected = isConnected();
   return true;
@@ -467,23 +497,28 @@ bool MqttClient::isConnectedService(mqtt_client::srv::IsConnected::Request& requ
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
   std::string mqtt_topic = mqtt_msg->get_topic();
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received MQTT message on topic '%s'", mqtt_topic.c_str());
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
+              "Received MQTT message on topic '%s'", mqtt_topic.c_str());
 
-  bool msg_contains_ros_msg_type = 
+  bool msg_contains_ros_msg_type =
     mqtt_topic.find(kRosMsgTypeMqttTopicPrefix) != std::string::npos;
   if (msg_contains_ros_msg_type) {
 
     // copy ROS message type from MQTT message to buffer
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Changing ROS message type is not supported in this application yet."
+    RCLCPP_ERROR(
+      rclcpp::get_logger("rclcpp"),
+      "Changing ROS message type is not supported in this application yet."
       "Only PointCloud2 message type known");
     exit(EXIT_FAILURE);
   } else {
 
     // publish ROS message, if publisher initialized
-    if (!mqtt2ros_[mqtt_topic].ros.topic.empty()){
+    if (!mqtt2ros_[mqtt_topic].ros.topic.empty()) {
       mqtt2ros(mqtt_msg);
     } else {
-      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "ROS publisher for data from MQTT topic '%s' is not yet initialized: "
+      RCLCPP_WARN(
+        rclcpp::get_logger("rclcpp"),
+        "ROS publisher for data from MQTT topic '%s' is not yet initialized: "
         "ROS message type not yet known",
         mqtt_topic.c_str());
     }
@@ -499,15 +534,16 @@ void MqttClient::on_success(const mqtt::token& token) {}
 
 void MqttClient::on_failure(const mqtt::token& token) {
 
-  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Connection to broker failed (return code %d), will automatically "
-  "retry...",
-  token.get_return_code());
+  RCLCPP_ERROR(
+    rclcpp::get_logger("rclcpp"),
+    "Connection to broker failed (return code %d), will automatically "
+    "retry...",
+    token.get_return_code());
 }
 
-} // namespace mqtt_client
+}  // namespace mqtt_client
 
-int main(int argc, char * argv[])
-{
+int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<mqtt_client::MqttClient>());
   rclcpp::shutdown();
