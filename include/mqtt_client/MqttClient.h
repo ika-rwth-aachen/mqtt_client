@@ -192,6 +192,8 @@ class MqttClient : public nodelet::Nodelet,
   void mqtt2ros(mqtt::const_message_ptr mqtt_msg,
                 const ros::WallTime& arrival_stamp = ros::WallTime::now());
 
+  void mqtt2primitive(mqtt::const_message_ptr mqtt_msg);
+
   /**
    * @brief Callback for when the client has successfully connected to the
    * broker.

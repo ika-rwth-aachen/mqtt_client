@@ -547,7 +547,9 @@ void MqttClient::connected(const std::string& cause) {
   // subscribe MQTT topics
   for (auto& mqtt2ros_p : mqtt2ros_) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_p.second;
-    std::string mqtt_topic = kRosMsgTypeMqttTopicPrefix + mqtt2ros_p.first;
+    std::string mqtt_topic = mqtt2ros_p.first;
+    if (!mqtt2ros.primitive)  // subscribe topics for ROS message types first
+      mqtt_topic = kRosMsgTypeMqttTopicPrefix + mqtt_topic;
     client_->subscribe(mqtt_topic, mqtt2ros.mqtt.qos);
     NODELET_DEBUG("Subscribed MQTT topic '%s'", mqtt_topic.c_str());
   }
@@ -583,17 +585,26 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
   std::string mqtt_topic = mqtt_msg->get_topic();
   NODELET_DEBUG("Received MQTT message on topic '%s'", mqtt_topic.c_str());
-  auto& payload = mqtt_msg->get_payload_ref();
-  uint32_t payload_length = static_cast<uint32_t>(payload.size());
 
+  // publish directly if primitive
+  if (mqtt2ros_.count(mqtt_topic) > 0) {
+    Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
+    if (mqtt2ros.primitive) mqtt2primitive(mqtt_msg);
+    return;
+  }
+
+  // else first check for ROS message type
   bool msg_contains_ros_msg_type =
     mqtt_topic.find(kRosMsgTypeMqttTopicPrefix) != std::string::npos;
   if (msg_contains_ros_msg_type) {
 
     // create ROS message buffer on top of MQTT message payload
+    auto& payload = mqtt_msg->get_payload_ref();
+    uint32_t payload_length = static_cast<uint32_t>(payload.size());
     char* non_const_payload = const_cast<char*>(&payload[0]);
     uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
+    // TODO: might crash if payload by chance does not contain ros msg type
     // deserialize ROS message type
     RosMsgType ros_msg_type;
     ros::serialization::IStream msg_type_stream(msg_type_buffer,
