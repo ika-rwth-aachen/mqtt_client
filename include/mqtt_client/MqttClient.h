@@ -346,6 +346,8 @@ class MqttClient : public nodelet::Nodelet,
       int queue_size = 1;                       ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
     } ros;                   ///< ROS-related variables
+    bool primitive = false;  ///< whether to publish as primitive message (if
+                             ///< coming from non-ROS MQTT client)
   };
 
  protected:

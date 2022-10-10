@@ -188,6 +188,7 @@ bridge:
   mqtt2ros:            # array specifying which MQTT topics to map to which ROS topics
     - mqtt_topic:        # MQTT topic on which messages are received from the broker
       ros_topic:         # ROS topic on which corresponding MQTT messages are published
+      primitive:         # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
       advanced:
         mqtt:
           qos:             # [0] MQTT QoS value

@@ -181,6 +181,10 @@ void MqttClient::loadParameters() {
           Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
           mqtt2ros.ros.topic = std::string(mqtt2ros_params[k]["ros_topic"]);
 
+          // mqtt2ros[k]/primitive
+          if (mqtt2ros_params[k].hasMember("primitive"))
+            mqtt2ros.primitive = mqtt2ros_params[k]["primitive"];
+
           // mqtt2ros[k]/advanced
           if (mqtt2ros_params[k].hasMember("advanced")) {
             XmlRpc::XmlRpcValue& advanced_params =
