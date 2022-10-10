@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -531,6 +532,57 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
     mqtt2ros.ros.topic.c_str());
   mqtt2ros.ros.shape_shifter.read(msg_stream);
   mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
+}
+
+
+void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
+
+  bool found_primitive = false;
+  const std::string str_msg = mqtt_msg->to_string();
+
+  // check for bool
+  if (!found_primitive) {
+    std::string bool_str = str_msg;
+    std::transform(str_msg.cbegin(), str_msg.cend(), bool_str.begin(),
+                   ::tolower);
+    if (bool_str == "true" || bool_str == "false") {
+      found_primitive = true;
+      bool bool_msg = (bool_str == "true");
+      NODELET_INFO("Got bool: %d", bool_msg);
+    }
+  }
+
+  // check for int
+  if (!found_primitive) {
+    std::size_t pos;
+    try {
+      const int int_msg = std::stoi(str_msg, &pos);
+      if (pos == str_msg.size()) {
+        found_primitive = true;
+        NODELET_INFO("Got int: %d", int_msg);
+      }
+    } catch (const std::invalid_argument& ex) {
+    } catch (const std::out_of_range& ex) {
+    }
+  }
+
+  // check for float
+  if (!found_primitive) {
+    std::size_t pos;
+    try {
+      const float float_msg = std::stof(str_msg, &pos);
+      if (pos == str_msg.size()) {
+        found_primitive = true;
+        NODELET_INFO("Got float: %f", float_msg);
+      }
+    } catch (const std::invalid_argument& ex) {
+    } catch (const std::out_of_range& ex) {
+    }
+  }
+
+  if (!found_primitive) {
+    NODELET_INFO("Got string: %s", str_msg.c_str());
+  }
 }
 
 
