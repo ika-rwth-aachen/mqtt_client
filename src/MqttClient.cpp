@@ -207,8 +207,9 @@ void MqttClient::loadParameters() {
             }
           }
 
-          NODELET_INFO("Bridging MQTT topic '%s' to ROS topic '%s'",
-                       mqtt_topic.c_str(), mqtt2ros.ros.topic.c_str());
+          NODELET_INFO(
+            "Bridging MQTT topic '%s' to %sROS topic '%s'", mqtt_topic.c_str(),
+            mqtt2ros.primitive ? "primitive " : "", mqtt2ros.ros.topic.c_str());
         } else {
           NODELET_WARN(
             "Parameter 'bridge/mqtt2ros[%d]' is missing subparameter "
