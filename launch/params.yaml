@@ -8,3 +8,6 @@ bridge:
   mqtt2ros:
     - mqtt_topic: pingpong
       ros_topic: /pong
+    - mqtt_topic: primitive
+      ros_topic: /primitive
+      primitive: true

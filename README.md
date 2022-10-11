@@ -57,8 +57,9 @@ docker run --rm --network host --name mosquitto eclipse-mosquitto
 
 The *mqtt_client* is best configured with a ROS parameter *yaml* file. The configuration shown below (also see [`params.yaml`](launch/params.yaml)) allows an exchange of messages as follows:
 
-- ROS messages received locally on topic `/ping` are sent to the broker on MQTT topic `pingpong`
-- MQTT messages received from the broker on MQTT topic `pingpong` are published locally on ROS topic `/pong`
+- ROS messages received locally on ROS topic `/ping` are sent to the broker on MQTT topic `pingpong`;
+- MQTT messages received from the broker on MQTT topic `pingpong` are published locally on ROS topic `/pong`;
+- MQTT messages received sent by other non-ROS clients and received from the broker on MQTT topic `primitive` are published locally as primitive ROS messages (`bool`, `int`, `float`, `string`) on ROS topic `/primitive`.
 
 ```yaml
 broker:
@@ -71,6 +72,9 @@ bridge:
   mqtt2ros:
     - mqtt_topic: pingpong
       ros_topic: /pong
+    - mqtt_topic: primitive
+      ros_topic: /primitive
+      primitive: true
 ```
 
 #### Demo Client Launch
@@ -82,33 +86,44 @@ roslaunch mqtt_client standalone.launch
 ```
 
 ```txt
-[ WARN] [1652888439.858857758]: Parameter 'broker/tls/enabled' not set, defaulting to '0'
-[ WARN] [1652888439.859706411]: Parameter 'client/id' not set, defaulting to ''
-[ WARN] [1652888439.859717540]: Client buffer can not be enabled when client ID is empty
-[ WARN] [1652888439.860144376]: Parameter 'client/clean_session' not set, defaulting to '1'
-[ WARN] [1652888439.860366209]: Parameter 'client/keep_alive_interval' not set, defaulting to '0.000000'
-[ WARN] [1652888439.860583442]: Parameter 'client/max_inflight' not set, defaulting to '65535'
-[ INFO] [1652888439.860924591]: Bridging ROS topic '/ping' to MQTT topic 'pingpong'
-[ INFO] [1652888439.860967600]: Bridging MQTT topic 'pingpong' to ROS topic '/pong'
-[ INFO] [1652888439.861800203]: Connecting to broker at 'tcp://localhost:1883' ...
-[ INFO] [1652888440.062255501]: Connected to broker at 'tcp://localhost:1883'
+[ WARN] [1665521116.598414724]: Parameter 'broker/tls/enabled' not set, defaulting to '0'
+[ WARN] [1665521116.598987895]: Parameter 'client/id' not set, defaulting to ''
+[ WARN] [1665521116.599000755]: Client buffer can not be enabled when client ID is empty
+[ WARN] [1665521116.599293016]: Parameter 'client/clean_session' not set, defaulting to '1'
+[ WARN] [1665521116.599543528]: Parameter 'client/keep_alive_interval' not set, defaulting to '60.000000'
+[ WARN] [1665521116.599792350]: Parameter 'client/max_inflight' not set, defaulting to '65535'
+[ INFO] [1665521116.600156748]: Bridging ROS topic '/ping' to MQTT topic 'pingpong' 
+[ INFO] [1665521116.600202047]: Bridging MQTT topic 'pingpong' to ROS topic '/pong'
+[ INFO] [1665521116.600219366]: Bridging MQTT topic 'primitive' to primitive ROS topic '/primitive'
+[ INFO] [1665521116.600988342]: Connecting to broker at 'tcp://localhost:1883' ...
+[ INFO] [1665521116.701596581]: Connected to broker at 'tcp://localhost:1883'
 ```
 
 Note that the *mqtt_client* successfully connected to the broker and also echoed which ROS/MQTT topics are being bridged.
 
-In order to test the communication, publish any message on ROS topic `/ping` and wait for a response on ROS topic `/pong`. To this end, open two new terminals and execute the following commands.
+In order to test the communication among `mqtt_client`, publish any message on ROS topic `/ping` and wait for a response on ROS topic `/pong`. In order to test the communication between other MQTT clients and the `mqtt_client`, directly publish any message on MQTT topic `primitive` and wait for a response on ROS topic `/primitive`. To this end, open four new terminals and execute the following commands.
 
 ```bash
-# 1st terminal: listen on /pong
+# 1st terminal: listen for ROS messages on /pong
 rostopic echo /pong
 ```
 
 ```bash
-# 2nd terminal: publish to /ping
+# 2nd terminal: publish ROS message to /ping
 rostopic pub -r 1 /ping std_msgs/String "Hello MQTT!"
 ```
 
-If everything works as expected, a new message should be printed in the first terminal once a second.
+```bash
+# 3rd terminal: listen for ROS messages on /primitive
+rostopic echo /primitive
+```
+
+```bash
+# 4th terminal: publish MQTT message to primitive
+docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "primitive" --repeat 10 --repeat-delay 1 -m 3.14
+```
+
+If everything works as expected, a new message should be printed in the first and third terminal once a second.
 
 ### Launch
 
