@@ -743,12 +743,19 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     char* non_const_payload = const_cast<char*>(&payload[0]);
     uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
-    // TODO: might crash if payload by chance does not contain ros msg type
     // deserialize ROS message type
     RosMsgType ros_msg_type;
     ros::serialization::IStream msg_type_stream(msg_type_buffer,
                                                 payload_length);
-    ros::serialization::deserialize(msg_type_stream, ros_msg_type);
+    try {
+      ros::serialization::deserialize(msg_type_stream, ros_msg_type);
+    } catch (ros::serialization::StreamOverrunException) {
+      NODELET_ERROR(
+        "Failed to deserialize ROS message type from MQTT message received on "
+        "topic '%s', got message:\n%s",
+        mqtt_topic.c_str(), mqtt_msg->to_string().c_str());
+      return;
+    }
 
     // reconstruct corresponding MQTT data topic
     std::string mqtt_data_topic = mqtt_topic;
