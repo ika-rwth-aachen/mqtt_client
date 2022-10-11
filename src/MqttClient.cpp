@@ -725,8 +725,10 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
   // publish directly if primitive
   if (mqtt2ros_.count(mqtt_topic) > 0) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
-    if (mqtt2ros.primitive) mqtt2primitive(mqtt_msg);
-    return;
+    if (mqtt2ros.primitive) {
+      mqtt2primitive(mqtt_msg);
+      return;
+    }
   }
 
   // else first check for ROS message type
