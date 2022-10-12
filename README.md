@@ -136,7 +136,7 @@ rostopic pub -r 1 /ping/primitive std_msgs/Int32 42
 docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "pingpong/primitive" --repeat 10 --repeat-delay 1 -m 69
 ```
 
-If everything works as expected, the second terminal should print a message at 1Hz, while the fifth third terminal should print two different messages at 1Hz.
+If everything works as expected, the second terminal should print a message at 1Hz, while the third terminal should print two different messages at 1Hz.
 
 ### Launch
 
