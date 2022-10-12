@@ -348,6 +348,7 @@ class MqttClient : public nodelet::Nodelet,
       int qos = 0;            ///< MQTT QoS value
       bool retained = false;  ///< whether to retain MQTT message
     } mqtt;                   ///< MQTT-related variables
+    bool primitive = false;   ///< whether to publish as primitive message
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
   };
 
