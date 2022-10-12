@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/github/v/release/ika-rwth-aachen/mqtt_client"/></a>
   <img src="https://img.shields.io/github/license/ika-rwth-aachen/mqtt_client"/></a>
   <a href="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/build.yml"><img src="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/build.yml/badge.svg"/></a>
-  <img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
+  <a href="https://github.com/ika-rwth-aachen/mqtt_client"><img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
 </p>
 
 The *mqtt_client* package provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types.
@@ -15,6 +15,7 @@ The *mqtt_client* package provides a ROS nodelet that enables connected ROS-base
   - [Quick Start](#quick-start)
   - [Launch](#launch)
   - [Configuration](#configuration)
+- [Primitive Messages](#primitive-messages)
 - [Latency Computation](#latency-computation)
 - [Package Summary](#package-summary)
 - [How It Works](#how-it-works)
@@ -57,9 +58,10 @@ docker run --rm --network host --name mosquitto eclipse-mosquitto
 
 The *mqtt_client* is best configured with a ROS parameter *yaml* file. The configuration shown below (also see [`params.yaml`](launch/params.yaml)) allows an exchange of messages as follows:
 
-- ROS messages received locally on ROS topic `/ping` are sent to the broker on MQTT topic `pingpong`;
-- MQTT messages received from the broker on MQTT topic `pingpong` are published locally on ROS topic `/pong`;
-- MQTT messages received sent by other non-ROS clients and received from the broker on MQTT topic `primitive` are published locally as primitive ROS messages (`bool`, `int`, `float`, `string`) on ROS topic `/primitive`.
+- ROS messages received locally on ROS topic `/ping/ros` are sent to the broker on MQTT topic `pingpong/ros`;
+- MQTT messages received from the broker on MQTT topic `pingpong/ros` are published locally on ROS topic `/pong/ros`;
+- primitive ROS messages received locally on ROS topic `/ping/primitive` are sent as primitive (string) messages to the broker on MQTT topic `pingpong/primitive`;
+- MQTT messages received from the broker on MQTT topic `pingpong/primitive` are published locally as primitive ROS messages on ROS topic `/primitive`.
 
 ```yaml
 broker:
@@ -67,13 +69,16 @@ broker:
   port: 1883
 bridge:
   ros2mqtt:
-    - ros_topic: /ping
-      mqtt_topic: pingpong
+    - ros_topic: /ping/ros
+      mqtt_topic: pingpong/ros
+    - ros_topic: /ping/primitive
+      mqtt_topic: pingpong/primitive
+      primitive: true
   mqtt2ros:
-    - mqtt_topic: pingpong
-      ros_topic: /pong
-    - mqtt_topic: primitive
-      ros_topic: /primitive
+    - mqtt_topic: pingpong/ros
+      ros_topic: /pong/ros
+    - mqtt_topic: pingpong/primitive
+      ros_topic: /pong/primitive
       primitive: true
 ```
 
@@ -86,44 +91,52 @@ roslaunch mqtt_client standalone.launch
 ```
 
 ```txt
-[ WARN] [1665521116.598414724]: Parameter 'broker/tls/enabled' not set, defaulting to '0'
-[ WARN] [1665521116.598987895]: Parameter 'client/id' not set, defaulting to ''
-[ WARN] [1665521116.599000755]: Client buffer can not be enabled when client ID is empty
-[ WARN] [1665521116.599293016]: Parameter 'client/clean_session' not set, defaulting to '1'
-[ WARN] [1665521116.599543528]: Parameter 'client/keep_alive_interval' not set, defaulting to '60.000000'
-[ WARN] [1665521116.599792350]: Parameter 'client/max_inflight' not set, defaulting to '65535'
-[ INFO] [1665521116.600156748]: Bridging ROS topic '/ping' to MQTT topic 'pingpong' 
-[ INFO] [1665521116.600202047]: Bridging MQTT topic 'pingpong' to ROS topic '/pong'
-[ INFO] [1665521116.600219366]: Bridging MQTT topic 'primitive' to primitive ROS topic '/primitive'
-[ INFO] [1665521116.600988342]: Connecting to broker at 'tcp://localhost:1883' ...
-[ INFO] [1665521116.701596581]: Connected to broker at 'tcp://localhost:1883'
+[ WARN] [1665575657.358869079]: Parameter 'broker/tls/enabled' not set, defaulting to '0'
+[ WARN] [1665575657.359798329]: Parameter 'client/id' not set, defaulting to ''
+[ WARN] [1665575657.359810889]: Client buffer can not be enabled when client ID is empty
+[ WARN] [1665575657.360300703]: Parameter 'client/clean_session' not set, defaulting to '1'
+[ WARN] [1665575657.360576344]: Parameter 'client/keep_alive_interval' not set, defaulting to '60.000000'
+[ WARN] [1665575657.360847295]: Parameter 'client/max_inflight' not set, defaulting to '65535'
+[ INFO] [1665575657.361281461]: Bridging ROS topic '/ping/ros' to MQTT topic 'pingpong/ros' 
+[ INFO] [1665575657.361303380]: Bridging primitive ROS topic '/ping/primitive' to MQTT topic 'pingpong/primitive' 
+[ INFO] [1665575657.361352809]: Bridging MQTT topic 'pingpong/ros' to ROS topic '/pong/ros'
+[ INFO] [1665575657.361370558]: Bridging MQTT topic 'pingpong/primitive' to primitive ROS topic '/pong/primitive'
+[ INFO] [1665575657.362153083]: Connecting to broker at 'tcp://localhost:1883' ...
+[ INFO] [1665575657.462622065]: Connected to broker at 'tcp://localhost:1883'
 ```
 
 Note that the *mqtt_client* successfully connected to the broker and also echoed which ROS/MQTT topics are being bridged.
 
-In order to test the communication among `mqtt_client`, publish any message on ROS topic `/ping` and wait for a response on ROS topic `/pong`. In order to test the communication between other MQTT clients and the `mqtt_client`, directly publish any message on MQTT topic `primitive` and wait for a response on ROS topic `/primitive`. To this end, open four new terminals and execute the following commands.
+In order to test the communication among *mqtt_clients*, publish any ROS message on ROS topic `/ping/ros` and wait for a response on ROS topic `/pong/ros`.
 
 ```bash
-# 1st terminal: listen for ROS messages on /pong
-rostopic echo /pong
+# 1st terminal: listen for ROS messages on /pong/ros
+rostopic echo /pong/ros
 ```
 
 ```bash
-# 2nd terminal: publish ROS message to /ping
-rostopic pub -r 1 /ping std_msgs/String "Hello MQTT!"
+# 2nd terminal: publish ROS message to /ping/ros
+rostopic pub -r 1 /ping/ros std_msgs/String "Hello MQTT!"
+```
+
+In order to test the communication between *mqtt_client* and other MQTT clients, publish a primitive ROS message on ROS topic `/ping/primitive`, directly publish a primitive MQTT message on MQTT topic `pingpong/primitive` and wait for responses on ROS topic `/pong/primitive`.
+
+```bash
+# 3rd terminal: listen for primitive ROS messages on /pong/primitive
+rostopic echo /pong/primitive
 ```
 
 ```bash
-# 3rd terminal: listen for ROS messages on /primitive
-rostopic echo /primitive
+# 4th terminal: publish primitive ROS message to /ping/primitive
+rostopic pub -r 1 /ping/primitive std_msgs/Int32 42
 ```
 
 ```bash
-# 4th terminal: publish MQTT message to primitive
-docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "primitive" --repeat 10 --repeat-delay 1 -m 3.14
+# 5th terminal: publish primitive MQTT message to pingpong/primitive
+docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "pingpong/primitive" --repeat 10 --repeat-delay 1 -m 69
 ```
 
-If everything works as expected, a new message should be printed in the first and third terminal once a second.
+If everything works as expected, the second terminal should print a message at 1Hz, while the fifth third terminal should print two different messages at 1Hz.
 
 ### Launch
 
@@ -212,6 +225,14 @@ bridge:
           queue_size:        # [1] ROS publisher queue size
           latched:           # [false] whether to latch ROS message
 ```
+
+## Primitive Messages
+
+As seen in the [Quick Start](#quick-start), the *mqtt_client* can not only exchange arbitrary ROS messages with other *mqtt_clients*, but it can also exchange primitive message data with other non-*mqtt_client* MQTT clients. The `primitive` parameter can be set for both ROS-to-MQTT (`bridge/ros2mqtt`) and MQTT-to-ROS (`bridge/mqtt2ros`) transmissions.
+
+If a ROS-to-MQTT transmission is configured as `primitive`, the ROS message is simply serialized to a string representation, without providing any information of the underlying ROS message type via MQTT. If the ROS message type is one of the supported primitive ROS message types, the encapsualating ROS message components are also removed, s.t. only the raw data is published as a string. The supported primitive ROS message types are [`std_msgs/String`](http://docs.ros.org/en/api/std_msgs/html/msg/String.html), [`std_msgs/Bool`](http://docs.ros.org/en/api/std_msgs/html/msg/Bool.html), [`std_msgs/Char`](http://docs.ros.org/en/api/std_msgs/html/msg/Char.html), [`std_msgs/UInt8`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt8.html), [`std_msgs/UInt16`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt16.html), [`std_msgs/UInt32`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt32.html), [`std_msgs/UInt64`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt16.html), [`std_msgs/Int8`](http://docs.ros.org/en/api/std_msgs/html/msg/Int8.html), [`std_msgs/Int16`](http://docs.ros.org/en/api/std_msgs/html/msg/Int16.html), [`std_msgs/Int32`](http://docs.ros.org/en/api/std_msgs/html/msg/Int32.html), [`std_msgs/Int64`](http://docs.ros.org/en/api/std_msgs/html/msg/Int64.html), [`std_msgs/Float32`](http://docs.ros.org/en/api/std_msgs/html/msg/Float32.html), [`std_msgs/Float32`](http://docs.ros.org/en/api/std_msgs/html/msg/Float64.html).
+
+If an MQTT-to-ROS transmission is configured as `primitive`, the MQTT message is interpreted and published as a primitive data type, if possible. The message is probed in the following order: `bool` ([`std_msgs/Bool`](http://docs.ros.org/en/api/std_msgs/html/msg/Bool.html)), `int` ([`std_msgs/Int32`](http://docs.ros.org/en/api/std_msgs/html/msg/Int32.html)), `float` ([`std_msgs/Float32`](http://docs.ros.org/en/api/std_msgs/html/msg/Float32.html)), `string` ([`std_msgs/String`](http://docs.ros.org/en/api/std_msgs/html/msg/String.html)).
 
 ## Latency Computation
 

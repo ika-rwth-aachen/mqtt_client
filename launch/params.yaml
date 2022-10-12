@@ -3,11 +3,14 @@ broker:
   port: 1883
 bridge:
   ros2mqtt:
-    - ros_topic: /ping
-      mqtt_topic: pingpong
+    - ros_topic: /ping/ros
+      mqtt_topic: pingpong/ros
+    - ros_topic: /ping/primitive
+      mqtt_topic: pingpong/primitive
+      primitive: true
   mqtt2ros:
-    - mqtt_topic: pingpong
-      ros_topic: /pong
-    - mqtt_topic: primitive
-      ros_topic: /primitive
+    - mqtt_topic: pingpong/ros
+      ros_topic: /pong/ros
+    - mqtt_topic: pingpong/primitive
+      ros_topic: /pong/primitive
       primitive: true
