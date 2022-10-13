@@ -193,6 +193,26 @@ class MqttClient : public nodelet::Nodelet,
                 const ros::WallTime& arrival_stamp = ros::WallTime::now());
 
   /**
+   * @brief Publishes a primitive message received via MQTT to ROS.
+   *
+   * This tries to interpret the raw MQTT message as a bool, int, or float value
+   * in the given order before falling back to string. The message is then
+   * published as a corresponding primitive ROS message. This utilizes the
+   * ShapeShifter stored for the MQTT topic on which the message was received.
+   * The ShapeShifter is dynamically configured to the appropriate ROS message
+   * type.
+   *
+   * The following mappings from primitive type to ROS message type hold:
+   *   bool: std_msgs/Bool
+   *   int: std_msgs/Int32
+   *   float: std_msgs/Float32
+   *   string: std_msgs/String
+   *
+   * @param   mqtt_msg     MQTT message
+   */
+  void mqtt2primitive(mqtt::const_message_ptr mqtt_msg);
+
+  /**
    * @brief Callback for when the client has successfully connected to the
    * broker.
    *
@@ -328,6 +348,7 @@ class MqttClient : public nodelet::Nodelet,
       int qos = 0;            ///< MQTT QoS value
       bool retained = false;  ///< whether to retain MQTT message
     } mqtt;                   ///< MQTT-related variables
+    bool primitive = false;   ///< whether to publish as primitive message
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
   };
 
@@ -346,6 +367,8 @@ class MqttClient : public nodelet::Nodelet,
       int queue_size = 1;                       ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
     } ros;                   ///< ROS-related variables
+    bool primitive = false;  ///< whether to publish as primitive message (if
+                             ///< coming from non-ROS MQTT client)
   };
 
  protected:
@@ -437,6 +460,24 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
     NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
                   std::to_string(value).c_str());
   return found;
+}
+
+
+/**
+ * Serializes a ROS message to a buffer.
+ *
+ * @tparam  T            ROS message type
+ *
+ * @param[in]   msg      ROS message
+ * @param[out]  buffer   buffer to serialize to
+ */
+template <typename T>
+void serializeRosMessage(const T& msg, std::vector<uint8_t>& buffer) {
+
+  const uint32_t length = ros::serialization::serializationLength(msg);
+  buffer.resize(length);
+  ros::serialization::OStream stream(buffer.data(), length);
+  ros::serialization::serialize(stream, msg);
 }
 
 }  // namespace mqtt_client
