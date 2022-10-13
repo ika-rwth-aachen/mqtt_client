@@ -8,7 +8,7 @@
   <a href="https://github.com/ika-rwth-aachen/mqtt_client"><img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
 </p>
 
-The *mqtt_client* package provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types.
+The *mqtt_client* package provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types. The *mqtt_client* can also exchange primitive messages with MQTT clients running on devices not based on ROS.
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -105,7 +105,7 @@ roslaunch mqtt_client standalone.launch
 [ INFO] [1665575657.462622065]: Connected to broker at 'tcp://localhost:1883'
 ```
 
-Note that the *mqtt_client* successfully connected to the broker and also echoed which ROS/MQTT topics are being bridged.
+Note that the *mqtt_client* successfully connected to the broker and also echoed which ROS/MQTT topics are being bridged. For testing the communication between *mqtt_client*, itself, and other MQTT clients, open five new terminals.
 
 In order to test the communication among *mqtt_clients*, publish any ROS message on ROS topic `/ping/ros` and wait for a response on ROS topic `/pong/ros`.
 
@@ -133,7 +133,7 @@ rostopic pub -r 1 /ping/primitive std_msgs/Int32 42
 
 ```bash
 # 5th terminal: publish primitive MQTT message to pingpong/primitive
-docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "pingpong/primitive" --repeat 10 --repeat-delay 1 -m 69
+docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "pingpong/primitive" --repeat 20 --repeat-delay 1 -m 69
 ```
 
 If everything works as expected, the second terminal should print a message at 1Hz, while the third terminal should print two different messages at 1Hz.
