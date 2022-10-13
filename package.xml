@@ -2,7 +2,7 @@
 <package format="2">
 
   <name>mqtt_client</name>
-  <version>1.0.2</version>
+  <version>1.1.0</version>
   <description>Provides a nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the MQTT protocol.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
