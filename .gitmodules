@@ -1,0 +1,3 @@
+[submodule "docker/docker-ros"]
+	path = docker/docker-ros
+	url = ../../ops/docker-ros.git
