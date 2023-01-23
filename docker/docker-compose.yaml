@@ -8,6 +8,8 @@ x-command:      &command      roslaunch mqtt_client standalone.launch
 x-build: &build
   dockerfile: ./docker/docker-ros/Dockerfile
   context: ../
+  cache_from: ['type=registry,ref=$CACHE_IMAGE']
+  cache_to: [type=inline']
   args:
     BASE_IMAGE: *base-image
     COMMAND: *command
