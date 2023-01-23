@@ -11,6 +11,8 @@ x-build: &build
   args:
     BASE_IMAGE: *base-image
     COMMAND: *command
+    GIT_HTTPS_USER: $GIT_HTTPS_USER
+    GIT_HTTPS_PASSWORD: $GIT_HTTPS_PASSWORD
 
 services:
   devel:
