@@ -5,6 +5,7 @@ default:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - cd $DOCKER_COMPOSE_DIR
+    - 'sed -i "/\ image:/a\    platform: $PLATFORM" docker-compose.yaml'
 
 
 variables:
@@ -35,35 +36,39 @@ stages:
 devel-amd64:
   stage: Build Images (amd64)
   script:
-    - 'sed -i "/\ image:/a\    platform: linux/amd64" docker-compose.yaml'
     - docker compose build devel
     - docker tag $IMAGE_DEVEL $IMAGE_DEVEL_CI_AMD64
     - docker push $IMAGE_DEVEL_CI_AMD64
+  variables:
+    PLATFORM: linux/amd64
 
 run-amd64:
   stage: Build Images (amd64)
   script:
-    - 'sed -i "/\ image:/a\    platform: linux/amd64" docker-compose.yaml'
     - docker compose build run
     - docker tag $IMAGE_RUN $IMAGE_RUN_CI_AMD64
     - docker push $IMAGE_RUN_CI_AMD64
+  variables:
+    PLATFORM: linux/amd64
 
 
 devel-arm64:
   stage: Build Images (arm64)
   script:
-    - 'sed -i "/\ image:/a\    platform: linux/arm64" docker-compose.yaml'
     - docker compose build devel
     - docker tag $IMAGE_DEVEL $IMAGE_DEVEL_CI_ARM64
     - docker push $IMAGE_DEVEL_CI_ARM64
+  variables:
+    PLATFORM: linux/arm64
 
 run-arm64:
   stage: Build Images (arm64)
   script:
-    - 'sed -i "/\ image:/a\    platform: linux/arm64" docker-compose.yaml'
     - docker compose build run
     - docker tag $IMAGE_RUN $IMAGE_RUN_CI_ARM64
     - docker push $IMAGE_RUN_CI_ARM64
+  variables:
+    PLATFORM: linux/arm64
 
 
 Test devel-amd64:
