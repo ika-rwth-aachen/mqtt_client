@@ -179,7 +179,7 @@ class MqttClient : public rclcpp::Node,
    * @param   ros_msg    generic ROS message
    * @param   ros_topic  ROS topic where the message was published
    */
-  void ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> ros_msg,
+  void ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> serialized_msg,
                 const std::string& ros_topic);
 
   /**

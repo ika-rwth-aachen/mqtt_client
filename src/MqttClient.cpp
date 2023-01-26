@@ -347,33 +347,17 @@ void MqttClient::connect() {
 }
 
 
-void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> generic_ros_msg,
+void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> serialized_msg,
                           const std::string& ros_topic) {
-
-  std_msgs::msg::String::SharedPtr ros_msg = std::make_shared<std_msgs::msg::String>();
-  ros_msg->data = "test message";
-
-  Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
-
-  // gather information on ROS message type in special ROS message
-  std::string mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
 
   RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"),
                "Received ROS message on topic '%s'", ros_topic.c_str());
-
-  // serialize ROS message to buffer
-  rclcpp::SerializedMessage serialized_msg;
-  static rclcpp::Serialization<message_type> serializer;
-  serializer.serialize_message(ros_msg.get(), &serialized_msg);
-
-  uint32_t msg_length =
-    serialized_msg.get_rcl_serialized_message().buffer_length;
-  std::vector<uint8_t> msg_buffer(
-    serialized_msg.get_rcl_serialized_message().buffer,
-    serialized_msg.get_rcl_serialized_message().buffer + msg_length);
+  Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
 
   // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
   // where first item = 1 if timestamp (S) is included
+  uint32_t msg_length =
+    serialized_msg->get_rcl_serialized_message().buffer_length;
   uint32_t payload_length = 1 + msg_length;
   uint32_t msg_offset = 1;
   std::vector<uint8_t> payload_buffer;
@@ -386,12 +370,15 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> gener
     payload_buffer[0] = 0;
   }
   // add ROS message to payload
+  std::vector<uint8_t> msg_buffer(
+    serialized_msg->get_rcl_serialized_message().buffer,
+    serialized_msg->get_rcl_serialized_message().buffer + msg_length);
   payload_buffer.insert(payload_buffer.begin() + msg_offset,
                         std::make_move_iterator(msg_buffer.begin()),
                         std::make_move_iterator(msg_buffer.end()));
 
   // send ROS message to MQTT broker
-  mqtt_topic = ros2mqtt.mqtt.topic;
+  std::string mqtt_topic = ros2mqtt.mqtt.topic;
   try {
     RCLCPP_DEBUG(
       rclcpp::get_logger("rclcpp"),
