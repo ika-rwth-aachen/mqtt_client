@@ -41,7 +41,10 @@ SOFTWARE.
 #include "rcpputils/get_env.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "std_msgs/msg/float64.hpp"
-typedef sensor_msgs::msg::PointCloud2 message_type;
+#include "std_msgs/msg/string.hpp"
+#include "rclcpp/generic_subscription.hpp"
+
+typedef std_msgs::msg::String message_type;
 
 
 /**
@@ -176,7 +179,7 @@ class MqttClient : public rclcpp::Node,
    * @param   ros_msg    generic ROS message
    * @param   ros_topic  ROS topic where the message was published
    */
-  void ros2mqtt(const message_type::SharedPtr ros_msg,
+  void ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> ros_msg,
                 const std::string& ros_topic);
 
   /**
@@ -324,7 +327,7 @@ class MqttClient : public rclcpp::Node,
    */
   struct Ros2MqttInterface {
     struct {
-      rclcpp::Subscription<message_type>::SharedPtr
+      rclcpp::GenericSubscription::SharedPtr
         subscription;      ///< ROS subscriber
       int queue_size = 1;  ///< ROS subscriber queue size
     } ros;                 ///< ROS-related variables

@@ -33,9 +33,6 @@ SOFTWARE.
 #include "std_msgs/msg/string.hpp"
 
 
-using std::placeholders::_1;
-
-
 namespace mqtt_client {
 
 
@@ -249,10 +246,10 @@ void MqttClient::setup() {
   for (auto& ros2mqtt_p : ros2mqtt_) {
     const std::string& ros_topic = ros2mqtt_p.first;
     Ros2MqttInterface& ros2mqtt = ros2mqtt_p.second;
-    std::function<void(const message_type::SharedPtr msg)> bound_callback_func =
-      std::bind(&MqttClient::ros2mqtt, this, _1, ros_topic);
-    ros2mqtt.ros.subscription = create_subscription<message_type>(
-      ros_topic, ros2mqtt.ros.queue_size, bound_callback_func);
+    std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)> bound_callback_func =
+      std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic);
+    ros2mqtt.ros.subscription = create_generic_subscription(
+      ros_topic, "std_msgs/msg/String", ros2mqtt.ros.queue_size, bound_callback_func);
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'",
                  ros_topic.c_str());
   }
@@ -339,8 +336,11 @@ void MqttClient::connect() {
 }
 
 
-void MqttClient::ros2mqtt(const message_type::SharedPtr ros_msg,
+void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> generic_ros_msg,
                           const std::string& ros_topic) {
+
+  std_msgs::msg::String::SharedPtr ros_msg = std::make_shared<std_msgs::msg::String>();
+  ros_msg->data = "test message";
 
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
 
