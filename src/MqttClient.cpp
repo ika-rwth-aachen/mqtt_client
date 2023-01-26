@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include "mqtt_client/MqttClient.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "rclcpp/serialization.hpp"
@@ -242,27 +243,33 @@ void MqttClient::setup() {
   // is_connected_service_ = create_service<mqtt_client::srv::IsConnected>(
   //    "is_connected", &MqttClient::isConnectedService);
 
-  // TODO: get_topic_names_and_types can be used to get the type of the topic to be subscribed before generically subscribing
-  // e.g., this would yield {"/ping": ["std_msgs/msg/String"]}
-  RCLCPP_INFO(rclcpp::get_logger("mqtt_client"), "all_topics_and_types:");
-  std::map<std::string, std::vector<std::string>> all_topics_and_types = this->get_topic_names_and_types();
-  for (const auto& [key, val] : all_topics_and_types) {
-    RCLCPP_INFO(rclcpp::get_logger("mqtt_client"), "- %s:", key.c_str());
-    for (const auto& kk : val) {
-      RCLCPP_INFO(rclcpp::get_logger("mqtt_client"), "  - %s", kk.c_str());
-    }
-  }
+  check_subscriptions_timer_ =
+    create_wall_timer(std::chrono::duration<double>(0.1),
+                      std::bind(&MqttClient::setupSubscriptions, this));
+}
 
-  // create ROS subscribers
+
+void MqttClient::setupSubscriptions() {
+
+  const auto all_topics_and_types = this->get_topic_names_and_types();
+
   for (auto& ros2mqtt_p : ros2mqtt_) {
     const std::string& ros_topic = ros2mqtt_p.first;
     Ros2MqttInterface& ros2mqtt = ros2mqtt_p.second;
-    std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)> bound_callback_func =
-      std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic);
-    ros2mqtt.ros.subscription = create_generic_subscription(
-      ros_topic, "std_msgs/msg/String", ros2mqtt.ros.queue_size, bound_callback_func);
-    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s'",
-                 ros_topic.c_str());
+    
+    if (all_topics_and_types.count(ros_topic)) {
+
+      const std::string& msg_type = all_topics_and_types.at(ros_topic)[0];
+      if (msg_type == ros2mqtt.ros.msg_type) continue;
+      ros2mqtt.ros.msg_type = msg_type;
+    
+      std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)> bound_callback_func =
+        std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic);
+      ros2mqtt.ros.subscription = create_generic_subscription(
+        ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subscribed ROS topic '%s' of type '%s'",
+                  ros_topic.c_str(), msg_type.c_str());
+    }
   }
 }
 

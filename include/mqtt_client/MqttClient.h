@@ -153,6 +153,8 @@ class MqttClient : public rclcpp::Node,
    */
   void setup();
 
+  void setupSubscriptions();
+
   /**
    * @brief Sets up the client connection options and initializes the client
    * object.
@@ -331,6 +333,7 @@ class MqttClient : public rclcpp::Node,
       rclcpp::GenericSubscription::SharedPtr
         subscription;      ///< ROS subscriber
       int queue_size = 1;  ///< ROS subscriber queue size
+      std::string msg_type;
     } ros;                 ///< ROS-related variables
     struct {
       std::string topic;      ///< MQTT topic
@@ -414,6 +417,8 @@ class MqttClient : public rclcpp::Node,
    * @brief MQTT2ROS connection variables sorted by MQTT topic
    */
   std::map<std::string, Mqtt2RosInterface> mqtt2ros_;
+
+  rclcpp::TimerBase::SharedPtr check_subscriptions_timer_;
 };
 
 
