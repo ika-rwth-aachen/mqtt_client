@@ -42,6 +42,7 @@ SOFTWARE.
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "rclcpp/generic_publisher.hpp"
 #include "rclcpp/generic_subscription.hpp"
 
 typedef std_msgs::msg::String message_type;
@@ -348,7 +349,7 @@ class MqttClient : public rclcpp::Node,
     } mqtt;         ///< MQTT-related variables
     struct {
       std::string topic;  ///< ROS topic
-      rclcpp::Publisher<message_type>::SharedPtr
+      rclcpp::GenericPublisher::SharedPtr
         publisher;  ///< generic ROS publisher
       rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
         latency_publisher;   ///< ROS publisher for latency

@@ -356,8 +356,7 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage> seria
 
   // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
   // where first item = 1 if timestamp (S) is included
-  uint32_t msg_length =
-    serialized_msg->get_rcl_serialized_message().buffer_length;
+  uint32_t msg_length = serialized_msg->size();
   uint32_t payload_length = 1 + msg_length;
   uint32_t msg_offset = 1;
   std::vector<uint8_t> payload_buffer;
@@ -421,29 +420,18 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
     exit(EXIT_FAILURE);
   }
 
-  // copy ROS message from MQTT message to buffer
-  std::vector<uint8_t> msg_buffer;
-  msg_buffer.resize(msg_length);
-  std::memcpy(msg_buffer.data(), &(payload[msg_offset]), msg_length);
-
-  // deserialize buffer to ROS message object
-  rcl_serialized_message_t serialized_msg;
-  serialized_msg.buffer = &msg_buffer[0];
-  serialized_msg.buffer_length = msg_buffer.size();
-  serialized_msg.buffer_capacity = msg_buffer.capacity();
-  message_type ros_msg;
-  auto ts_handle =
-    rosidl_typesupport_cpp::get_message_type_support_handle<message_type>();
-  if (rmw_deserialize(&serialized_msg, ts_handle, &ros_msg) != RMW_RET_OK)
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to deserialize message");
+  // copy ROS message from MQTT message to generic message buffer
+  rclcpp::SerializedMessage serialized_msg(msg_length);
+  std::memcpy(serialized_msg.get_rcl_serialized_message().buffer, &(payload[msg_offset]), msg_length);
+  serialized_msg.get_rcl_serialized_message().buffer_length = msg_length;
 
   // publish ROS message
-  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"),
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
                "Sending ROS message from MQTT broker to ROS topic '%s' ...",
                mqtt2ros.ros.topic.c_str());
   mqtt2ros.ros.publisher =
-    create_publisher<message_type>(mqtt2ros.ros.topic, mqtt2ros.ros.queue_size);
-  mqtt2ros.ros.publisher->publish(ros_msg);
+    create_generic_publisher(mqtt2ros.ros.topic, "std_msgs/msg/String", mqtt2ros.ros.queue_size);
+  mqtt2ros.ros.publisher->publish(serialized_msg);
 }
 
 
