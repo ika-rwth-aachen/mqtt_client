@@ -242,6 +242,17 @@ void MqttClient::setup() {
   // is_connected_service_ = create_service<mqtt_client::srv::IsConnected>(
   //    "is_connected", &MqttClient::isConnectedService);
 
+  // TODO: get_topic_names_and_types can be used to get the type of the topic to be subscribed before generically subscribing
+  // e.g., this would yield {"/ping": ["std_msgs/msg/String"]}
+  RCLCPP_INFO(rclcpp::get_logger("mqtt_client"), "all_topics_and_types:");
+  std::map<std::string, std::vector<std::string>> all_topics_and_types = this->get_topic_names_and_types();
+  for (const auto& [key, val] : all_topics_and_types) {
+    RCLCPP_INFO(rclcpp::get_logger("mqtt_client"), "- %s:", key.c_str());
+    for (const auto& kk : val) {
+      RCLCPP_INFO(rclcpp::get_logger("mqtt_client"), "  - %s", kk.c_str());
+    }
+  }
+
   // create ROS subscribers
   for (auto& ros2mqtt_p : ros2mqtt_) {
     const std::string& ros_topic = ros2mqtt_p.first;
