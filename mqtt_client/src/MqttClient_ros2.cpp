@@ -116,50 +116,51 @@ MqttClient::MqttClient() : Node("mqtt_client") {
 
 void MqttClient::loadParameters() {
 
-  declare_parameter("broker/host");
-  declare_parameter("broker/port");
-  declare_parameter("bridge/ros2mqtt/ros_topic");
-  declare_parameter("bridge/ros2mqtt/mqtt_topic");
-  declare_parameter("bridge/mqtt2ros/mqtt_topic");
-  declare_parameter("bridge/mqtt2ros/ros_topic");
+  // TODO: declare all?
+  declare_parameter("broker.host");
+  declare_parameter("broker.port");
+  declare_parameter("bridge.ros2mqtt.ros_topic");
+  declare_parameter("bridge.ros2mqtt.mqtt_topic");
+  declare_parameter("bridge.mqtt2ros.mqtt_topic");
+  declare_parameter("bridge.mqtt2ros.ros_topic");
 
   // load broker parameters from parameter server
   std::string broker_tls_ca_certificate;
-  loadParameter("broker/host", broker_config_.host, "localhost");
-  loadParameter("broker/port", broker_config_.port, 1883);
-  if (loadParameter("broker/user", broker_config_.user)) {
-    loadParameter("broker/pass", broker_config_.pass, "");
+  loadParameter("broker.host", broker_config_.host, "localhost");
+  loadParameter("broker.port", broker_config_.port, 1883);
+  if (loadParameter("broker.user", broker_config_.user)) {
+    loadParameter("broker.pass", broker_config_.pass, "");
   }
-  if (loadParameter("broker/tls/enabled", broker_config_.tls.enabled, false)) {
-    loadParameter("broker/tls/ca_certificate", broker_tls_ca_certificate,
+  if (loadParameter("broker.tls.enabled", broker_config_.tls.enabled, false)) {
+    loadParameter("broker.tls.ca_certificate", broker_tls_ca_certificate,
                   "/etc/ssl/certs/ca-certificates.crt");
   }
 
   // load client parameters from parameter server
   std::string client_buffer_directory, client_tls_certificate, client_tls_key;
-  loadParameter("client/id", client_config_.id, "");
+  loadParameter("client.id", client_config_.id, "");
   client_config_.buffer.enabled = !client_config_.id.empty();
   if (client_config_.buffer.enabled) {
-    loadParameter("client/buffer/size", client_config_.buffer.size, 0);
-    loadParameter("client/buffer/directory", client_buffer_directory, "buffer");
+    loadParameter("client.buffer.size", client_config_.buffer.size, 0);
+    loadParameter("client.buffer.directory", client_buffer_directory, "buffer");
   } else {
     RCLCPP_WARN(get_logger(), "Client buffer can not be enabled when client ID is empty");
   }
-  if (loadParameter("client/last_will/topic", client_config_.last_will.topic)) {
-    loadParameter("client/last_will/message", client_config_.last_will.message,
+  if (loadParameter("client.last_will.topic", client_config_.last_will.topic)) {
+    loadParameter("client.last_will.message", client_config_.last_will.message,
                   "offline");
-    loadParameter("client/last_will/qos", client_config_.last_will.qos, 0);
-    loadParameter("client/last_will/retained",
+    loadParameter("client.last_will.qos", client_config_.last_will.qos, 0);
+    loadParameter("client.last_will.retained",
                   client_config_.last_will.retained, false);
   }
-  loadParameter("client/clean_session", client_config_.clean_session, true);
-  loadParameter("client/keep_alive_interval",
+  loadParameter("client.clean_session", client_config_.clean_session, true);
+  loadParameter("client.keep_alive_interval",
                 client_config_.keep_alive_interval, 60.0);
-  loadParameter("client/max_inflight", client_config_.max_inflight, 65535);
+  loadParameter("client.max_inflight", client_config_.max_inflight, 65535);
   if (broker_config_.tls.enabled) {
-    if (loadParameter("client/tls/certificate", client_tls_certificate)) {
-      loadParameter("client/tls/key", client_tls_key);
-      loadParameter("client/tls/password", client_config_.tls.password);
+    if (loadParameter("client.tls.certificate", client_tls_certificate)) {
+      loadParameter("client.tls.key", client_tls_key);
+      loadParameter("client.tls.password", client_config_.tls.password);
     }
   }
 
@@ -173,8 +174,8 @@ void MqttClient::loadParameters() {
 
   // ros2mqtt
   rclcpp::Parameter ros_topic_param, mqtt_topic_param;
-  if (get_parameter("bridge/ros2mqtt/ros_topic", ros_topic_param) &&
-      get_parameter("bridge/ros2mqtt/mqtt_topic", mqtt_topic_param)) {
+  if (get_parameter("bridge.ros2mqtt.ros_topic", ros_topic_param) &&
+      get_parameter("bridge.ros2mqtt.mqtt_topic", mqtt_topic_param)) {
 
     // ros2mqtt[k]/ros_topic and ros2mqtt[k]/mqtt_topic
     std::string ros_topic = ros_topic_param.as_string();
@@ -184,12 +185,12 @@ void MqttClient::loadParameters() {
 
     // ros2mqtt[k]/primitive
     rclcpp::Parameter primitive_param;
-    if (get_parameter("bridge/ros2mqtt/primitive", primitive_param))
+    if (get_parameter("bridge.ros2mqtt.primitive", primitive_param))
       ros2mqtt.primitive = primitive_param.as_bool();
 
     // ros2mqtt[k]/inject_timestamp
     rclcpp::Parameter stamped_param;
-    if (get_parameter("bridge/ros2mqtt/inject_timestamp", stamped_param))
+    if (get_parameter("bridge.ros2mqtt.inject_timestamp", stamped_param))
       ros2mqtt.stamped = stamped_param.as_bool();
     if (ros2mqtt.stamped && ros2mqtt.primitive) {
       RCLCPP_WARN(
@@ -202,17 +203,17 @@ void MqttClient::loadParameters() {
 
     // ros2mqtt[k]/advanced/ros/queue_size
     rclcpp::Parameter queue_size_param;
-    if (get_parameter("bridge/ros2mqtt/advanced/ros/queue_size", queue_size_param))
+    if (get_parameter("bridge.ros2mqtt.advanced.ros.queue_size", queue_size_param))
       ros2mqtt.ros.queue_size = queue_size_param.as_int();
 
     // ros2mqtt[k]/advanced/mqtt/qos
     rclcpp::Parameter qos_param;
-    if (get_parameter("bridge/ros2mqtt/advanced/mqtt/qos", qos_param))
+    if (get_parameter("bridge.ros2mqtt.advanced.mqtt.qos", qos_param))
       ros2mqtt.mqtt.qos = qos_param.as_int();
 
     // ros2mqtt[k]/advanced/mqtt/retained
     rclcpp::Parameter retained_param;
-    if (get_parameter("bridge/ros2mqtt/advanced/mqtt/retained", retained_param))
+    if (get_parameter("bridge.ros2mqtt.advanced.mqtt.retained", retained_param))
       ros2mqtt.mqtt.retained = retained_param.as_bool();
 
     RCLCPP_INFO(get_logger(),
@@ -223,13 +224,13 @@ void MqttClient::loadParameters() {
   } else {
     RCLCPP_WARN(
       get_logger(),
-      "Parameter 'bridge/ros2mqtt' is missing subparameter "
+      "Parameter 'bridge.ros2mqtt' is missing subparameter "
       "'ros_topic' or 'mqtt_topic', will be ignored");
   }
 
   // mqtt2ros
-  if (get_parameter("bridge/mqtt2ros/mqtt_topic", mqtt_topic_param) &&
-      get_parameter("bridge/mqtt2ros/ros_topic", ros_topic_param)) {
+  if (get_parameter("bridge.mqtt2ros.mqtt_topic", mqtt_topic_param) &&
+      get_parameter("bridge.mqtt2ros.ros_topic", ros_topic_param)) {
 
     // mqtt2ros[k]/mqtt_topic and mqtt2ros[k]/ros_topic
     std::string mqtt_topic = mqtt_topic_param.as_string();
@@ -239,17 +240,17 @@ void MqttClient::loadParameters() {
 
     // mqtt2ros[k]/advanced/mqtt/qos
     rclcpp::Parameter qos_param;
-    if (get_parameter("bridge/mqtt2ros/advanced/mqtt/qos", qos_param))
+    if (get_parameter("bridge.mqtt2ros.advanced.mqtt.qos", qos_param))
       mqtt2ros.mqtt.qos = qos_param.as_int();
 
     // mqtt2ros[k]/advanced/ros/queue_size
     rclcpp::Parameter queue_size_param;
-    if (get_parameter("bridge/mqtt2ros/advanced/ros/queue_size", queue_size_param))
+    if (get_parameter("bridge.mqtt2ros.advanced.ros.queue_size", queue_size_param))
       mqtt2ros.ros.queue_size = queue_size_param.as_int();
 
     // mqtt2ros[k]/advanced/ros/latched
     rclcpp::Parameter latched_param;
-    if (get_parameter("bridge/mqtt2ros/advanced/ros/latched", latched_param))
+    if (get_parameter("bridge.mqtt2ros.advanced.ros.latched", latched_param))
       mqtt2ros.ros.latched = latched_param.as_bool();
 
     RCLCPP_INFO(get_logger(),
@@ -258,7 +259,7 @@ void MqttClient::loadParameters() {
   } else {
     RCLCPP_WARN(
       get_logger(),
-      "Parameter 'bridge/mqtt2ros' is missing subparameter "
+      "Parameter 'bridge.mqtt2ros' is missing subparameter "
       "'mqtt_topic' or 'ros_topic', will be ignored");
   }
 
