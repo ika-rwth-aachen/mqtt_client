@@ -30,6 +30,7 @@ SOFTWARE.
 #include <cstring>
 #include <vector>
 
+#include <mqtt_client/MqttClient_ros2.hpp>
 #include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
 #include <rcpputils/get_env.hpp>
 
