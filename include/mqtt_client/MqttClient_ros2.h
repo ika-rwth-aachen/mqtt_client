@@ -35,6 +35,7 @@ SOFTWARE.
 #include <mqtt/async_client.h>
 #include <mqtt_client/srv/IsConnected.h>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float64.hpp>
 
 
 /**
@@ -56,12 +57,13 @@ class MqttClient : public rclcpp::Node,
                    public virtual mqtt::callback,
                    public virtual mqtt::iaction_listener {
 
- protected:
+ public:
   /**
    * @brief Initializes node.
    */
   MqttClient();
 
+ protected:
   /**
    * @brief Loads ROS parameters from parameter server.
    */
@@ -139,6 +141,11 @@ class MqttClient : public rclcpp::Node,
    * @brief Initializes broker connection and subscriptions.
    */
   void setup();
+
+  /**
+   * TODO
+  */
+  void setupSubscriptions();
 
   /**
    * @brief Sets up the client connection options and initializes the client
@@ -331,7 +338,7 @@ class MqttClient : public rclcpp::Node,
     struct {
       std::string topic;                              ///< ROS topic
       rclcpp::GenericPublisher::SharedPtr publisher;  ///< generic ROS publisher
-      rclcpp::Publisher latency_publisher;            ///< ROS publisher for latency
+      rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr latency_publisher;  ///< ROS publisher for latency
       int queue_size = 1;                             ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
     } ros;                   ///< ROS-related variables
@@ -354,6 +361,9 @@ class MqttClient : public rclcpp::Node,
    * Must contain trailing '/'.
    */
   static const std::string kLatencyRosTopicPrefix;
+
+  // TODO
+  rclcpp::TimerBase::SharedPtr check_subscriptions_timer_;
 
   /**
    * @brief ROS Service server for providing connection status
@@ -399,9 +409,9 @@ class MqttClient : public rclcpp::Node,
 
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, T& value) {
-  bool found = private_node_handle_.getParam(key, value);
+  bool found = get_parameter(key, value);
   if (found)
-    RCLCPP_DEBUG(rclcpp::get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
+    RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
                  std::to_string(value).c_str());
   return found;
 }
@@ -410,12 +420,12 @@ bool MqttClient::loadParameter(const std::string& key, T& value) {
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, T& value,
                                const T& default_value) {
-  bool found = private_node_handle_.param<T>(key, value, default_value);
+  bool found = get_parameter_or(key, value, default_value);
   if (!found)
-    RCLCPP_WARN(rclcpp::get_logger(), "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
+    RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                  std::to_string(default_value).c_str());
   if (found)
-    RCLCPP_DEBUG(rclcpp::get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
+    RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
                  std::to_string(value).c_str());
   return found;
 }
