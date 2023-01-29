@@ -33,7 +33,7 @@ SOFTWARE.
 #include <string>
 
 #include <mqtt/async_client.h>
-#include <mqtt_client/srv/IsConnected.h>
+#include <mqtt_client_interfaces/srv/is_connected.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float64.hpp>
 
@@ -223,8 +223,8 @@ class MqttClient : public rclcpp::Node,
    * @return true if client is connected to the broker
    * @return false if client is not connected to the broker
    */
-  bool isConnectedService(srv::IsConnected::Request& request,
-                          srv::IsConnected::Response& response);
+  bool isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request& request,
+                          mqtt_client_interfaces::srv::IsConnected::Response& response);
 
   /**
    * @brief Callback for when the client receives a MQTT message from the
@@ -368,7 +368,7 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief ROS Service server for providing connection status
    */
-  rclcpp::Service<srv::IsConnected>::SharedPtr is_connected_service_;
+  rclcpp::Service<mqtt_client_interfaces::srv::IsConnected>::SharedPtr is_connected_service_;
 
   /**
    * @brief Status variable keeping track of connection status to broker

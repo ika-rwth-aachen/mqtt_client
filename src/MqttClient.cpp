@@ -31,7 +31,7 @@ SOFTWARE.
 #include <vector>
 
 #include <mqtt_client/MqttClient.h>
-#include <mqtt_client/RosMsgType.h>
+#include <mqtt_client_interfaces/RosMsgType.h>
 #include <pluginlib/class_list_macros.h>
 #include <ros/message_traits.h>
 #include <std_msgs/Bool.h>
@@ -825,8 +825,8 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(IsConnected::Request& request,
-                                    IsConnected::Response& response) {
+bool MqttClient::isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
+                                    mqtt_client_interfaces::IsConnected::Response& response) {
 
   response.connected = isConnected();
   return true;

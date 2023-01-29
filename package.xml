@@ -55,27 +55,21 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
 
+  <depend>mqtt_client_interfaces</depend>
   <depend>ros_environment</depend>
+  <depend>std_msgs</depend>
 
   <!-- ROS2 -->
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
-  <build_depend condition="$ROS_VERSION == 2">rosidl_default_generators</build_depend>
-  <depend condition="$ROS_VERSION == 2">builtin_interfaces</depend>
-  <depend condition="$ROS_VERSION == 2">paho-mqtt-cpp</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
-  <depend condition="$ROS_VERSION == 2">sensor_msgs</depend>
-  <depend condition="$ROS_VERSION == 2">std_msgs</depend>
-  <exec_depend condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
+  <depend condition="$ROS_VERSION == 2">rcpputils</depend>
 
   <!-- ROS1 -->
   <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
-  <depend condition="$ROS_VERSION == 1">message_generation</depend>
   <depend condition="$ROS_VERSION == 1">nodelet</depend>
   <depend condition="$ROS_VERSION == 1">paho-mqtt-cpp</depend>
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
-  <depend condition="$ROS_VERSION == 1">std_msgs</depend>
   <depend condition="$ROS_VERSION == 1">topic_tools</depend>
-  <exec_depend condition="$ROS_VERSION == 1">message_runtime</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

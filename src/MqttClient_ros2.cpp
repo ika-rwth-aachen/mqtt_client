@@ -30,6 +30,7 @@ SOFTWARE.
 #include <cstring>
 #include <vector>
 
+#include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
 #include <rcpputils/get_env.hpp>
 
 
@@ -448,7 +449,7 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
   std::vector<uint8_t> payload_buffer;
 
   // gather information on ROS message type in special ROS message
-  msg::RosMsgType ros_msg_type;
+  mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
   ros_msg_type.name = ros2mqtt.ros.msg_type;
 
   RCLCPP_DEBUG(get_logger(),
@@ -794,8 +795,8 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(srv::IsConnected::Request& request,
-                                    srv::IsConnected::Response& response) {
+bool MqttClient::isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request& request,
+                                    mqtt_client_interfaces::srv::IsConnected::Response& response) {
 
   response.connected = isConnected();
   return true;

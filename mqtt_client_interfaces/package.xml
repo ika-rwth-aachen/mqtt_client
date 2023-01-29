@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package format="3">
+
+  <name>mqtt_client_interfaces</name>
+  <version>1.1.0</version>
+  <description>TODO</description>
+
+  <maintainer email="lennart.reiher@rwth-aachen.de">Lennart Reiher</maintainer>
+
+  <license>MIT</license>
+
+  <url type="website">http://wiki.ros.org/mqtt_client</url>
+  <url type="repository">https://github.com/ika-rwth-aachen/mqtt_client</url>
+
+  <author email="lennart.reiher@rwth-aachen.de">Lennart Reiher</author>
+
+  <depend>ros_environment</depend>
+
+  <!-- ROS2 -->
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <build_depend condition="$ROS_VERSION == 2">rosidl_default_generators</build_depend>
+  <depend condition="$ROS_VERSION == 2">std_msgs</depend>
+  <exec_depend condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
+
+  <!-- ROS1 -->
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <depend condition="$ROS_VERSION == 1">message_generation</depend>
+  <depend condition="$ROS_VERSION == 1">std_msgs</depend>
+  <exec_depend condition="$ROS_VERSION == 1">message_runtime</exec_depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+  </export>
+
+  <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
+
+</package>

@@ -33,7 +33,7 @@ SOFTWARE.
 #include <string>
 
 #include <mqtt/async_client.h>
-#include <mqtt_client/IsConnected.h>
+#include <mqtt_client_interfaces/IsConnected.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <topic_tools/shape_shifter.h>
@@ -248,8 +248,8 @@ class MqttClient : public nodelet::Nodelet,
    * @return true if client is connected to the broker
    * @return false if client is not connected to the broker
    */
-  bool isConnectedService(IsConnected::Request& request,
-                          IsConnected::Response& response);
+  bool isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
+                          mqtt_client_interfaces::IsConnected::Response& response);
 
   /**
    * @brief Callback for when the client receives a MQTT message from the

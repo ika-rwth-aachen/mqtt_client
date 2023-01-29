@@ -14,40 +14,36 @@ endif()
 if(${ROS_VERSION} EQUAL 2)
 
   find_package(ament_cmake REQUIRED)
-  find_package(builtin_interfaces REQUIRED)
-  find_package(PahoMqttCpp REQUIRED)
+
+  find_package(mqtt_client_interfaces REQUIRED)
   find_package(rclcpp REQUIRED)
-  find_package(rosidl_default_generators REQUIRED)
   find_package(sensor_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
 
-  add_executable(mqtt_client src/MqttClient.cpp)
+  find_package(PahoMqttCpp REQUIRED)
+  set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 
-  target_include_directories(mqtt_client PUBLIC
+  add_executable(${PROJECT_NAME} src/MqttClient_ros2.cpp)
+
+  target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
-  ament_target_dependencies(mqtt_client
-    builtin_interfaces
+  ament_target_dependencies(${PROJECT_NAME}
+    mqtt_client_interfaces
     PahoMqttCpp
     rclcpp
-    rosidl_default_generators
     sensor_msgs
     std_msgs
   )
 
   install(TARGETS
-    mqtt_client
+    ${PROJECT_NAME}
     DESTINATION lib/${PROJECT_NAME}
   )
 
   install(
     DIRECTORY launch
-    DESTINATION share/${PROJECT_NAME}
-  )
-
-  install(
-    DIRECTORY config
     DESTINATION share/${PROJECT_NAME}
   )
 
@@ -114,16 +110,18 @@ elseif(${ROS_VERSION} EQUAL 1)
   ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
   ## Generate messages in the 'msg' folder
-  add_message_files(
-    FILES
-    RosMsgType.msg
-  )
+  # add_message_files(
+  #   FILES
+  #   Message1.msg
+  #   Message2.msg
+  # )
 
   ## Generate services in the 'srv' folder
-  add_service_files(
-    FILES
-    IsConnected.srv
-  )
+  # add_service_files(
+  #   FILES
+  #   Service1.srv
+  #   Service2.srv
+  # )
 
   ## Generate actions in the 'action' folder
   # add_action_files(
@@ -133,10 +131,10 @@ elseif(${ROS_VERSION} EQUAL 1)
   # )
 
   ## Generate added messages and services with any dependencies listed here
-  generate_messages(
-    DEPENDENCIES
-    std_msgs
-  )
+  # generate_messages(
+  #   DEPENDENCIES
+  #   std_msgs
+  # )
 
   ################################################
   ## Declare ROS dynamic reconfigure parameters ##
@@ -170,7 +168,6 @@ elseif(${ROS_VERSION} EQUAL 1)
     INCLUDE_DIRS include
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
-      message_runtime
       nodelet
       roscpp
       std_msgs
