@@ -1,8 +1,8 @@
-<?xml version="1.0"?>
-<package format="2">
+<?xml version="1.0" encoding="utf-8"?>
+<package format="3">
 
   <name>mqtt_client</name>
-  <version>1.1.0</version>
+  <version>1.0.2</version>
   <description>Provides a nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the MQTT protocol.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
@@ -54,19 +54,25 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
-  <buildtool_depend>catkin</buildtool_depend>
-  <depend>message_generation</depend>
-  <depend>nodelet</depend>
-  <depend>paho-mqtt-cpp</depend>
-  <depend>roscpp</depend>
-  <depend>std_msgs</depend>
-  <depend>topic_tools</depend>
-  <exec_depend>message_runtime</exec_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <build_depend>builtin_interfaces</build_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+  <build_depend>paho-mqtt-cpp</build_depend>
+  <build_depend>rclcpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>builtin_interfaces</exec_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
 
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+    <build_type>ament_cmake</build_type>
   </export>
 
 </package>

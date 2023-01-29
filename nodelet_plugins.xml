@@ -1,0 +1,7 @@
+<library path="lib/libmqtt_client">
+  <class name="mqtt_client/MqttClient" type="mqtt_client::MqttClient" base_class_type="nodelet::Nodelet">
+    <description>
+      mqtt_client nodelet
+    </description>
+  </class>
+</library>
