@@ -47,6 +47,11 @@ if(${ROS_VERSION} EQUAL 2)
     DESTINATION share/${PROJECT_NAME}
   )
 
+  install(
+    DIRECTORY config
+    DESTINATION share/${PROJECT_NAME}
+  )
+
   if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     # the following line skips the linter which checks for copyrights
@@ -252,6 +257,10 @@ elseif(${ROS_VERSION} EQUAL 1)
   )
   install(DIRECTORY
     launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  )
+  install(DIRECTORY
+    config
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   )
 
