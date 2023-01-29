@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
 
   <name>mqtt_client</name>
   <version>1.1.0</version>
@@ -54,19 +54,35 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
-  <buildtool_depend>catkin</buildtool_depend>
-  <depend>message_generation</depend>
-  <depend>nodelet</depend>
-  <depend>paho-mqtt-cpp</depend>
-  <depend>roscpp</depend>
-  <depend>std_msgs</depend>
-  <depend>topic_tools</depend>
-  <exec_depend>message_runtime</exec_depend>
+
+  <depend>ros_environment</depend>
+
+  <!-- ROS2 -->
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <build_depend condition="$ROS_VERSION == 2">rosidl_default_generators</build_depend>
+  <depend condition="$ROS_VERSION == 2">builtin_interfaces</depend>
+  <depend condition="$ROS_VERSION == 2">paho-mqtt-cpp</depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <depend condition="$ROS_VERSION == 2">sensor_msgs</depend>
+  <depend condition="$ROS_VERSION == 2">std_msgs</depend>
+  <exec_depend condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
+
+  <!-- ROS1 -->
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <depend condition="$ROS_VERSION == 1">message_generation</depend>
+  <depend condition="$ROS_VERSION == 1">nodelet</depend>
+  <depend condition="$ROS_VERSION == 1">paho-mqtt-cpp</depend>
+  <depend condition="$ROS_VERSION == 1">roscpp</depend>
+  <depend condition="$ROS_VERSION == 1">std_msgs</depend>
+  <depend condition="$ROS_VERSION == 1">topic_tools</depend>
+  <exec_depend condition="$ROS_VERSION == 1">message_runtime</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <nodelet condition="$ROS_VERSION == 1" plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 
 </package>
