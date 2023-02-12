@@ -825,11 +825,10 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
+void MqttClient::isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
                                     mqtt_client_interfaces::IsConnected::Response& response) {
 
   response.connected = isConnected();
-  return true;
 }
 
 
@@ -920,7 +919,10 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 void MqttClient::delivery_complete(mqtt::delivery_token_ptr token) {}
 
 
-void MqttClient::on_success(const mqtt::token& token) {}
+void MqttClient::on_success(const mqtt::token& token) {
+
+  is_connected_ = true;
+}
 
 
 void MqttClient::on_failure(const mqtt::token& token) {
@@ -929,6 +931,7 @@ void MqttClient::on_failure(const mqtt::token& token) {
     "Connection to broker failed (return code %d), will automatically "
     "retry...",
     token.get_return_code());
+  is_connected_ = false;
 }
 
 }  // namespace mqtt_client

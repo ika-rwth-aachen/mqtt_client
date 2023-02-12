@@ -219,12 +219,9 @@ class MqttClient : public rclcpp::Node,
    *
    * @param request  service request
    * @param response service response
-   *
-   * @return true if client is connected to the broker
-   * @return false if client is not connected to the broker
    */
-  bool isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request& request,
-                          mqtt_client_interfaces::srv::IsConnected::Response& response);
+  void isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request::SharedPtr request,
+                          mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
 
   /**
    * @brief Callback for when the client receives a MQTT message from the

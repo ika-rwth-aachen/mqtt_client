@@ -321,10 +321,12 @@ void MqttClient::setup() {
   // connect to MQTT broker
   connect();
 
-  // TODO
   // create ROS service server
-  // is_connected_service_ = private_node_handle_.advertiseService(
-  //   "is_connected", &MqttClient::isConnectedService, this);
+  is_connected_service_ =
+    create_service<mqtt_client_interfaces::srv::IsConnected>(
+      "is_connected", std::bind(&MqttClient::isConnectedService, this,
+                           std::placeholders::_1, std::placeholders::_2));
+
 
   // setup subscribers; check for new types every second
   check_subscriptions_timer_ =
@@ -786,11 +788,10 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request& request,
-                                    mqtt_client_interfaces::srv::IsConnected::Response& response) {
+void MqttClient::isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request::SharedPtr request,
+                                    mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response) {
 
-  response.connected = isConnected();
-  return true;
+  response->connected = isConnected();
 }
 
 
@@ -866,7 +867,10 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 void MqttClient::delivery_complete(mqtt::delivery_token_ptr token) {}
 
 
-void MqttClient::on_success(const mqtt::token& token) {}
+void MqttClient::on_success(const mqtt::token& token) {
+
+  is_connected_ = true;
+}
 
 
 void MqttClient::on_failure(const mqtt::token& token) {
@@ -876,6 +880,7 @@ void MqttClient::on_failure(const mqtt::token& token) {
     "Connection to broker failed (return code %d), will automatically "
     "retry...",
     token.get_return_code());
+  is_connected_ = false;
 }
 
 }  // namespace mqtt_client

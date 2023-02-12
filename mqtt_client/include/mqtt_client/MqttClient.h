@@ -244,11 +244,8 @@ class MqttClient : public nodelet::Nodelet,
    *
    * @param request  service request
    * @param response service response
-   *
-   * @return true if client is connected to the broker
-   * @return false if client is not connected to the broker
    */
-  bool isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
+  void isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
                           mqtt_client_interfaces::IsConnected::Response& response);
 
   /**
