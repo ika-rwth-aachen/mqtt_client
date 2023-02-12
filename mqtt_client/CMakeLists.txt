@@ -23,7 +23,7 @@ if(${ROS_VERSION} EQUAL 2)
   find_package(PahoMqttCpp REQUIRED)
   set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 
-  add_executable(${PROJECT_NAME} src/MqttClient_ros2.cpp)
+  add_executable(${PROJECT_NAME} src/MqttClient.ros2.cpp)
 
   target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
