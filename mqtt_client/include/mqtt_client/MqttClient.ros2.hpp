@@ -337,6 +337,7 @@ class MqttClient : public rclcpp::Node,
     } mqtt;         ///< MQTT-related variables
     struct {
       std::string topic;                              ///< ROS topic
+      std::string msg_type;                           ///< message type of publisher
       rclcpp::GenericPublisher::SharedPtr publisher;  ///< generic ROS publisher
       rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr latency_publisher;  ///< ROS publisher for latency
       int queue_size = 1;                             ///< ROS publisher queue size

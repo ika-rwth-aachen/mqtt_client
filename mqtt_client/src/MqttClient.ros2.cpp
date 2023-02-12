@@ -31,7 +31,6 @@ SOFTWARE.
 #include <vector>
 
 #include <mqtt_client/MqttClient.ros2.hpp>
-#include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
 #include <rcpputils/get_env.hpp>
 
 
@@ -353,8 +352,14 @@ void MqttClient::setupSubscriptions() {
       // create new generic subscription, if message type has changed
       std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)> bound_callback_func =
         std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic);
-      ros2mqtt.ros.subscriber = create_generic_subscription(
-        ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+      try {
+        ros2mqtt.ros.subscriber = create_generic_subscription(
+          ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+      } catch (rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(get_logger(),
+                     "Failed to create generic subscriber: %s", e.what());
+        return;
+      }
       RCLCPP_INFO(get_logger(),
                   "Subscribed ROS topic '%s' of type '%s'",
                   ros_topic.c_str(), msg_type.c_str());
@@ -447,16 +452,13 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
                           const std::string& ros_topic) {
 
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
+  std::string& ros_msg_type = ros2mqtt.ros.msg_type;
   std::string mqtt_topic = ros2mqtt.mqtt.topic;
   std::vector<uint8_t> payload_buffer;
 
-  // gather information on ROS message type in special ROS message
-  mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
-  ros_msg_type.name = ros2mqtt.ros.msg_type;
-
   RCLCPP_DEBUG(get_logger(),
                "Received ROS message of type '%s' on topic '%s'",
-               ros_msg_type.name.c_str(), ros_topic.c_str());
+               ros_msg_type.c_str(), ros_topic.c_str());
 
   if (ros2mqtt.primitive) {  // publish as primitive (string) message
 
@@ -464,31 +466,22 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
 
   } else {  // publish as complete ROS message incl. ROS message type
 
-    // TODO
-    // serialize ROS message type to buffer
-    // uint32_t msg_type_length =
-    //   ros::serialization::serializationLength(ros_msg_type);
-    // std::vector<uint8_t> msg_type_buffer;
-    // msg_type_buffer.resize(msg_type_length);
-    // ros::serialization::OStream msg_type_stream(msg_type_buffer.data(),
-    //                                             msg_type_length);
-    // ros::serialization::serialize(msg_type_stream, ros_msg_type);
-
-    // TODO
     // send ROS message type information to MQTT broker
-    // mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
-    // try {
-    //   NODELET_DEBUG("Sending ROS message type to MQTT broker on topic '%s' ...",
-    //                 mqtt_topic.c_str());
-    //   mqtt::message_ptr mqtt_msg =
-    //     mqtt::make_message(mqtt_topic, msg_type_buffer.data(),
-    //                        msg_type_buffer.size(), ros2mqtt.mqtt.qos, true);
-    //   client_->publish(mqtt_msg);
-    // } catch (const mqtt::exception& e) {
-    //   NODELET_WARN(
-    //     "Publishing ROS message type information to MQTT topic '%s' failed: %s",
-    //     mqtt_topic.c_str(), e.what());
-    // }
+    mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
+    try {
+      RCLCPP_DEBUG(get_logger(),
+                   "Sending ROS message type to MQTT broker on topic '%s' ...",
+                   mqtt_topic.c_str());
+      mqtt::message_ptr mqtt_msg =
+        mqtt::make_message(mqtt_topic, ros_msg_type.c_str(),
+                           ros_msg_type.size(), ros2mqtt.mqtt.qos, true);
+      client_->publish(mqtt_msg);
+    } catch (const mqtt::exception& e) {
+      RCLCPP_WARN(
+        get_logger(),
+        "Publishing ROS message type information to MQTT topic '%s' failed: %s",
+        mqtt_topic.c_str(), e.what());
+    }
 
     // TODO
     // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
@@ -540,7 +533,7 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
     RCLCPP_DEBUG(
       get_logger(),
       "Sending ROS message of type '%s' to MQTT broker on topic '%s' ...",
-      ros_msg_type.name.c_str(), mqtt_topic.c_str());
+      ros_msg_type.c_str(), mqtt_topic.c_str());
     mqtt::message_ptr mqtt_msg = mqtt::make_message(
       mqtt_topic, payload_buffer.data(), payload_buffer.size(),
       ros2mqtt.mqtt.qos, ros2mqtt.mqtt.retained);
@@ -614,16 +607,12 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
   std::memcpy(serialized_msg.get_rcl_serialized_message().buffer, &(payload[msg_offset]), msg_length);
   serialized_msg.get_rcl_serialized_message().buffer_length = msg_length;
 
-  // TODO: receive type from RosMsgType
-  // TODO: don't create new publisher for every message
   // publish generic ROS message
   RCLCPP_DEBUG(
     get_logger(),
     "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
     "std_msgs/msg/String",
     mqtt2ros.ros.topic.c_str());
-  mqtt2ros.ros.publisher =
-    create_generic_publisher(mqtt2ros.ros.topic, "std_msgs/msg/String", mqtt2ros.ros.queue_size);
   mqtt2ros.ros.publisher->publish(serialized_msg);
 }
 
@@ -828,59 +817,40 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     mqtt_topic.find(kRosMsgTypeMqttTopicPrefix) != std::string::npos;
   if (msg_contains_ros_msg_type) {
 
-    // TODO
+    std::string ros_msg_type = mqtt_msg->to_string();
 
-    // // create ROS message buffer on top of MQTT message payload
-    // auto& payload = mqtt_msg->get_payload_ref();
-    // uint32_t payload_length = static_cast<uint32_t>(payload.size());
-    // char* non_const_payload = const_cast<char*>(&payload[0]);
-    // uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
+    // reconstruct corresponding MQTT data topic
+    std::string mqtt_data_topic = mqtt_topic;
+    mqtt_data_topic.erase(mqtt_data_topic.find(kRosMsgTypeMqttTopicPrefix),
+                          kRosMsgTypeMqttTopicPrefix.length());
+    Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
 
-    // // deserialize ROS message type
-    // RosMsgType ros_msg_type;
-    // ros::serialization::IStream msg_type_stream(msg_type_buffer,
-    //                                             payload_length);
-    // try {
-    //   ros::serialization::deserialize(msg_type_stream, ros_msg_type);
-    // } catch (ros::serialization::StreamOverrunException) {
-    //   NODELET_ERROR(
-    //     "Failed to deserialize ROS message type from MQTT message received on "
-    //     "topic '%s', got message:\n%s",
-    //     mqtt_topic.c_str(), mqtt_msg->to_string().c_str());
-    //   return;
-    // }
+    // if ROS message type has changed
+    if (ros_msg_type != mqtt2ros.ros.msg_type) {
 
-    // // reconstruct corresponding MQTT data topic
-    // std::string mqtt_data_topic = mqtt_topic;
-    // mqtt_data_topic.erase(mqtt_data_topic.find(kRosMsgTypeMqttTopicPrefix),
-    //                       kRosMsgTypeMqttTopicPrefix.length());
-    // Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
+      mqtt2ros.ros.msg_type = ros_msg_type;
+      RCLCPP_INFO(get_logger(),
+                  "ROS publisher message type on topic '%s' set to '%s'",
+                  mqtt2ros.ros.topic.c_str(), ros_msg_type.c_str());
 
-    // // if ROS message type has changed
-    // if (ros_msg_type.md5 != mqtt2ros.ros.shape_shifter.getMD5Sum()) {
+      // recreate generic publisher
+      try {
+        mqtt2ros.ros.publisher = create_generic_publisher(mqtt2ros.ros.topic, ros_msg_type, mqtt2ros.ros.queue_size);
+      } catch (rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(get_logger(),
+                     "Failed to create generic publisher: %s", e.what());
+        return;
+      }
 
-    //   // configure ShapeShifter
-    //   mqtt2ros.ros.shape_shifter.morph(ros_msg_type.md5, ros_msg_type.name,
-    //                                    ros_msg_type.definition, "");
-
-    //   // advertise with ROS publisher
-    //   mqtt2ros.ros.publisher.shutdown();
-    //   mqtt2ros.ros.publisher = mqtt2ros.ros.shape_shifter.advertise(
-    //     node_handle_, mqtt2ros.ros.topic, mqtt2ros.ros.queue_size,
-    //     mqtt2ros.ros.latched);
-
-    //   NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
-    //                mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
-
-    //   // subscribe to MQTT topic with actual ROS messages
-    //   client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
-    //   NODELET_DEBUG("Subscribed MQTT topic '%s'", mqtt_data_topic.c_str());
-    // }
+      // subscribe to MQTT topic with actual ROS messages
+      client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
+      RCLCPP_DEBUG(get_logger(), "Subscribed MQTT topic '%s'", mqtt_data_topic.c_str());
+    }
 
   } else {
 
     // publish ROS message, if publisher initialized
-    if (true) { // TODO: (!mqtt2ros_[mqtt_topic].ros.publisher.getTopic().empty()) {
+    if (!mqtt2ros_[mqtt_topic].ros.msg_type.empty()) {
       mqtt2ros(mqtt_msg); // TODO: , arrival_stamp);
     } else {
       RCLCPP_WARN(
