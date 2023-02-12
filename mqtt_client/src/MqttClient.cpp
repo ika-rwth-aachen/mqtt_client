@@ -486,7 +486,7 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
   std::vector<uint8_t> payload_buffer;
 
   // gather information on ROS message type in special ROS message
-  RosMsgType ros_msg_type;
+  mqtt_client_interfaces::RosMsgType ros_msg_type;
   ros_msg_type.md5 = ros_msg->getMD5Sum();
   ros_msg_type.name = ros_msg->getDataType();
   ros_msg_type.definition = ros_msg->getMessageDefinition();
@@ -825,10 +825,11 @@ bool MqttClient::isConnected() {
 }
 
 
-void MqttClient::isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
+bool MqttClient::isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
                                     mqtt_client_interfaces::IsConnected::Response& response) {
 
   response.connected = isConnected();
+  return true;
 }
 
 
@@ -861,7 +862,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
     // deserialize ROS message type
-    RosMsgType ros_msg_type;
+    mqtt_client_interfaces::RosMsgType ros_msg_type;
     ros::serialization::IStream msg_type_stream(msg_type_buffer,
                                                 payload_length);
     try {

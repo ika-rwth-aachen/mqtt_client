@@ -75,7 +75,7 @@ elseif(${ROS_VERSION} EQUAL 1)
   ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
   ## is used, also find other catkin packages
   find_package(catkin REQUIRED COMPONENTS
-    message_generation
+    mqtt_client_interfaces
     nodelet
     roscpp
     std_msgs

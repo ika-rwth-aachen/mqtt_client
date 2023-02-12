@@ -244,8 +244,11 @@ class MqttClient : public nodelet::Nodelet,
    *
    * @param request  service request
    * @param response service response
+   *
+   * @return true always
+   * @return false never
    */
-  void isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
+  bool isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
                           mqtt_client_interfaces::IsConnected::Response& response);
 
   /**
