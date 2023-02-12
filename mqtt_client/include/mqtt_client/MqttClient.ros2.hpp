@@ -181,7 +181,7 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief Publishes a primitive message received via MQTT to ROS.
    *
-   * TODO
+   * Currently not implemented.
    *
    * @param   mqtt_msg     MQTT message
    */

@@ -4,6 +4,7 @@ mqtt_client:
       host: localhost
       port: 1883
     bridge:
+      # TODO: allow to specify multiple
       ros2mqtt:
         ros_topic: /ping
         mqtt_topic: pingpong
