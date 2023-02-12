@@ -45,11 +45,13 @@ if(${ROS_VERSION} EQUAL 2)
   install(
     DIRECTORY launch
     DESTINATION share/${PROJECT_NAME}
+    FILES_MATCHING PATTERN "*ros2*"
   )
 
   install(
     DIRECTORY config
     DESTINATION share/${PROJECT_NAME}
+    FILES_MATCHING PATTERN "*ros2*"
   )
 
   if(BUILD_TESTING)
@@ -258,10 +260,12 @@ elseif(${ROS_VERSION} EQUAL 1)
   install(DIRECTORY
     launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    PATTERN "*ros2*" EXCLUDE
   )
   install(DIRECTORY
     config
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    PATTERN "*ros2*" EXCLUDE
   )
 
   #############
