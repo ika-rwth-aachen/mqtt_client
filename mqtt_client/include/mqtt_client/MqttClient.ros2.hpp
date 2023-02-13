@@ -35,6 +35,7 @@ SOFTWARE.
 #include <mqtt/async_client.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
 #include <std_msgs/msg/float64.hpp>
 
 
@@ -426,6 +427,35 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
     RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
                  std::to_string(value).c_str());
   return found;
+}
+
+
+/**
+ * Serializes a ROS message to a buffer.
+ * 
+ * TODO
+ *
+ * @tparam  T            ROS message type
+ *
+ * @param[in]   msg      ROS message
+ * @param[out]  buffer   buffer to serialize to
+ */
+template <typename T>
+void serializeRosMessage(const T& msg, rclcpp::SerializedMessage& serialized_msg) {
+
+  rclcpp::Serialization<T> serializer;
+  serializer.serialize_message(&msg, &serialized_msg);
+}
+
+
+/**
+ * TODO
+ */
+template <typename T>
+void deserializeRosMessage(const rclcpp::SerializedMessage& serialized_msg, T& msg) {
+
+  rclcpp::Serialization<T> serializer;
+  serializer.deserialize_message(&serialized_msg, &msg);
 }
 
 }  // namespace mqtt_client
