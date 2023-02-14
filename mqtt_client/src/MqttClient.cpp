@@ -502,9 +502,11 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
     if (found_primitive)
       payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
     else
-      NODELET_WARN("Cannot send ROS message of type '%s' as primitive message, "
-                   "check supported primitive types", ros_msg_type.name.c_str());
-      return;
+      NODELET_WARN(
+        "Cannot send ROS message of type '%s' as primitive message, "
+        "check supported primitive types",
+        ros_msg_type.name.c_str());
+    return;
 
   } else {  // publish as complete ROS message incl. ROS message type
 
@@ -826,8 +828,9 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
-                                    mqtt_client_interfaces::IsConnected::Response& response) {
+bool MqttClient::isConnectedService(
+  mqtt_client_interfaces::IsConnected::Request& request,
+  mqtt_client_interfaces::IsConnected::Response& response) {
 
   response.connected = isConnected();
   return true;

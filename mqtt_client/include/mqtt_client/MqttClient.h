@@ -248,8 +248,9 @@ class MqttClient : public nodelet::Nodelet,
    * @return true always
    * @return false never
    */
-  bool isConnectedService(mqtt_client_interfaces::IsConnected::Request& request,
-                          mqtt_client_interfaces::IsConnected::Response& response);
+  bool isConnectedService(
+    mqtt_client_interfaces::IsConnected::Request& request,
+    mqtt_client_interfaces::IsConnected::Response& response);
 
   /**
    * @brief Callback for when the client receives a MQTT message from the

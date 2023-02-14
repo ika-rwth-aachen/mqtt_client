@@ -145,7 +145,7 @@ class MqttClient : public rclcpp::Node,
 
   /**
    * TODO
-  */
+   */
   void setupSubscriptions();
 
   /**
@@ -167,8 +167,9 @@ class MqttClient : public rclcpp::Node,
    * @param   serialized_msg  generic serialized ROS message
    * @param   ros_topic       ROS topic where the message was published
    */
-  void ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& serialized_msg,
-                const std::string& ros_topic);
+  void ros2mqtt(
+    const std::shared_ptr<rclcpp::SerializedMessage>& serialized_msg,
+    const std::string& ros_topic);
 
   /**
    * @brief Publishes a ROS message received via MQTT to ROS.
@@ -177,7 +178,8 @@ class MqttClient : public rclcpp::Node,
    *
    * @param   mqtt_msg       MQTT message
    */
-  void mqtt2ros(mqtt::const_message_ptr mqtt_msg, const rclcpp::Time& arrival_stamp);
+  void mqtt2ros(mqtt::const_message_ptr mqtt_msg,
+                const rclcpp::Time& arrival_stamp);
 
   /**
    * @brief Publishes a primitive message received via MQTT to ROS.
@@ -221,8 +223,9 @@ class MqttClient : public rclcpp::Node,
    * @param request  service request
    * @param response service response
    */
-  void isConnectedService(mqtt_client_interfaces::srv::IsConnected::Request::SharedPtr request,
-                          mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
+  void isConnectedService(
+    mqtt_client_interfaces::srv::IsConnected::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
 
   /**
    * @brief Callback for when the client receives a MQTT message from the
@@ -313,10 +316,11 @@ class MqttClient : public rclcpp::Node,
    */
   struct Ros2MqttInterface {
     struct {
-      rclcpp::GenericSubscription::SharedPtr subscriber;  ///< generic ROS subscriber
-      std::string msg_type;                               ///< message type of subscriber
-      int queue_size = 1;                                 ///< ROS subscriber queue size
-    } ros;                                                ///< ROS-related variables
+      rclcpp::GenericSubscription::SharedPtr
+        subscriber;          ///< generic ROS subscriber
+      std::string msg_type;  ///< message type of subscriber
+      int queue_size = 1;    ///< ROS subscriber queue size
+    } ros;                   ///< ROS-related variables
     struct {
       std::string topic;      ///< MQTT topic
       int qos = 0;            ///< MQTT QoS value
@@ -334,11 +338,12 @@ class MqttClient : public rclcpp::Node,
       int qos = 0;  ///< MQTT QoS value
     } mqtt;         ///< MQTT-related variables
     struct {
-      std::string topic;                              ///< ROS topic
-      std::string msg_type;                           ///< message type of publisher
+      std::string topic;     ///< ROS topic
+      std::string msg_type;  ///< message type of publisher
       rclcpp::GenericPublisher::SharedPtr publisher;  ///< generic ROS publisher
-      rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr latency_publisher;  ///< ROS publisher for latency
-      int queue_size = 1;                             ///< ROS publisher queue size
+      rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
+        latency_publisher;   ///< ROS publisher for latency
+      int queue_size = 1;    ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
     } ros;                   ///< ROS-related variables
     bool primitive = false;  ///< whether to publish as primitive message (if
@@ -367,7 +372,8 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief ROS Service server for providing connection status
    */
-  rclcpp::Service<mqtt_client_interfaces::srv::IsConnected>::SharedPtr is_connected_service_;
+  rclcpp::Service<mqtt_client_interfaces::srv::IsConnected>::SharedPtr
+    is_connected_service_;
 
   /**
    * @brief Status variable keeping track of connection status to broker
@@ -424,8 +430,8 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
                                const T& default_value) {
   bool found = get_parameter_or(key, value, default_value);
   if (!found)
-    RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'", key.c_str(),
-                 std::to_string(default_value).c_str());
+    RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'",
+                key.c_str(), std::to_string(default_value).c_str());
   if (found)
     RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
                  std::to_string(value).c_str());
@@ -435,7 +441,7 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
 
 /**
  * Serializes a ROS message to a buffer.
- * 
+ *
  * TODO
  *
  * @tparam  T            ROS message type
@@ -444,7 +450,8 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
  * @param[out]  buffer   buffer to serialize to
  */
 template <typename T>
-void serializeRosMessage(const T& msg, rclcpp::SerializedMessage& serialized_msg) {
+void serializeRosMessage(const T& msg,
+                         rclcpp::SerializedMessage& serialized_msg) {
 
   rclcpp::Serialization<T> serializer;
   serializer.serialize_message(&msg, &serialized_msg);
@@ -455,7 +462,8 @@ void serializeRosMessage(const T& msg, rclcpp::SerializedMessage& serialized_msg
  * TODO
  */
 template <typename T>
-void deserializeRosMessage(const rclcpp::SerializedMessage& serialized_msg, T& msg) {
+void deserializeRosMessage(const rclcpp::SerializedMessage& serialized_msg,
+                           T& msg) {
 
   rclcpp::Serialization<T> serializer;
   serializer.deserialize_message(&serialized_msg, &msg);
