@@ -148,6 +148,7 @@ void MqttClient::loadParameters() {
   declare_parameter("bridge.ros2mqtt.ros_topic");
   declare_parameter("bridge.ros2mqtt.mqtt_topic");
   declare_parameter("bridge.ros2mqtt.primitive");
+  declare_parameter("bridge.ros2mqtt.inject_timestamp");
   declare_parameter("bridge.mqtt2ros.mqtt_topic");
   declare_parameter("bridge.mqtt2ros.ros_topic");
   declare_parameter("bridge.mqtt2ros.primitive");
@@ -350,6 +351,12 @@ std::filesystem::path MqttClient::resolvePath(const std::string& path_string) {
 
 void MqttClient::setup() {
 
+  // pre-compute timestamp length
+  builtin_interfaces::msg::Time tmp_stamp;
+  rclcpp::SerializedMessage tmp_serialized_stamp;
+  serializeRosMessage(tmp_stamp, tmp_serialized_stamp);
+  stamp_length_ = tmp_serialized_stamp.size();
+
   // initialize MQTT client
   setupClient();
 
@@ -529,48 +536,39 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
         mqtt_topic.c_str(), e.what());
     }
 
-    // TODO
     // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
     // where first item = 1 if timestamp (S) is included
     uint32_t msg_length = serialized_msg->size();
-    // uint32_t payload_length = 1 + msg_length;
-    // uint32_t stamp_length = ros::serialization::serializationLength(ros::Time());
-    // uint32_t msg_offset = 1;
-    // if (ros2mqtt.stamped) {
-    //   // allocate buffer with appropriate size to hold [1, S, R]
-    //   msg_offset += stamp_length;
-    //   payload_length += stamp_length;
-    //   payload_buffer.resize(payload_length);
-    //   payload_buffer[0] = 1;
-    // } else {
-    //   // allocate buffer with appropriate size to hold [0, R]
-    //   payload_buffer.resize(payload_length);
-    //   payload_buffer[0] = 0;
-    // }
+    uint32_t payload_length = 1 + msg_length;
 
-    // build payload construct around serialized ROS Message
-    payload_buffer = std::vector<uint8_t>(
-      serialized_msg->get_rcl_serialized_message().buffer,
-      serialized_msg->get_rcl_serialized_message().buffer + msg_length);
+    uint32_t msg_offset = 1;
+    if (ros2mqtt.stamped) {
+      // allocate buffer with appropriate size to hold [1, S, R]
+      msg_offset += stamp_length_;
+      payload_length += stamp_length_;
+      payload_buffer.resize(payload_length);
+      payload_buffer[0] = 1;
+    } else {
+      // allocate buffer with appropriate size to hold [0, R]
+      payload_buffer.resize(payload_length);
+      payload_buffer[0] = 0;
+    }
 
-    // TODO
+    // TODO: if not stamped, could create payload_buffer directly on top of serialized_msg->get_rcl_serialized_message().buffer
+    // copy serialized ROS message to payload [0/1, -, R]
+    std::copy(serialized_msg->get_rcl_serialized_message().buffer, serialized_msg->get_rcl_serialized_message().buffer + msg_length, payload_buffer.begin() + msg_offset);
+
     // inject timestamp as final step
-    // if (ros2mqtt.stamped) {
+    if (ros2mqtt.stamped) {
 
-    //   // take current timestamp
-    //   ros::WallTime stamp_wall = ros::WallTime::now();
-    //   ros::Time stamp(stamp_wall.sec, stamp_wall.nsec);
-    //   if (stamp.isZero())
-    //     NODELET_WARN(
-    //       "Injected ROS time 0 into MQTT payload on topic %s, is a ROS clock "
-    //       "running?",
-    //       ros2mqtt.mqtt.topic.c_str());
+      // take current timestamp
+      builtin_interfaces::msg::Time stamp(rclcpp::Clock(RCL_SYSTEM_TIME).now());
 
-    //   // serialize timestamp to payload [1, S, R]
-    //   ros::serialization::OStream stamp_stream(&payload_buffer[1],
-    //                                            stamp_length);
-    //   ros::serialization::serialize(stamp_stream, stamp);
-    // }
+      // copy serialized timestamp to payload [1, S, R]
+      rclcpp::SerializedMessage serialized_stamp;
+      serializeRosMessage(stamp, serialized_stamp);
+      std::copy(serialized_stamp.get_rcl_serialized_message().buffer, serialized_stamp.get_rcl_serialized_message().buffer + stamp_length_, payload_buffer.begin() + 1);
+    }
   }
 
   // send ROS message to MQTT broker
@@ -593,59 +591,52 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
 }
 
 
-void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg) {
-                          // TODO: const ros::WallTime& arrival_stamp) {
+void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg, const rclcpp::Time& arrival_stamp) {
 
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
   auto& payload = mqtt_msg->get_payload_ref();
   uint32_t payload_length = static_cast<uint32_t>(payload.size());
 
-  // TODO
   // determine whether timestamp is injected by reading first element
-  bool stamped = false; // (static_cast<uint8_t>(payload[0]) > 0);
+  bool stamped = (static_cast<uint8_t>(payload[0]) > 0);
 
-  // TODO
   // read MQTT payload for ROS message (R) as [1, S, R] or [0, R]
   // where first item = 1 if timestamp (S) is included
-  uint32_t msg_length = payload_length; // - 1;
-  uint32_t msg_offset = 0; // TODO: 1;
+  uint32_t msg_length = payload_length - 1;
+  uint32_t msg_offset = 1;
 
-  // TODO
   // if stamped, compute latency
   if (stamped) {
 
-    // // create ROS message buffer on top of MQTT message payload
-    // char* non_const_payload = const_cast<char*>(&payload[1]);
-    // uint8_t* stamp_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
+    // create ROS message buffer on top of MQTT message payload
+    char* non_const_payload = const_cast<char*>(&payload[1]);
+    uint8_t* stamp_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
-    // // deserialize stamp
-    // ros::Time stamp;
-    // uint32_t stamp_length = ros::serialization::serializationLength(stamp);
-    // ros::serialization::IStream stamp_stream(stamp_buffer, stamp_length);
-    // ros::serialization::deserialize(stamp_stream, stamp);
+    // copy stamp to generic message buffer
+    rclcpp::SerializedMessage serialized_stamp(stamp_length_);
+    std::memcpy(serialized_stamp.get_rcl_serialized_message().buffer, &(payload[msg_offset]), stamp_length_);
+    serialized_stamp.get_rcl_serialized_message().buffer_length = stamp_length_;
 
-    // // compute ROS2MQTT latency
-    // ros::Time now(arrival_stamp.sec, arrival_stamp.nsec);
-    // if (now.isZero())
-    //   NODELET_WARN(
-    //     "Cannot compute latency for MQTT topic %s when ROS time is 0, is a ROS "
-    //     "clock running?",
-    //     mqtt_topic.c_str());
-    // ros::Duration latency = now - stamp;
-    // std_msgs::Float64 latency_msg;
-    // latency_msg.data = latency.toSec();
+    // deserialize stamp
+    builtin_interfaces::msg::Time stamp;
+    deserializeRosMessage(serialized_stamp, stamp);
 
-    // // publish latency
-    // if (mqtt2ros.ros.latency_publisher.getTopic().empty()) {
-    //   std::string latency_topic = kLatencyRosTopicPrefix + mqtt2ros.ros.topic;
-    //   mqtt2ros.ros.latency_publisher =
-    //     private_node_handle_.advertise<std_msgs::Float64>(latency_topic, 1);
-    // }
-    // mqtt2ros.ros.latency_publisher.publish(latency_msg);
+    // compute ROS2MQTT latency
+    rclcpp::Duration latency = arrival_stamp - stamp;
+    std_msgs::msg::Float64 latency_msg;
+    latency_msg.data = latency.seconds();
 
-    // msg_length -= stamp_length;
-    // msg_offset += stamp_length;
+    // publish latency
+    if (!mqtt2ros.ros.latency_publisher) {
+      std::string latency_topic = kLatencyRosTopicPrefix + mqtt2ros.ros.topic;
+      latency_topic.replace(latency_topic.find("//"), 2, "/");
+      mqtt2ros.ros.latency_publisher = create_publisher<std_msgs::msg::Float64>(latency_topic, 1);
+    }
+    mqtt2ros.ros.latency_publisher->publish(latency_msg);
+
+    msg_length -= stamp_length_;
+    msg_offset += stamp_length_;
   }
 
   // copy ROS message from MQTT message to generic message buffer
@@ -815,9 +806,8 @@ void MqttClient::isConnectedService(mqtt_client_interfaces::srv::IsConnected::Re
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
-  // TODO
   // instantly take arrival timestamp
-  // ros::WallTime arrival_stamp = ros::WallTime::now();
+  rclcpp::Time arrival_stamp(builtin_interfaces::msg::Time(rclcpp::Clock(RCL_SYSTEM_TIME).now()));
 
   std::string mqtt_topic = mqtt_msg->get_topic();
   RCLCPP_DEBUG(get_logger(), "Received MQTT message on topic '%s'", mqtt_topic.c_str());
@@ -870,7 +860,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
     // publish ROS message, if publisher initialized
     if (!mqtt2ros_[mqtt_topic].ros.msg_type.empty()) {
-      mqtt2ros(mqtt_msg); // TODO: , arrival_stamp);
+      mqtt2ros(mqtt_msg, arrival_stamp);
     } else {
       RCLCPP_WARN(
         get_logger(),

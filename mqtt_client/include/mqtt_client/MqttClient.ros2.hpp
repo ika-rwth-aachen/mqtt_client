@@ -177,7 +177,7 @@ class MqttClient : public rclcpp::Node,
    *
    * @param   mqtt_msg       MQTT message
    */
-  void mqtt2ros(mqtt::const_message_ptr mqtt_msg);
+  void mqtt2ros(mqtt::const_message_ptr mqtt_msg, const rclcpp::Time& arrival_stamp);
 
   /**
    * @brief Publishes a primitive message received via MQTT to ROS.
@@ -403,6 +403,9 @@ class MqttClient : public rclcpp::Node,
    * @brief MQTT2ROS connection variables sorted by MQTT topic
    */
   std::map<std::string, Mqtt2RosInterface> mqtt2ros_;
+
+  // TODO
+  uint32_t stamp_length_;
 };
 
 
