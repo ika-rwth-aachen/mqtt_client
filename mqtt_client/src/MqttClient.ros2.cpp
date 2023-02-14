@@ -508,6 +508,7 @@ void MqttClient::ros2mqtt(const std::shared_ptr<rclcpp::SerializedMessage>& seri
       RCLCPP_WARN(get_logger(),
                   "Cannot send ROS message of type '%s' as primitive message, "
                   "check supported primitive types", ros_msg_type.c_str());
+      return;
 
   } else {  // publish as complete ROS message incl. ROS message type
 
