@@ -1,7 +1,7 @@
-x-base-image: &base-image gitlab.ika.rwth-aachen.de:5050/automated-driving/docker/ros1:latest  # e.g. gitlab.ika.rwth-aachen.de:5050/automated-driving/docker/ros2:latest
-x-dev-image:  &dev-image  gitlab.ika.rwth-aachen.de:5050/github/mqtt_client:latest-dev   # e.g. gitlab.ika.rwth-aachen.de:5050/ops/hello_world:latest-dev
-x-run-image:  &run-image  gitlab.ika.rwth-aachen.de:5050/github/mqtt_client:latest   # e.g. gitlab.ika.rwth-aachen.de:5050/ops/hello_world:latest
-x-command:    &command    roslaunch mqtt_client standalone.launch     # e.g. ros2 topic pub "/ping" "std_msgs/msg/String" "{data: Hello World}"
+x-base-image: &base-image gitlab.ika.rwth-aachen.de:5050/fb-fi/ops/docker-base/ros1:latest
+x-dev-image:  &dev-image  gitlab.ika.rwth-aachen.de:5050/fb-fi/github/mqtt_client:latest-dev
+x-run-image:  &run-image  gitlab.ika.rwth-aachen.de:5050/fb-fi/github/mqtt_client:latest
+x-command:    &command    roslaunch mqtt_client standalone.launch
 
 # ==============================================================================
 
