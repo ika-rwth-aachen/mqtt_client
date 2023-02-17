@@ -17,11 +17,16 @@ x-build: &build
 services:
   dev:
     image: *dev-image
+    network_mode: "host"
     build:
       target: dev
       <<: *build
   run:
     image: *run-image
+    network_mode: "host"
     build:
       target: run
       <<: *build
+  broker:
+    network_mode: "host"
+    image: eclipse-mosquitto
