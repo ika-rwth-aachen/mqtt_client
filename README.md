@@ -36,11 +36,11 @@ If you would like to install *mqtt_client* from source, simply clone this reposi
 rosdep install -r --ignore-src --from-paths .
 ```
 
-Alternatively, you can directly run the *mqtt_client* and the *mosquitto* MQTT broker in two Docker containers.
+Alternatively, you can directly run the *mqtt_client* in a Docker container.
 
 ```bash
 # mqtt_client/docker$
-docker compose up broker run
+docker compose up run
 ```
 
 ## Usage

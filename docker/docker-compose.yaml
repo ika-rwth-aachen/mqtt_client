@@ -27,6 +27,3 @@ services:
     build:
       target: run
       <<: *build
-  broker:
-    network_mode: "host"
-    image: eclipse-mosquitto
