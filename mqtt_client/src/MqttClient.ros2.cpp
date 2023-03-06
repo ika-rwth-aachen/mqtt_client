@@ -142,16 +142,38 @@ MqttClient::MqttClient() : Node("mqtt_client") {
 
 void MqttClient::loadParameters() {
 
-  // TODO: declare all?
   declare_parameter("broker.host");
   declare_parameter("broker.port");
+  declare_parameter("broker.user");
+  declare_parameter("broker.pass");
+  declare_parameter("broker.tls.enabled");
+  declare_parameter("broker.tls.ca_certificate");
+  declare_parameter("client.id");
+  declare_parameter("client.buffer.size");
+  declare_parameter("client.buffer.directory");
+  declare_parameter("client.last_will.topic");
+  declare_parameter("client.last_will.message");
+  declare_parameter("client.last_will.qos");
+  declare_parameter("client.last_will.retained");
+  declare_parameter("client.clean_session");
+  declare_parameter("client.keep_alive_interval");
+  declare_parameter("client.max_inflight");
+  declare_parameter("client.tls.certificate");
+  declare_parameter("client.tls.key");
+  declare_parameter("client.tls.password");
   declare_parameter("bridge.ros2mqtt.ros_topic");
   declare_parameter("bridge.ros2mqtt.mqtt_topic");
   declare_parameter("bridge.ros2mqtt.primitive");
   declare_parameter("bridge.ros2mqtt.inject_timestamp");
+  declare_parameter("bridge.ros2mqtt.advanced.ros.queue_size");
+  declare_parameter("bridge.ros2mqtt.advanced.mqtt.qos");
+  declare_parameter("bridge.ros2mqtt.advanced.mqtt.retained");
   declare_parameter("bridge.mqtt2ros.mqtt_topic");
   declare_parameter("bridge.mqtt2ros.ros_topic");
   declare_parameter("bridge.mqtt2ros.primitive");
+  declare_parameter("bridge.mqtt2ros.advanced.mqtt.qos");
+  declare_parameter("bridge.mqtt2ros.advanced.ros.queue_size");
+  declare_parameter("bridge.mqtt2ros.advanced.ros.latched");
 
   // load broker parameters from parameter server
   std::string broker_tls_ca_certificate;
