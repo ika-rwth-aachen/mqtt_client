@@ -577,21 +577,23 @@ void MqttClient::ros2mqtt(
     uint32_t payload_length = msg_length;
     uint32_t msg_offset = 0;
     if (ros2mqtt.stamped) {
+
       // allocate buffer with appropriate size to hold [S, R]
       msg_offset += stamp_length_;
       payload_length += stamp_length_;
       payload_buffer.resize(payload_length);
-    } else {
-      // allocate buffer with appropriate size to hold [R]
-      payload_buffer.resize(payload_length);
-    }
 
-    // TODO: if not stamped, could create payload_buffer directly on top of
-    // serialized_msg->get_rcl_serialized_message().buffer copy serialized ROS
-    // message to payload [-, R]
-    std::copy(serialized_msg->get_rcl_serialized_message().buffer,
-              serialized_msg->get_rcl_serialized_message().buffer + msg_length,
-              payload_buffer.begin() + msg_offset);
+      // copy serialized ROS message to payload [-, R]
+      std::copy(serialized_msg->get_rcl_serialized_message().buffer,
+                serialized_msg->get_rcl_serialized_message().buffer + msg_length,
+                payload_buffer.begin() + msg_offset);
+    } else {
+
+      // directly build payload buffer on top of serialized message
+      payload_buffer = std::vector<uint8_t>(
+        serialized_msg->get_rcl_serialized_message().buffer,
+        serialized_msg->get_rcl_serialized_message().buffer + msg_length);
+    }
 
     // inject timestamp as final step
     if (ros2mqtt.stamped) {
