@@ -31,6 +31,7 @@ SOFTWARE.
 #include <vector>
 
 #include <mqtt_client/MqttClient.ros2.hpp>
+#include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
 #include <rcpputils/env.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/char.hpp>
@@ -516,30 +517,41 @@ void MqttClient::ros2mqtt(
   const std::string& ros_topic) {
 
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
-  std::string& ros_msg_type = ros2mqtt.ros.msg_type;
   std::string mqtt_topic = ros2mqtt.mqtt.topic;
   std::vector<uint8_t> payload_buffer;
 
+  // gather information on ROS message type in special ROS message
+  mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
+  ros_msg_type.name = ros2mqtt.ros.msg_type;
+
   RCLCPP_DEBUG(get_logger(), "Received ROS message of type '%s' on topic '%s'",
-               ros_msg_type.c_str(), ros_topic.c_str());
+               ros_msg_type.name.c_str(), ros_topic.c_str());
 
   if (ros2mqtt.primitive) {  // publish as primitive (string) message
 
     // resolve ROS messages to primitive strings if possible
     std::string payload;
     bool found_primitive =
-      primitiveRosMessageToString(serialized_msg, ros_msg_type, payload);
+      primitiveRosMessageToString(serialized_msg, ros_msg_type.name, payload);
     if (found_primitive) {
       payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
     } else {
       RCLCPP_WARN(get_logger(),
                   "Cannot send ROS message of type '%s' as primitive message, "
                   "check supported primitive types",
-                  ros_msg_type.c_str());
+                  ros_msg_type.name.c_str());
       return;
     }
 
   } else {  // publish as complete ROS message incl. ROS message type
+
+    // serialize ROS message type
+    rclcpp::SerializedMessage serialized_ros_msg_type;
+    serializeRosMessage(ros_msg_type, serialized_ros_msg_type);
+    uint32_t msg_type_length = serialized_ros_msg_type.size();
+    std::vector<uint8_t> msg_type_buffer = std::vector<uint8_t>(
+      serialized_ros_msg_type.get_rcl_serialized_message().buffer,
+      serialized_ros_msg_type.get_rcl_serialized_message().buffer + msg_type_length);
 
     // send ROS message type information to MQTT broker
     mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
@@ -548,8 +560,8 @@ void MqttClient::ros2mqtt(
                    "Sending ROS message type to MQTT broker on topic '%s' ...",
                    mqtt_topic.c_str());
       mqtt::message_ptr mqtt_msg =
-        mqtt::make_message(mqtt_topic, ros_msg_type.c_str(),
-                           ros_msg_type.size(), ros2mqtt.mqtt.qos, true);
+        mqtt::make_message(mqtt_topic, msg_type_buffer.data(),
+                           msg_type_buffer.size(), ros2mqtt.mqtt.qos, true);
       client_->publish(mqtt_msg);
     } catch (const mqtt::exception& e) {
       RCLCPP_WARN(
@@ -605,7 +617,7 @@ void MqttClient::ros2mqtt(
     RCLCPP_DEBUG(
       get_logger(),
       "Sending ROS message of type '%s' to MQTT broker on topic '%s' ...",
-      ros_msg_type.c_str(), mqtt_topic.c_str());
+      ros_msg_type.name.c_str(), mqtt_topic.c_str());
     mqtt::message_ptr mqtt_msg = mqtt::make_message(
       mqtt_topic, payload_buffer.data(), payload_buffer.size(),
       ros2mqtt.mqtt.qos, ros2mqtt.mqtt.retained);
@@ -637,10 +649,6 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
 
   // if stamped, compute latency
   if (stamped) {
-
-    // create ROS message buffer on top of MQTT message payload
-    char* non_const_payload = const_cast<char*>(&payload[1]);
-    uint8_t* stamp_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
     // copy stamp to generic message buffer
     rclcpp::SerializedMessage serialized_stamp(stamp_length_);
@@ -860,7 +868,17 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     mqtt_topic.find(kRosMsgTypeMqttTopicPrefix) != std::string::npos;
   if (msg_contains_ros_msg_type) {
 
-    std::string ros_msg_type = mqtt_msg->to_string();
+    // copy message type to generic message buffer
+    auto& payload = mqtt_msg->get_payload_ref();
+    uint32_t payload_length = static_cast<uint32_t>(payload.size());
+    rclcpp::SerializedMessage serialized_ros_msg_type(payload_length);
+    std::memcpy(serialized_ros_msg_type.get_rcl_serialized_message().buffer,
+                &(payload[0]), payload_length);
+    serialized_ros_msg_type.get_rcl_serialized_message().buffer_length = payload_length;
+
+    // deserialize ROS message type
+    mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
+    deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
 
     // reconstruct corresponding MQTT data topic
     std::string mqtt_data_topic = mqtt_topic;
@@ -869,17 +887,17 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
 
     // if ROS message type has changed
-    if (ros_msg_type != mqtt2ros.ros.msg_type) {
+    if (ros_msg_type.name != mqtt2ros.ros.msg_type) {
 
-      mqtt2ros.ros.msg_type = ros_msg_type;
+      mqtt2ros.ros.msg_type = ros_msg_type.name;
       RCLCPP_INFO(get_logger(),
                   "ROS publisher message type on topic '%s' set to '%s'",
-                  mqtt2ros.ros.topic.c_str(), ros_msg_type.c_str());
+                  mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
 
       // recreate generic publisher
       try {
         mqtt2ros.ros.publisher = create_generic_publisher(
-          mqtt2ros.ros.topic, ros_msg_type, mqtt2ros.ros.queue_size);
+          mqtt2ros.ros.topic, ros_msg_type.name, mqtt2ros.ros.queue_size);
       } catch (rclcpp::exceptions::RCLError& e) {
         RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
                      e.what());
