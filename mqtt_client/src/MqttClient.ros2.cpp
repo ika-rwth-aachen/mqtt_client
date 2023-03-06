@@ -525,14 +525,15 @@ void MqttClient::ros2mqtt(
     std::string payload;
     bool found_primitive =
       primitiveRosMessageToString(serialized_msg, ros_msg_type, payload);
-    if (found_primitive)
+    if (found_primitive) {
       payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
-    else
+    } else {
       RCLCPP_WARN(get_logger(),
                   "Cannot send ROS message of type '%s' as primitive message, "
                   "check supported primitive types",
                   ros_msg_type.c_str());
-    return;
+      return;
+    }
 
   } else {  // publish as complete ROS message incl. ROS message type
 
