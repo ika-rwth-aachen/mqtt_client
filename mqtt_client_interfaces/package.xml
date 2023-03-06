@@ -3,7 +3,7 @@
 
   <name>mqtt_client_interfaces</name>
   <version>1.1.0</version>
-  <description>TODO</description>
+  <description>Message and service definitions for mqtt_client</description>
 
   <maintainer email="lennart.reiher@rwth-aachen.de">Lennart Reiher</maintainer>
 
