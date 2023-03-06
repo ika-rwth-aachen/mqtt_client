@@ -53,7 +53,7 @@ namespace mqtt_client {
 const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
   "mqtt_client/ros_msg_type/";
 
-const std::string MqttClient::kLatencyRosTopicPrefix = "latencies/";
+const std::string MqttClient::kLatencyRosTopicPrefix = "~/latencies/";
 
 
 /**
