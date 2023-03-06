@@ -311,7 +311,7 @@ void MqttClient::loadParameters() {
       mqtt2ros.ros.latched = latched_param.as_bool();
 
     RCLCPP_INFO(get_logger(), "Bridging MQTT topic '%s' to %sROS topic '%s'",
-                mqtt2ros.primitive ? "primitive " : "", mqtt_topic.c_str(),
+                mqtt_topic.c_str(), mqtt2ros.primitive ? "primitive " : "",
                 mqtt2ros.ros.topic.c_str());
   } else {
     RCLCPP_WARN(get_logger(),
