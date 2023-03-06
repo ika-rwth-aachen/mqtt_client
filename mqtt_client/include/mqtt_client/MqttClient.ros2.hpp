@@ -144,7 +144,7 @@ class MqttClient : public rclcpp::Node,
   void setup();
 
   /**
-   * TODO
+   * @brief Checks all active ROS topics in order to set up generic subscribers.
    */
   void setupSubscriptions();
 
@@ -160,9 +160,16 @@ class MqttClient : public rclcpp::Node,
   void connect();
 
   /**
-   * @brief Serializes and publishes a generic ROS message to the MQTT broker.
+   * @brief Publishes a generic serialized ROS message to the MQTT broker.
    *
-   * TODO
+   * Before publishing the ROS message to the MQTT broker, the ROS message type
+   * is extracted. This type information is also sent to the MQTT broker on a
+   * separate topic.
+   *
+   * The MQTT payload for the actual ROS message carries the following:
+   * - 0 or 1 (indicating if timestamp is injected (=1))
+   * - serialized timestamp (optional)
+   * - serialized ROS message
    *
    * @param   serialized_msg  generic serialized ROS message
    * @param   ros_topic       ROS topic where the message was published
@@ -174,9 +181,18 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief Publishes a ROS message received via MQTT to ROS.
    *
-   * TODO
+   * This utilizes the generic publisher stored for the MQTT topic on which the
+   * message was received. The publisher has to be configured to the ROS message
+   * type of the message. If the message carries an injected timestamp, the
+   * latency is computed and published.
+   *
+   * The MQTT payload is expected to carry the following:
+   * - 0 or 1 (indicating if timestamp is injected (=1))
+   * - serialized timestamp (optional)
+   * - serialized ROS message
    *
    * @param   mqtt_msg       MQTT message
+   * @param   arrival_stamp  arrival timestamp used for latency computation
    */
   void mqtt2ros(mqtt::const_message_ptr mqtt_msg,
                 const rclcpp::Time& arrival_stamp);
@@ -366,7 +382,9 @@ class MqttClient : public rclcpp::Node,
    */
   static const std::string kLatencyRosTopicPrefix;
 
-  // TODO
+  /**
+   * @brief Timer to repeatedly check active ROS topics for topics to subscribe
+   */
   rclcpp::TimerBase::SharedPtr check_subscriptions_timer_;
 
   /**
@@ -410,7 +428,9 @@ class MqttClient : public rclcpp::Node,
    */
   std::map<std::string, Mqtt2RosInterface> mqtt2ros_;
 
-  // TODO
+  /**
+   * Message length of a serialized `builtin_interfaces::msg::Time` message
+   */
   uint32_t stamp_length_;
 };
 
@@ -440,14 +460,12 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
 
 
 /**
- * Serializes a ROS message to a buffer.
+ * Serializes a ROS message.
  *
- * TODO
+ * @tparam  T                    ROS message type
  *
- * @tparam  T            ROS message type
- *
- * @param[in]   msg      ROS message
- * @param[out]  buffer   buffer to serialize to
+ * @param[in]   msg              ROS message
+ * @param[out]  serialized_msg   serialized message
  */
 template <typename T>
 void serializeRosMessage(const T& msg,
@@ -459,7 +477,12 @@ void serializeRosMessage(const T& msg,
 
 
 /**
- * TODO
+ * Deserializes a ROS message.
+ *
+ * @tparam  T                   ROS message type
+ *
+ * @param[in]   serialized_msg  serialized message
+ * @param[out]  msg             ROS message
  */
 template <typename T>
 void deserializeRosMessage(const rclcpp::SerializedMessage& serialized_msg,

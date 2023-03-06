@@ -59,10 +59,14 @@ const std::string MqttClient::kLatencyRosTopicPrefix = "~/latencies/";
 /**
  * @brief Extracts string of primitive data types from ROS message.
  *
- * TODO
+ * This is helpful to extract the actual data payload of a primitive ROS
+ * message. If e.g. an std_msgs/msg/String is serialized to a string
+ * representation, it also contains the field name 'data'. This function
+ * instead returns the underlying value as string.
  *
- * @param [in]  msg        generic ShapeShifter ROS message
- * @param [out] primitive  string representation of primitive message data
+ * @param [in]  serialized_msg  generic serialized ROS message
+ * @param [in]  msg_type        ROS message type, e.g. `std_msgs/msg/String`
+ * @param [out] primitive       string representation of primitive message data
  *
  * @return true  if primitive ROS message type was found
  * @return false if ROS message type is not primitive
@@ -682,8 +686,6 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
 
 
 void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
-
-  // TODO: not yet working with primitives published by mosquitto_pub
 
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
