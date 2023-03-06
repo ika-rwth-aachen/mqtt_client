@@ -364,6 +364,7 @@ class MqttClient : public rclcpp::Node,
     } ros;                   ///< ROS-related variables
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
+    bool stamped = false;    ///< whether timestamp is injected
   };
 
  protected:

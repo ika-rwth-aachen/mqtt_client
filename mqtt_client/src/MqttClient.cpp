@@ -490,6 +490,7 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
   ros_msg_type.md5 = ros_msg->getMD5Sum();
   ros_msg_type.name = ros_msg->getDataType();
   ros_msg_type.definition = ros_msg->getMessageDefinition();
+  ros_msg_type.stamped = ros2mqtt.stamped;
 
   NODELET_DEBUG("Received ROS message of type '%s' on topic '%s'",
                 ros_msg_type.name.c_str(), ros_topic.c_str());
@@ -534,26 +535,24 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
         mqtt_topic.c_str(), e.what());
     }
 
-    // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
-    // where first item = 1 if timestamp (S) is included
+    // build MQTT payload for ROS message (R) as [R]
+    // or [S, R] if timestamp (S) is included
     uint32_t msg_length = ros::serialization::serializationLength(*ros_msg);
-    uint32_t payload_length = 1 + msg_length;
+    uint32_t payload_length = msg_length;
     uint32_t stamp_length =
       ros::serialization::serializationLength(ros::Time());
-    uint32_t msg_offset = 1;
+    uint32_t msg_offset = 0;
     if (ros2mqtt.stamped) {
-      // allocate buffer with appropriate size to hold [1, S, R]
+      // allocate buffer with appropriate size to hold [S, R]
       msg_offset += stamp_length;
       payload_length += stamp_length;
       payload_buffer.resize(payload_length);
-      payload_buffer[0] = 1;
     } else {
-      // allocate buffer with appropriate size to hold [0, R]
+      // allocate buffer with appropriate size to hold [R]
       payload_buffer.resize(payload_length);
-      payload_buffer[0] = 0;
     }
 
-    // serialize ROS message to payload [0/1, -, R]
+    // serialize ROS message to payload [-, R]
     ros::serialization::OStream msg_stream(&payload_buffer[msg_offset],
                                            msg_length);
     ros::serialization::serialize(msg_stream, *ros_msg);
@@ -570,8 +569,8 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
           "running?",
           ros2mqtt.mqtt.topic.c_str());
 
-      // serialize timestamp to payload [1, S, R]
-      ros::serialization::OStream stamp_stream(&payload_buffer[1],
+      // serialize timestamp to payload [S, R]
+      ros::serialization::OStream stamp_stream(&payload_buffer[0],
                                                stamp_length);
       ros::serialization::serialize(stamp_stream, stamp);
     }
@@ -603,16 +602,13 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
   auto& payload = mqtt_msg->get_payload_ref();
   uint32_t payload_length = static_cast<uint32_t>(payload.size());
 
-  // determine whether timestamp is injected by reading first element
-  bool stamped = (static_cast<uint8_t>(payload[0]) > 0);
-
-  // read MQTT payload for ROS message (R) as [1, S, R] or [0, R]
-  // where first item = 1 if timestamp (S) is included
-  uint32_t msg_length = payload_length - 1;
-  uint32_t msg_offset = 1;
+  // read MQTT payload for ROS message (R) as [R]
+  // or [S, R] if timestamp (S) is included
+  uint32_t msg_length = payload_length;
+  uint32_t msg_offset = 0;
 
   // if stamped, compute latency
-  if (stamped) {
+  if (mqtt2ros.stamped) {
 
     // create ROS message buffer on top of MQTT message payload
     char* non_const_payload = const_cast<char*>(&payload[1]);
@@ -888,6 +884,10 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     // if ROS message type has changed
     if (ros_msg_type.md5 != mqtt2ros.ros.shape_shifter.getMD5Sum()) {
 
+      mqtt2ros.stamped = ros_msg_type.stamped;
+      NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
+                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
+
       // configure ShapeShifter
       mqtt2ros.ros.shape_shifter.morph(ros_msg_type.md5, ros_msg_type.name,
                                        ros_msg_type.definition, "");
@@ -897,9 +897,6 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
       mqtt2ros.ros.publisher = mqtt2ros.ros.shape_shifter.advertise(
         node_handle_, mqtt2ros.ros.topic, mqtt2ros.ros.queue_size,
         mqtt2ros.ros.latched);
-
-      NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
-                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
 
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
