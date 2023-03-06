@@ -312,8 +312,12 @@ void MqttClient::loadParameters() {
 
     // mqtt2ros[k]/advanced/ros/latched
     rclcpp::Parameter latched_param;
-    if (get_parameter("bridge.mqtt2ros.advanced.ros.latched", latched_param))
+    if (get_parameter("bridge.mqtt2ros.advanced.ros.latched", latched_param)) {
       mqtt2ros.ros.latched = latched_param.as_bool();
+      RCLCPP_WARN(get_logger(),
+                  "Parameter 'bridge.mqtt2ros.advanced.ros.latched' is ignored "
+                  "since ROS 2 does not easily support latched topics.");
+    }
 
     RCLCPP_INFO(get_logger(), "Bridging MQTT topic '%s' to %sROS topic '%s'",
                 mqtt_topic.c_str(), mqtt2ros.primitive ? "primitive " : "",
