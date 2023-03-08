@@ -147,38 +147,75 @@ MqttClient::MqttClient() : Node("mqtt_client") {
 
 void MqttClient::loadParameters() {
 
-  declare_parameter("broker.host");
-  declare_parameter("broker.port");
-  declare_parameter("broker.user");
-  declare_parameter("broker.pass");
-  declare_parameter("broker.tls.enabled");
-  declare_parameter("broker.tls.ca_certificate");
-  declare_parameter("client.id");
-  declare_parameter("client.buffer.size");
-  declare_parameter("client.buffer.directory");
-  declare_parameter("client.last_will.topic");
-  declare_parameter("client.last_will.message");
-  declare_parameter("client.last_will.qos");
-  declare_parameter("client.last_will.retained");
-  declare_parameter("client.clean_session");
-  declare_parameter("client.keep_alive_interval");
-  declare_parameter("client.max_inflight");
-  declare_parameter("client.tls.certificate");
-  declare_parameter("client.tls.key");
-  declare_parameter("client.tls.password");
-  declare_parameter("bridge.ros2mqtt.ros_topic");
-  declare_parameter("bridge.ros2mqtt.mqtt_topic");
-  declare_parameter("bridge.ros2mqtt.primitive");
-  declare_parameter("bridge.ros2mqtt.inject_timestamp");
-  declare_parameter("bridge.ros2mqtt.advanced.ros.queue_size");
-  declare_parameter("bridge.ros2mqtt.advanced.mqtt.qos");
-  declare_parameter("bridge.ros2mqtt.advanced.mqtt.retained");
-  declare_parameter("bridge.mqtt2ros.mqtt_topic");
-  declare_parameter("bridge.mqtt2ros.ros_topic");
-  declare_parameter("bridge.mqtt2ros.primitive");
-  declare_parameter("bridge.mqtt2ros.advanced.mqtt.qos");
-  declare_parameter("bridge.mqtt2ros.advanced.ros.queue_size");
-  declare_parameter("bridge.mqtt2ros.advanced.ros.latched");
+  rcl_interfaces::msg::ParameterDescriptor param_desc;
+
+  param_desc.description = "IP address or hostname of the machine running the MQTT broker";
+  declare_parameter("broker.host", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "port the MQTT broker is listening on";
+  declare_parameter("broker.port", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "username used for authenticating to the broker (if empty, will try to connect anonymously)";
+  declare_parameter("broker.user", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "password used for authenticating to the broker";
+  declare_parameter("broker.pass", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "whether to connect via SSL/TLS";
+  declare_parameter("broker.tls.enabled", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "CA certificate file trusted by client (relative to ROS_HOME)";
+  declare_parameter("broker.tls.ca_certificate", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+
+  param_desc.description = "unique ID used to identify the client (broker may allow empty ID and automatically generate one)";
+  declare_parameter("client.id", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "maximum number of messages buffered by the bridge when not connected to broker (only available if client ID is not empty)";
+  declare_parameter("client.buffer.size", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "directory used to buffer messages when not connected to broker (relative to ROS_HOME)";
+  declare_parameter("client.buffer.directory", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "topic used for this client's last-will message (no last will, if not specified)";
+  declare_parameter("client.last_will.topic", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "last-will message";
+  declare_parameter("client.last_will.message", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "QoS value for last-will message";
+  declare_parameter("client.last_will.qos", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "whether to retain last-will message";
+  declare_parameter("client.last_will.retained", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "whether to use a clean session for this client";
+  declare_parameter("client.clean_session", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "keep-alive interval in seconds";
+  declare_parameter("client.keep_alive_interval", rclcpp::ParameterType::PARAMETER_DOUBLE, param_desc);
+  param_desc.description = "maximum number of inflight messages";
+  declare_parameter("client.max_inflight", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "client certificate file (only needed if broker requires client certificates; relative to ROS_HOME)";
+  declare_parameter("client.tls.certificate", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "client private key file (relative to ROS_HOME)";
+  declare_parameter("client.tls.key", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "client private key password";
+  declare_parameter("client.tls.password", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+
+  param_desc.description = "ROS topic whose messages are transformed to MQTT messages";
+  declare_parameter("bridge.ros2mqtt.ros_topic", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "MQTT topic on which the corresponding ROS messages are sent to the broker";
+  declare_parameter("bridge.ros2mqtt.mqtt_topic", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "whether to publish as primitive message";
+  declare_parameter("bridge.ros2mqtt.primitive", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)";
+  declare_parameter("bridge.ros2mqtt.inject_timestamp", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "ROS subscriber queue size";
+  declare_parameter("bridge.ros2mqtt.advanced.ros.queue_size", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "MQTT QoS value";
+  declare_parameter("bridge.ros2mqtt.advanced.mqtt.qos", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "whether to retain MQTT message";
+  declare_parameter("bridge.ros2mqtt.advanced.mqtt.retained", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+
+  param_desc.description = "MQTT topic on which messages are received from the broker";
+  declare_parameter("bridge.mqtt2ros.mqtt_topic", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "ROS topic on which corresponding MQTT messages are published";
+  declare_parameter("bridge.mqtt2ros.ros_topic", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "whether to publish as primitive message (if coming from non-ROS MQTT client)";
+  declare_parameter("bridge.mqtt2ros.primitive", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "MQTT QoS value";
+  declare_parameter("bridge.mqtt2ros.advanced.mqtt.qos", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "ROS publisher queue size";
+  declare_parameter("bridge.mqtt2ros.advanced.ros.queue_size", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "whether to latch ROS message";
+  declare_parameter("bridge.mqtt2ros.advanced.ros.latched", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
 
   // load broker parameters from parameter server
   std::string broker_tls_ca_certificate;
