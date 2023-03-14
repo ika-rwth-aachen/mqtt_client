@@ -17,11 +17,12 @@ if(${ROS_VERSION} EQUAL 2)
 
   find_package(mqtt_client_interfaces REQUIRED)
   find_package(rclcpp REQUIRED)
-  find_package(sensor_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
 
-  find_package(PahoMqttCpp REQUIRED)
-  set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
+  # Paho MQTT C++ apt package doesn't include cMake config
+  # find_package(PahoMqttCpp REQUIRED)
+  find_library(PahoMqttC_LIBRARY libpaho-mqtt3as.so.1 REQUIRED)
+  find_library(PahoMqttCpp_LIBRARY libpaho-mqttpp3.so.1 REQUIRED)
 
   add_executable(${PROJECT_NAME} src/MqttClient.ros2.cpp)
 
@@ -29,11 +30,14 @@ if(${ROS_VERSION} EQUAL 2)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
+  target_link_libraries(${PROJECT_NAME}
+    ${PahoMqttC_LIBRARY}
+    ${PahoMqttCpp_LIBRARY}
+  )
+
   ament_target_dependencies(${PROJECT_NAME}
     mqtt_client_interfaces
-    PahoMqttCpp
     rclcpp
-    sensor_msgs
     std_msgs
   )
 
