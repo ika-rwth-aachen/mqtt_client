@@ -64,6 +64,8 @@ The *mqtt_client* is best configured with a ROS parameter *yaml* file. The confi
 
 - ROS messages received locally on ROS topic `/ping/ros` are sent to the broker on MQTT topic `pingpong/ros`;
 - MQTT messages received from the broker on MQTT topic `pingpong/ros` are published locally on ROS topic `/pong/ros`;
+- primitive ROS messages received locally on ROS topic `/ping/primitive` are sent as primitive (string) messages to the broker on MQTT topic `pingpong/primitive`;
+- MQTT messages received from the broker on MQTT topic `pingpong/primitive` are published locally as primitive ROS messages on ROS topic `/pong/primitive`.
 
 ```yaml
 broker:
@@ -71,11 +73,17 @@ broker:
   port: 1883
 bridge:
   ros2mqtt:
-    - ros_topic: /ping
-      mqtt_topic: pingpong
+    - ros_topic: /ping/ros
+      mqtt_topic: pingpong/ros
+    - ros_topic: /ping/primitive
+      mqtt_topic: pingpong/primitive
+      primitive: true
   mqtt2ros:
-    - mqtt_topic: pingpong
-      ros_topic: /pong
+    - mqtt_topic: pingpong/ros
+      ros_topic: /pong/ros
+    - mqtt_topic: pingpong/primitive
+      ros_topic: /pong/primitive
+      primitive: true
 ```
 
 #### Demo Client Launch
@@ -98,7 +106,9 @@ ros2 launch mqtt_client standalone.launch.ros2.xml
 [ WARN] [1665575657.360576344]: Parameter 'client/keep_alive_interval' not set, defaulting to '60.000000'
 [ WARN] [1665575657.360847295]: Parameter 'client/max_inflight' not set, defaulting to '65535'
 [ INFO] [1665575657.361281461]: Bridging ROS topic '/ping/ros' to MQTT topic 'pingpong/ros' 
+[ INFO] [1665575657.361303380]: Bridging primitive ROS topic '/ping/primitive' to MQTT topic 'pingpong/primitive' 
 [ INFO] [1665575657.361352809]: Bridging MQTT topic 'pingpong/ros' to ROS topic '/pong/ros'
+[ INFO] [1665575657.361370558]: Bridging MQTT topic 'pingpong/primitive' to primitive ROS topic '/pong/primitive'
 [ INFO] [1665575657.362153083]: Connecting to broker at 'tcp://localhost:1883' ...
 [ INFO] [1665575657.462622065]: Connected to broker at 'tcp://localhost:1883'
 ```
