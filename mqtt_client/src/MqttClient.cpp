@@ -503,14 +503,15 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
     // resolve ROS messages to primitive strings if possible
     std::string payload;
     bool found_primitive = primitiveRosMessageToString(ros_msg, payload);
-    if (found_primitive)
+    if (found_primitive) {
       payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
-    else
+    } else {
       NODELET_WARN(
         "Cannot send ROS message of type '%s' as primitive message, "
         "check supported primitive types",
         ros_msg_type.name.c_str());
-    return;
+      return;
+    }
 
   } else {  // publish as complete ROS message incl. ROS message type
 
