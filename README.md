@@ -1,10 +1,11 @@
 # mqtt_client
 
 <p align="center">
-  <img src="https://img.shields.io/badge/ROS1-noetic-green"/></a>
   <img src="https://img.shields.io/github/v/release/ika-rwth-aachen/mqtt_client"/></a>
   <img src="https://img.shields.io/github/license/ika-rwth-aachen/mqtt_client"/></a>
   <a href="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/build.yml"><img src="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/build.yml/badge.svg"/></a>
+  <img src="https://img.shields.io/badge/ROS-noetic-blueviolet"/>
+  <img src="https://img.shields.io/badge/ROS 2-humble|rolling-blueviolet"/>
   <a href="https://github.com/ika-rwth-aachen/mqtt_client"><img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
 </p>
 
@@ -23,14 +24,11 @@ The *mqtt_client* package provides a ROS nodelet or ROS 2 node that enables conn
 
 ## Installation
 
-The *mqtt_client* package is released as an official ROS Noetic package and can easily be installed via a package manager.
+The *mqtt_client* package is released as an official ROS / ROS 2 package and can easily be installed via a package manager.
 
 ```bash
-# ROS 1
-sudo apt install ros-noetic-mqtt-client
-
-# ROS 2
-sudo apt install ros-humble-mqtt-client
+sudo apt update
+sudo apt install ros-$ROS_DISTRO-mqtt-client
 ```
 
 If you would like to install *mqtt_client* from source, simply clone this repository into your ROS workspace. All dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
@@ -38,6 +36,14 @@ If you would like to install *mqtt_client* from source, simply clone this reposi
 ```bash
 # mqtt_client$
 rosdep install -r --ignore-src --from-paths .
+
+# ROS 1
+# workspace$
+catkin build -DCMAKE_BUILD_TYPE=Release mqtt_client
+
+# ROS 2
+# workspace$
+colcon build --packages-up-to mqtt_client --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
 ## Usage
@@ -217,7 +223,7 @@ broker:
 
 ```yaml
 client:
-  id:                   # unique ID used to identify the client (broker may allow empty ID and automatically generate one)
+  id:                   # unique ID string used to identify the client (broker may allow empty ID and automatically generate one)
   buffer:
     size:                 # [0] maximum number of messages buffered by the bridge when not connected to broker (only available if client ID is not empty)
     directory:            # [buffer] directory used to buffer messages when not connected to broker (relative to ROS_HOME)
