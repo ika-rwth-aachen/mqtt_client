@@ -346,9 +346,12 @@ bool MqttClient::loadParameter(const std::string& key, std::string& value,
                                const std::string& default_value) {
   bool found =
     private_node_handle_.param<std::string>(key, value, default_value);
-  if (!found)
+  if (!found) {
+    if (private_node_handle_.hasParam(key))
+      NODELET_ERROR("Parameter '%s' has wrong data type", key.c_str());
     NODELET_WARN("Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                  default_value.c_str());
+  }
   if (found)
     NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
                   value.c_str());
