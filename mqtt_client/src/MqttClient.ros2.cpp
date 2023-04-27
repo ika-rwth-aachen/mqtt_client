@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <mqtt_client/MqttClient.ros2.hpp>
 #include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
-#include <rcpputils/env.hpp>
+#include <rcpputils/get_env.hpp> // Modify env.hpp to get_env.hpp according to https://github.com/ika-rwth-aachen/mqtt_client/issues/19
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/char.hpp>
 #include <std_msgs/msg/float32.hpp>
