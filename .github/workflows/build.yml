@@ -11,6 +11,8 @@ jobs:
         ROS_DISTRO:
           - noetic
           - humble
+          - iron
+          - rolling
         ROS_REPO:
           - testing
           - main
