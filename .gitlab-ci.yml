@@ -1,4 +1,6 @@
 include:
-  - project: fb-fi/ops/docker-ros
-    ref: main
-    file: .gitlab-ci.template.yml
+  - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
+
+variables:
+  BASE_IMAGE: rwthika/ros:noetic
+  COMMAND: roslaunch mqtt_client standalone.launch
