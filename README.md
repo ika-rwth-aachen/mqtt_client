@@ -47,12 +47,6 @@ catkin build -DCMAKE_BUILD_TYPE=Release mqtt_client
 colcon build --packages-up-to mqtt_client --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
-Alternatively, you can directly run the *mqtt_client* in a Docker container.
-
-```bash
-# mqtt_client/docker$
-docker compose up run
-```
 
 ## Usage
 
