@@ -1,0 +1,9 @@
+ros:
+  trigger:
+    include: .gitlab-ci.ros.yml
+    strategy: depend
+
+ros2:
+  trigger:
+    include: .gitlab-ci.ros2.yml
+    strategy: depend
