@@ -1,4 +1,4 @@
-name: Build
+name: industrial_ci
 
 on: push
 
@@ -17,7 +17,7 @@ jobs:
           - testing
           - main
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ros-industrial/industrial_ci@master
         with:
           config: ${{ toJSON(matrix) }}

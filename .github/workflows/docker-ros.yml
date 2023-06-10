@@ -1,0 +1,29 @@
+name: docker-ros
+
+on: push
+
+jobs:
+
+  ros:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ika-rwth-aachen/docker-ros@main
+        with:
+          image-tag: ros
+          base-image: rwthika/ros:latest
+          command: roslaunch mqtt_client standalone.launch
+          platform: amd64,arm64
+          target: run
+  
+  ros2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ika-rwth-aachen/docker-ros@main
+        with:
+          image-tag: ros2
+          base-image: rwthika/ros2:latest
+          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          platform: amd64,arm64
+          target: run
+          enable-push-as-latest: 'true'
+          
