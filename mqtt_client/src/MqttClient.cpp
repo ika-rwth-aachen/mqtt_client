@@ -31,7 +31,7 @@ SOFTWARE.
 #include <vector>
 
 #include <mqtt_client/MqttClient.h>
-#include <mqtt_client/RosMsgType.h>
+#include <mqtt_client_interfaces/RosMsgType.h>
 #include <pluginlib/class_list_macros.h>
 #include <ros/message_traits.h>
 #include <std_msgs/Bool.h>
@@ -346,9 +346,12 @@ bool MqttClient::loadParameter(const std::string& key, std::string& value,
                                const std::string& default_value) {
   bool found =
     private_node_handle_.param<std::string>(key, value, default_value);
-  if (!found)
+  if (!found) {
+    if (private_node_handle_.hasParam(key))
+      NODELET_ERROR("Parameter '%s' has wrong data type", key.c_str());
     NODELET_WARN("Parameter '%s' not set, defaulting to '%s'", key.c_str(),
                  default_value.c_str());
+  }
   if (found)
     NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
                   value.c_str());
@@ -486,24 +489,29 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
   std::vector<uint8_t> payload_buffer;
 
   // gather information on ROS message type in special ROS message
-  RosMsgType ros_msg_type;
+  mqtt_client_interfaces::RosMsgType ros_msg_type;
   ros_msg_type.md5 = ros_msg->getMD5Sum();
   ros_msg_type.name = ros_msg->getDataType();
   ros_msg_type.definition = ros_msg->getMessageDefinition();
+  ros_msg_type.stamped = ros2mqtt.stamped;
 
   NODELET_DEBUG("Received ROS message of type '%s' on topic '%s'",
                 ros_msg_type.name.c_str(), ros_topic.c_str());
 
   if (ros2mqtt.primitive) {  // publish as primitive (string) message
 
-    // resolve ROS messages to primitive strings if possible, else serialize
-    // entire message to string
+    // resolve ROS messages to primitive strings if possible
     std::string payload;
     bool found_primitive = primitiveRosMessageToString(ros_msg, payload);
-    if (found_primitive)
+    if (found_primitive) {
       payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
-    else
-      serializeRosMessage(*ros_msg, payload_buffer);
+    } else {
+      NODELET_WARN(
+        "Cannot send ROS message of type '%s' as primitive message, "
+        "check supported primitive types",
+        ros_msg_type.name.c_str());
+      return;
+    }
 
   } else {  // publish as complete ROS message incl. ROS message type
 
@@ -531,26 +539,24 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
         mqtt_topic.c_str(), e.what());
     }
 
-    // build MQTT payload for ROS message (R) as [1, S, R] or [0, R]
-    // where first item = 1 if timestamp (S) is included
+    // build MQTT payload for ROS message (R) as [R]
+    // or [S, R] if timestamp (S) is included
     uint32_t msg_length = ros::serialization::serializationLength(*ros_msg);
-    uint32_t payload_length = 1 + msg_length;
+    uint32_t payload_length = msg_length;
     uint32_t stamp_length =
       ros::serialization::serializationLength(ros::Time());
-    uint32_t msg_offset = 1;
+    uint32_t msg_offset = 0;
     if (ros2mqtt.stamped) {
-      // allocate buffer with appropriate size to hold [1, S, R]
+      // allocate buffer with appropriate size to hold [S, R]
       msg_offset += stamp_length;
       payload_length += stamp_length;
       payload_buffer.resize(payload_length);
-      payload_buffer[0] = 1;
     } else {
-      // allocate buffer with appropriate size to hold [0, R]
+      // allocate buffer with appropriate size to hold [R]
       payload_buffer.resize(payload_length);
-      payload_buffer[0] = 0;
     }
 
-    // serialize ROS message to payload [0/1, -, R]
+    // serialize ROS message to payload [-, R]
     ros::serialization::OStream msg_stream(&payload_buffer[msg_offset],
                                            msg_length);
     ros::serialization::serialize(msg_stream, *ros_msg);
@@ -567,8 +573,8 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
           "running?",
           ros2mqtt.mqtt.topic.c_str());
 
-      // serialize timestamp to payload [1, S, R]
-      ros::serialization::OStream stamp_stream(&payload_buffer[1],
+      // serialize timestamp to payload [S, R]
+      ros::serialization::OStream stamp_stream(&payload_buffer[0],
                                                stamp_length);
       ros::serialization::serialize(stamp_stream, stamp);
     }
@@ -600,16 +606,13 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
   auto& payload = mqtt_msg->get_payload_ref();
   uint32_t payload_length = static_cast<uint32_t>(payload.size());
 
-  // determine whether timestamp is injected by reading first element
-  bool stamped = (static_cast<uint8_t>(payload[0]) > 0);
-
-  // read MQTT payload for ROS message (R) as [1, S, R] or [0, R]
-  // where first item = 1 if timestamp (S) is included
-  uint32_t msg_length = payload_length - 1;
-  uint32_t msg_offset = 1;
+  // read MQTT payload for ROS message (R) as [R]
+  // or [S, R] if timestamp (S) is included
+  uint32_t msg_length = payload_length;
+  uint32_t msg_offset = 0;
 
   // if stamped, compute latency
-  if (stamped) {
+  if (mqtt2ros.stamped) {
 
     // create ROS message buffer on top of MQTT message payload
     char* non_const_payload = const_cast<char*>(&payload[1]);
@@ -825,8 +828,9 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(IsConnected::Request& request,
-                                    IsConnected::Response& response) {
+bool MqttClient::isConnectedService(
+  mqtt_client_interfaces::IsConnected::Request& request,
+  mqtt_client_interfaces::IsConnected::Response& response) {
 
   response.connected = isConnected();
   return true;
@@ -862,7 +866,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
 
     // deserialize ROS message type
-    RosMsgType ros_msg_type;
+    mqtt_client_interfaces::RosMsgType ros_msg_type;
     ros::serialization::IStream msg_type_stream(msg_type_buffer,
                                                 payload_length);
     try {
@@ -884,6 +888,10 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     // if ROS message type has changed
     if (ros_msg_type.md5 != mqtt2ros.ros.shape_shifter.getMD5Sum()) {
 
+      mqtt2ros.stamped = ros_msg_type.stamped;
+      NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
+                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
+
       // configure ShapeShifter
       mqtt2ros.ros.shape_shifter.morph(ros_msg_type.md5, ros_msg_type.name,
                                        ros_msg_type.definition, "");
@@ -893,9 +901,6 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
       mqtt2ros.ros.publisher = mqtt2ros.ros.shape_shifter.advertise(
         node_handle_, mqtt2ros.ros.topic, mqtt2ros.ros.queue_size,
         mqtt2ros.ros.latched);
-
-      NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
-                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
 
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
@@ -920,7 +925,10 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 void MqttClient::delivery_complete(mqtt::delivery_token_ptr token) {}
 
 
-void MqttClient::on_success(const mqtt::token& token) {}
+void MqttClient::on_success(const mqtt::token& token) {
+
+  is_connected_ = true;
+}
 
 
 void MqttClient::on_failure(const mqtt::token& token) {
@@ -929,6 +937,7 @@ void MqttClient::on_failure(const mqtt::token& token) {
     "Connection to broker failed (return code %d), will automatically "
     "retry...",
     token.get_return_code());
+  is_connected_ = false;
 }
 
 }  // namespace mqtt_client
