@@ -6,3 +6,4 @@ variables:
   COMMAND: roslaunch mqtt_client standalone.launch
   PLATFORM: amd64,arm64
   TARGET: dev,run
+  ENABLE_INDUSTRIAL_CI: 'true'
