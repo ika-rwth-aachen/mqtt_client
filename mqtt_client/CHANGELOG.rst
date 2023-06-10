@@ -2,6 +2,14 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (2023-06-10)
+------------------
+* Merge pull request #23 from ika-rwth-aachen/docker-ros
+  Integrate docker-ros
+* Merge pull request #16 from ika-rwth-aachen/dev/ros2
+  Add support for ROS2
+* Contributors: Lennart Reiher
+
 1.1.0 (2022-10-13)
 ------------------
 * Merge pull request #6 from ika-rwth-aachen/feature/primitive-msgs
