@@ -7,7 +7,7 @@ jobs:
   ros:
     runs-on: ubuntu-latest
     steps:
-      - uses: ika-rwth-aachen/docker-ros@main
+      - uses: ika-rwth-aachen/docker-ros@v1.0.0
         with:
           image-tag: ros
           base-image: rwthika/ros:latest
@@ -18,7 +18,7 @@ jobs:
   ros2:
     runs-on: ubuntu-latest
     steps:
-      - uses: ika-rwth-aachen/docker-ros@main
+      - uses: ika-rwth-aachen/docker-ros@v1.0.0
         with:
           image-tag: ros2
           base-image: rwthika/ros2:latest

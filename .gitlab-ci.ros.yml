@@ -1,5 +1,5 @@
 include:
-  - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
+  - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/v1.0.0/.gitlab-ci/docker-ros.yml
 
 variables:
   IMAGE_TAG: ros
