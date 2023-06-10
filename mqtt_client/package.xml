@@ -36,8 +36,8 @@
   <depend condition="$ROS_VERSION == 1">topic_tools</depend>
 
   <export>
-    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
     <nodelet condition="$ROS_VERSION == 1" plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 
