@@ -85,11 +85,11 @@ elseif(${ROS_VERSION} EQUAL 1)
     roscpp
     std_msgs
     topic_tools
+    rosfmt ## For fmt::format.
   )
 
   ## System dependencies are found with CMake's conventions
   find_package(PahoMqttCpp REQUIRED)
-  find_package(fmt REQUIRED)
   set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
 
 
