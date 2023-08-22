@@ -27,6 +27,7 @@
   <depend condition="$ROS_VERSION == 2">libpaho-mqttpp-dev</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
   <depend condition="$ROS_VERSION == 2">rcpputils</depend>
+  <depend condition="$ROS_VERSION == 2">fmt</depend>
 
   <!-- ROS1 -->
   <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
@@ -34,6 +35,7 @@
   <depend condition="$ROS_VERSION == 1">paho-mqtt-cpp</depend>
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
   <depend condition="$ROS_VERSION == 1">topic_tools</depend>
+  <depend condition="$ROS_VERSION == 1">rosfmt</depend> <!-- Needed for fmt library. -->
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
