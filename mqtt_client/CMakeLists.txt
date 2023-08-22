@@ -40,6 +40,7 @@ if(${ROS_VERSION} EQUAL 2)
     mqtt_client_interfaces
     rclcpp
     std_msgs
+    fmt
   )
 
   install(TARGETS
