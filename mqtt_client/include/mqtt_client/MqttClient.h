@@ -31,6 +31,7 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <string>
+#include <rosfmt/full> // fmt::format, fmt::join
 
 #include <mqtt/async_client.h>
 #include <mqtt_client_interfaces/IsConnected.h>
