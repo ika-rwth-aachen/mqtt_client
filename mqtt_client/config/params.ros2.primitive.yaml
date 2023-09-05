@@ -5,10 +5,16 @@ mqtt_client:
       port: 1883
     bridge:
       ros2mqtt:
-        ros_topic: /ping/primitive
-        mqtt_topic: pingpong/primitive
-        primitive: true
+        topics:
+          - ping
+        ping:
+          ros_topic: /ping/primitive
+          mqtt_topic: pingpong/primitive
+          primitive: true
       mqtt2ros:
-        mqtt_topic: pingpong/primitive
-        ros_topic: /pong/primitive
-        primitive: true
+        topics:
+          - pong
+        pong:
+          mqtt_topic: pingpong/primitive
+          ros_topic: /pong/primitive
+          primitive: true

@@ -5,8 +5,14 @@ mqtt_client:
       port: 1883
     bridge:
       ros2mqtt:
-        ros_topic: /ping/ros
-        mqtt_topic: pingpong/ros
+        topics:
+          - ping
+        ping:
+          ros_topic: /ping/ros
+          mqtt_topic: pingpong/ros
       mqtt2ros:
-        mqtt_topic: pingpong/ros
-        ros_topic: /pong/ros
+        topics:
+          - pong
+        pong:
+          mqtt_topic: pingpong/ros
+          ros_topic: /pong/ros
