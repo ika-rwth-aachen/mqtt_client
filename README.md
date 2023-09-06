@@ -262,7 +262,7 @@ client:
 
 ```yaml
 bridge:
-  ros2mqtt:            # array specifying which ROS topics to map to which MQTT topics
+  ros2mqtt:            # Array specifying which ROS topics to map to which MQTT topics
     - ros_topic:         # ROS topic whose messages are transformed to MQTT messages
       mqtt_topic:        # MQTT topic on which the corresponding ROS messages are sent to the broker
       primitive:         # [false] whether to publish as primitive message
@@ -273,7 +273,7 @@ bridge:
         mqtt:
           qos:             # [0] MQTT QoS value
           retained:        # [false] whether to retain MQTT message
-  mqtt2ros:            # array specifying which MQTT topics to map to which ROS topics
+  mqtt2ros:            # Array specifying which MQTT topics to map to which ROS topics
     - mqtt_topic:        # MQTT topic on which messages are received from the broker
       ros_topic:         # ROS topic on which corresponding MQTT messages are published
       primitive:         # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
@@ -303,7 +303,7 @@ bridge:
         mqtt:
           qos:               # [0] MQTT QoS value
           retained:          # [false] whether to retain MQTT message
-  mqtt2ros:            # array specifying which MQTT topics to map to which ROS topics
+  mqtt2ros:            # Object specifying which MQTT topics to map to which ROS topics
     topics:              # Array specifying which ROS topics to bridge
       - topic_name         # The topic that should be bridged, corresponds to the sub-object in the YAML
     topic_name:
