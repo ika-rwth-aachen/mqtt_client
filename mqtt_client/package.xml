@@ -23,6 +23,7 @@
 
   <!-- ROS2 -->
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <depend condition="$ROS_VERSION == 2">fmt</depend>
   <depend condition="$ROS_VERSION == 2">libpaho-mqtt-dev</depend>
   <depend condition="$ROS_VERSION == 2">libpaho-mqttpp-dev</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>

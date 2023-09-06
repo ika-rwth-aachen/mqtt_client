@@ -31,6 +31,8 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <string>
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
 
 #include <mqtt/async_client.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>

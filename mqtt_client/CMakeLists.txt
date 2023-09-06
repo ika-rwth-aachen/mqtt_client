@@ -18,6 +18,7 @@ if(${ROS_VERSION} EQUAL 2)
   find_package(mqtt_client_interfaces REQUIRED)
   find_package(rclcpp REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(fmt REQUIRED)
 
   # Paho MQTT C++ apt package doesn't include CMake config
   # find_package(PahoMqttCpp REQUIRED)
@@ -39,6 +40,7 @@ if(${ROS_VERSION} EQUAL 2)
     mqtt_client_interfaces
     rclcpp
     std_msgs
+    fmt
   )
 
   install(TARGETS
