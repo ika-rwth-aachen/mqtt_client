@@ -1,6 +1,6 @@
 name: industrial_ci
 
-on: push
+on: [push, pull_request]
 
 jobs:
   industrial_ci:

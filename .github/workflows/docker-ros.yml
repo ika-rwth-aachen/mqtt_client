@@ -14,7 +14,7 @@ jobs:
           command: roslaunch mqtt_client standalone.launch
           platform: amd64,arm64
           target: run
-  
+
   ros2:
     runs-on: ubuntu-latest
     steps:
@@ -26,4 +26,3 @@ jobs:
           platform: amd64,arm64
           target: run
           enable-push-as-latest: 'true'
-          

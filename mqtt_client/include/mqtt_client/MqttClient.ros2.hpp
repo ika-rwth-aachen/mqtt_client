@@ -32,8 +32,10 @@ SOFTWARE.
 #include <memory>
 #include <string>
 
-#include <mqtt/async_client.h>
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
+#include <mqtt/async_client.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <std_msgs/msg/float64.hpp>
@@ -124,6 +126,36 @@ class MqttClient : public rclcpp::Node,
    */
   template <typename T>
   bool loadParameter(const std::string& key, T& value, const T& default_value);
+
+  /**
+   * @brief Loads requested ROS parameter from parameter server.
+   *
+   * @tparam  T            type (one of int, double, bool)
+   *
+   * @param[in]   key      parameter name
+   * @param[out]  value    variable where to store the retrieved parameter
+   *
+   * @return  true         if parameter was successfully retrieved
+   * @return  false        if parameter was not found
+   */
+  template <typename T>
+  bool loadParameter(const std::string& key, std::vector<T>& value);
+
+  /**
+   * @brief Loads requested ROS parameter from parameter server, allows default
+   * value.
+   *
+   * @tparam  T            type (one of int, double, bool)
+   *
+   * @param[in]   key            parameter name
+   * @param[out]  value          variable where to store the retrieved parameter
+   * @param[in]   default_value  default value
+   *
+   * @return  true         if parameter was successfully retrieved
+   * @return  false        if parameter was not found or default was used
+   */
+  template <typename T>
+  bool loadParameter(const std::string& key, std::vector<T>& value, const std::vector<T>& default_value);
 
   /**
    * @brief Converts a string to a path object resolving paths relative to
@@ -321,9 +353,13 @@ class MqttClient : public rclcpp::Node,
     double keep_alive_interval;  ///< keep-alive interval
     int max_inflight;            ///< maximum number of inflight messages
     struct {
-      std::filesystem::path certificate;  ///< client certificate
-      std::filesystem::path key;          ///< client private keyfile
-      std::string password;  ///< decryption password for private key
+      std::filesystem::path certificate;    ///< client certificate
+      std::filesystem::path key;            ///< client private keyfile
+      std::string password;                 ///< decryption password for private key
+      int version;                          ///< TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
+      bool verify;                          ///< Verify the client should conduct
+                                            ///< post-connect checks
+      std::vector<std::string> alpn_protos; ///< list of ALPN protocols
     } tls;                   ///< SSL/TLS-related variables
   };
 
@@ -456,6 +492,32 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
   if (found)
     RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
                  std::to_string(value).c_str());
+  return found;
+}
+
+
+template <typename T>
+bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value)
+{
+  const bool found = get_parameter(key, value);
+  if (found)
+    RCLCPP_WARN(get_logger(), "Retrieved parameter '%s' = '[%s]'", key.c_str(),
+                  fmt::format("{}", fmt::join(value, ", ")).c_str());
+  return found;
+}
+
+
+template <typename T>
+bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value,
+                               const std::vector<T>& default_value)
+{
+  const bool found = get_parameter_or(key, value, default_value);
+  if (!found)
+    RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'",
+                key.c_str(), fmt::format("{}", fmt::join(value, ", ")).c_str());
+  if (found)
+    RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
+                  fmt::format("{}", fmt::join(value, ", ")).c_str());
   return found;
 }
 
