@@ -31,12 +31,12 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <string>
-#include <rosfmt/full.h> // fmt::format, fmt::join
 
-#include <mqtt/async_client.h>
 #include <mqtt_client_interfaces/IsConnected.h>
+#include <mqtt/async_client.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
+#include <rosfmt/full.h> // fmt::format, fmt::join
 #include <topic_tools/shape_shifter.h>
 
 
@@ -364,7 +364,7 @@ class MqttClient : public nodelet::Nodelet,
       std::filesystem::path certificate;    ///< client certificate
       std::filesystem::path key;            ///< client private keyfile
       std::string password;                 ///< decryption password for private key
-      int version;                          ///< TLS version
+      int version;                          ///< TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
       bool verify;                          ///< Verify the client should conduct
                                             ///< post-connect checks
       std::vector<std::string> alpn_protos; ///< list of ALPN protocols
