@@ -210,8 +210,8 @@ void MqttClient::loadParameters() {
   }
 
   param_desc.description = "The list of topics to bridge from MQTT to ROS";
-  auto mqtt2ros_topic_names = declare_parameter<std::vector<std::string>>("bridge.mqtt2ros.topics", std::vector<std::string>(), param_desc);
-  for (auto topic_name : mqtt2ros_topic_names)
+  const auto mqtt2ros_topic_names = declare_parameter<std::vector<std::string>>("bridge.mqtt2ros.topics", std::vector<std::string>(), param_desc);
+  for (const auto topic_name : mqtt2ros_topic_names)
   {
     param_desc.description = "MQTT topic on which messages are received from the broker";
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.mqtt_topic", topic_name), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
@@ -278,6 +278,7 @@ void MqttClient::loadParameters() {
 
   // ros2mqtt
   for (const auto& topic_name : ros2mqtt_topic_names) {
+
     rclcpp::Parameter ros_topic_param, mqtt_topic_param;
     if (get_parameter(fmt::format("bridge.ros2mqtt.{}.ros_topic", topic_name), ros_topic_param) &&
         get_parameter(fmt::format("bridge.ros2mqtt.{}.mqtt_topic", topic_name), mqtt_topic_param)) {

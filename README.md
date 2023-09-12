@@ -258,7 +258,7 @@ client:
 
 #### Bridge Parameters
 
-##### ROS1
+##### ROS 1
 
 ```yaml
 bridge:
@@ -285,7 +285,7 @@ bridge:
           latched:           # [false] whether to latch ROS message
 ```
 
-##### ROS2
+##### ROS 2
 
 ```yaml
 bridge:
