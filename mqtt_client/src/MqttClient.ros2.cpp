@@ -261,6 +261,9 @@ void MqttClient::loadParameters() {
     if (loadParameter("client.tls.certificate", client_tls_certificate)) {
       loadParameter("client.tls.key", client_tls_key);
       loadParameter("client.tls.password", client_config_.tls.password);
+      loadParameter("client.tls.version", client_config_.tls.version);
+      loadParameter("client.tls.verify", client_config_.tls.verify);
+      loadParameter("client.tls.alpn_protos", client_config_.tls.alpn_protos);
     }
   }
 
@@ -517,13 +520,16 @@ void MqttClient::setupClient() {
       if (!client_config_.tls.password.empty())
         ssl.set_private_key_password(client_config_.tls.password);
     }
+    ssl.set_ssl_version(client_config_.tls.version);
+    ssl.set_verify(client_config_.tls.verify);
+    ssl.set_alpn_protos(client_config_.tls.alpn_protos);
     connect_options_.set_ssl(ssl);
   }
 
   // create MQTT client
-  std::string protocol = broker_config_.tls.enabled ? "ssl" : "tcp";
-  std::string uri = protocol + std::string("://") + broker_config_.host +
-                    std::string(":") + std::to_string(broker_config_.port);
+  const std::string protocol = broker_config_.tls.enabled ? "ssl" : "tcp";
+  const std::string uri = fmt::format("{}://{}:{}", protocol, broker_config_.host,
+                                      broker_config_.port);
   try {
     if (client_config_.buffer.enabled) {
       client_ = std::shared_ptr<mqtt::async_client>(new mqtt::async_client(

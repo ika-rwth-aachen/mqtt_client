@@ -34,6 +34,7 @@
   <depend condition="$ROS_VERSION == 1">nodelet</depend>
   <depend condition="$ROS_VERSION == 1">paho-mqtt-cpp</depend>
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
+  <depend condition="$ROS_VERSION == 1">rosfmt</depend> <!-- Needed for fmt library. -->
   <depend condition="$ROS_VERSION == 1">topic_tools</depend>
 
   <export>

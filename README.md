@@ -254,6 +254,9 @@ client:
     certificate:          # client certificate file (only needed if broker requires client certificates; relative to ROS_HOME)
     key:                  # client private key file (relative to ROS_HOME)
     password:             # client private key password
+    version:              # TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
+    verify:               # verify the client should conduct post-connect checks.
+    alpn_protos:          # list of ALPN protocols (https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_alpn_protos.html)
 ```
 
 #### Bridge Parameters
