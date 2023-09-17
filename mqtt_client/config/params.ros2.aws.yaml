@@ -39,10 +39,14 @@ mqtt_client:
       # NOTE: It seems that AWS IOT only supports primitive topics. Using non-primitive
       # types results in the error message `Connection to broker lost, will try to reconnect...`
       ros2mqtt:
-        ros_topic: /ping/primitive
-        mqtt_topic: pingpong/primitive
-        primitive: true
+        ros_topics: 
+          - /ping/primitive
+        /ping/primitive:
+          mqtt_topic: pingpong/primitive
+          primitive: true
       mqtt2ros:
-        mqtt_topic: pingpong/primitive
-        ros_topic: /pong/primitive
-        primitive: true
+        mqtt_topics: 
+          - pingpong/primitive
+        pingpong/primitive:
+          ros_topic: /pong/primitive
+          primitive: true
