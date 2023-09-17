@@ -290,10 +290,9 @@ bridge:
 ```yaml
 bridge:
   ros2mqtt:            # Object specifying which ROS topics to map to which MQTT topics
-    topics:              # Array specifying which ROS topics to bridge
-      - topic_name         # The topic that should be bridged, corresponds to the sub-object in the YAML
-    topic_name:
-      ros_topic:           # ROS topic whose messages are transformed to MQTT messages
+    ros_topics:          # Array specifying which ROS topics to bridge
+      - {{ ros_topic_name }} # The ROS topic that should be bridged, corresponds to the sub-object in the YAML
+    {{ ros_topic_name }}:
       mqtt_topic:          # MQTT topic on which the corresponding ROS messages are sent to the broker
       primitive:           # [false] whether to publish as primitive message
       inject_timestamp:    # [false] whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)
@@ -304,10 +303,9 @@ bridge:
           qos:               # [0] MQTT QoS value
           retained:          # [false] whether to retain MQTT message
   mqtt2ros:            # Object specifying which MQTT topics to map to which ROS topics
-    topics:              # Array specifying which ROS topics to bridge
-      - topic_name         # The topic that should be bridged, corresponds to the sub-object in the YAML
-    topic_name:
-      mqtt_topic:          # MQTT topic on which messages are received from the broker
+    mqtt_topics:         # Array specifying which ROS topics to bridge
+      - {{ mqtt_topic_name }} # The MQTT topic that should be bridged, corresponds to the sub-object in the YAML
+    {{ mqtt_topic_name }}:
       ros_topic:           # ROS topic on which corresponding MQTT messages are published
       primitive:           # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
       advanced:
