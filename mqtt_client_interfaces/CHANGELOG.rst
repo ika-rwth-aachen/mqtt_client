@@ -2,6 +2,9 @@
 Changelog for package mqtt_client_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.1.0 (2023-09-18)
+------------------
+
 2.0.1 (2023-06-10)
 ------------------
 * fix unrecognized build type with catkin_make_isolated
