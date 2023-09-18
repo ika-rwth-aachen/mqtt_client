@@ -2,7 +2,7 @@
 
   <arg name="params_file" default="$(find-pkg-share mqtt_client)/config/params.ros2.yaml" />
 
-  <node pkg="mqtt_client" exec="mqtt_client_node" name="mqtt_client" output="screen">
+  <node pkg="mqtt_client" exec="mqtt_client" name="mqtt_client" output="screen">
     <param from="$(var params_file)" />
   </node>
 
