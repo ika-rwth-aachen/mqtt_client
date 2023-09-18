@@ -63,8 +63,10 @@ class MqttClient : public rclcpp::Node,
  public:
   /**
    * @brief Initializes node.
+   *
+   * @param[in]   options   ROS node options
    */
-  MqttClient();
+  explicit MqttClient(const rclcpp::NodeOptions& options);
 
  protected:
   /**
