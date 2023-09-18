@@ -2,6 +2,16 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.1.0 (2023-09-18)
+------------------
+* Merge pull request #31 from ika-rwth-aachen/features/ros2-component
+  ROS2 Component
+* Merge pull request #30 from oxin-ros/ros2-add-multiple-topics
+  ROS 2: add multiple topics
+* Merge pull request #28 from oxin-ros/add-ALPN-protocol-support-for-aws
+  Add ALPN protocol support for AWS
+* Contributors: David B, David Buckman, Lennart Reiher
+
 2.0.1 (2023-06-10)
 ------------------
 * fix unrecognized build type with catkin_make_isolated
