@@ -47,6 +47,9 @@ SOFTWARE.
 #include <std_msgs/msg/u_int64.hpp>
 #include <std_msgs/msg/u_int8.hpp>
 
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(mqtt_client::MqttClient)
+
 
 namespace mqtt_client {
 
@@ -138,7 +141,7 @@ bool primitiveRosMessageToString(
 }
 
 
-MqttClient::MqttClient() : Node("mqtt_client") {
+MqttClient::MqttClient(const rclcpp::NodeOptions& options) : Node("mqtt_client", options) {
 
   loadParameters();
   setup();
@@ -1007,13 +1010,3 @@ void MqttClient::on_failure(const mqtt::token& token) {
 }
 
 }  // namespace mqtt_client
-
-
-int main(int argc, char* argv[]) {
-
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<mqtt_client::MqttClient>());
-  rclcpp::shutdown();
-
-  return 0;
-}
