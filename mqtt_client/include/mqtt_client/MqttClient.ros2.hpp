@@ -35,6 +35,8 @@ SOFTWARE.
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
+#include <mqtt_client_interfaces/srv/new_mqtt_to_ros2.hpp>
+#include <mqtt_client_interfaces/srv/new_ros2_to_mqtt.hpp>
 #include <mqtt/async_client.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -278,6 +280,26 @@ class MqttClient : public rclcpp::Node,
     mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
 
   /**
+   * @brief ROS service that dynamically creates a ROS2 -> MQTT mapping. 
+   *
+   * @param request  service request
+   * @param response service response
+   */
+  void newRos2ToMqttService(
+    mqtt_client_interfaces::srv::NewRos2ToMqtt::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::NewRos2ToMqtt::Response::SharedPtr response);
+
+  /**
+   * @brief ROS service that dynamically creates an MQTT -> ROS2 mapping. 
+   *
+   * @param request  service request
+   * @param response service response
+   */
+  void newMqttToRos2Service(
+    mqtt_client_interfaces::srv::NewMqttToRos2::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::NewMqttToRos2::Response::SharedPtr response);
+
+  /**
    * @brief Callback for when the client receives a MQTT message from the
    * broker.
    *
@@ -431,6 +453,18 @@ class MqttClient : public rclcpp::Node,
    */
   rclcpp::Service<mqtt_client_interfaces::srv::IsConnected>::SharedPtr
     is_connected_service_;
+
+  /**
+   * @brief ROS Service server for providing dynamic ROS2 to MQTT mappings.
+   */
+  rclcpp::Service<mqtt_client_interfaces::srv::NewRos2ToMqtt>::SharedPtr
+    new_ros2_to_mqtt_service_;
+
+  /**
+   * @brief ROS Service server for providing dynamic MQTT to ROS2 mappings.
+   */
+  rclcpp::Service<mqtt_client_interfaces::srv::NewMqttToRos2>::SharedPtr
+    new_mqtt_to_ros2_service_;
 
   /**
    * @brief Status variable keeping track of connection status to broker
