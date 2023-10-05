@@ -79,6 +79,8 @@ For this demo, you may easily launch *Mosquitto* with its default configuration 
 docker run --rm --network host --name mosquitto eclipse-mosquitto
 ```
 
+For a more advanced setup of your own broker, check out our instructions for running an MQTT broker in Docker with enabled authentication and encryption [here](https://github.com/ika-rwth-aachen/mqtt-in-docker).
+
 #### Demo Configuration
 
 The *mqtt_client* is best configured with a ROS parameter *yaml* file. The configuration shown below (also see [`params.yaml`](mqtt_client/config/params.yaml) / [`params.ros2.yaml`](mqtt_client/config/params.ros2.yaml)) allows an exchange of messages as follows:
