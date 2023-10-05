@@ -455,7 +455,7 @@ class MqttClient : public rclcpp::Node,
     is_connected_service_;
 
   /**
-   * @brief ROS Service server for providing dynamic ROS2 to MQTT mappings.
+   * @brief ROS Service server for providing dynamic ROS to MQTT mappings.
    */
   rclcpp::Service<mqtt_client_interfaces::srv::NewRos2ToMqtt>::SharedPtr
     new_ros2_to_mqtt_service_;
