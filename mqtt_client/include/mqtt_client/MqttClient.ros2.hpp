@@ -35,8 +35,8 @@ SOFTWARE.
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
-#include <mqtt_client_interfaces/srv/new_mqtt_to_ros2.hpp>
-#include <mqtt_client_interfaces/srv/new_ros2_to_mqtt.hpp>
+#include <mqtt_client_interfaces/srv/register_mqtt_to_ros2.hpp>
+#include <mqtt_client_interfaces/srv/register_ros2_to_mqtt.hpp>
 #include <mqtt/async_client.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>

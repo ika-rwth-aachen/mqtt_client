@@ -914,9 +914,9 @@ void MqttClient::isConnectedService(
   response->connected = isConnected();
 }
 
-void MqttClient::newRos2ToMqttService(
-  mqtt_client_interfaces::srv::NewRos2ToMqtt::Request::SharedPtr request,
-  mqtt_client_interfaces::srv::NewRos2ToMqtt::Response::SharedPtr response){
+void MqttClient::registerRos2ToMqttService(
+  mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Response::SharedPtr response){
 
   //@TODO: Implement a response string
   (void) response; // Avoid compiler warning for unused parameter.
@@ -925,11 +925,11 @@ void MqttClient::newRos2ToMqttService(
   // Add mapping definition to ros2mqtt_
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[request->ros_topic];
   ros2mqtt.mqtt.topic = request->mqtt_topic;
-  ros2mqtt.primitive = request->is_primitive;
+  ros2mqtt.primitive = request->primitive;
   ros2mqtt.stamped = request->inject_timestamp;
-  ros2mqtt.ros.queue_size = request->queue_size;
-  ros2mqtt.mqtt.qos = request->qos;
-  ros2mqtt.mqtt.retained = request->is_retained;
+  ros2mqtt.ros.queue_size = request->ros_queue_size;
+  ros2mqtt.mqtt.qos = request->mqtt_qos;
+  ros2mqtt.mqtt.retained = request->mqtt_retained;
 
   if (ros2mqtt.stamped && ros2mqtt.primitive) {
         RCLCPP_WARN(
@@ -987,10 +987,10 @@ void MqttClient::registerMqttToRos2Service(
   // Add mapping definition to mqtt2ros_
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[request->mqtt_topic];
   mqtt2ros.ros.topic = request->ros_topic;
-  mqtt2ros.primitive = request->is_primitive;
-  mqtt2ros.mqtt.qos = request->qos;
-  mqtt2ros.ros.queue_size = request->queue_size;
-  mqtt2ros.ros.latched = request->is_latched;
+  mqtt2ros.primitive = request->primitive;
+  mqtt2ros.mqtt.qos = request->mqtt_qos;
+  mqtt2ros.ros.queue_size = request->ros_queue_size;
+  mqtt2ros.ros.latched = request->ros_latched;
   if(mqtt2ros.ros.latched){
     RCLCPP_WARN(get_logger(),
                     fmt::format("Parameter 'bridge.mqtt2ros.{}.advanced.ros.latched' is ignored "
