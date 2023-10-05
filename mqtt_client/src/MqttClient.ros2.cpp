@@ -451,14 +451,14 @@ void MqttClient::setup() {
 
   // create dynamic mappings services
 
-  new_ros2_to_mqtt_service_ =
-  create_service<mqtt_client_interfaces::srv::NewRos2ToMqtt>(
-      "new_ros2_to_mqtt", std::bind(&MqttClient::newRos2ToMqttService, this,
+  register_ros2_to_mqtt_service_ =
+  create_service<mqtt_client_interfaces::srv::RegisterRos2ToMqtt>(
+      "register_ros2_to_mqtt", std::bind(&MqttClient::registerRos2ToMqttService, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
-  new_mqtt_to_ros2_service_ =
-  create_service<mqtt_client_interfaces::srv::NewMqttToRos2>(
-      "new_mqtt_to_ros2", std::bind(&MqttClient::newMqttToRos2Service, this,
+  register_mqtt_to_ros2_service_ =
+  create_service<mqtt_client_interfaces::srv::RegisterMqttToRos2>(
+      "register_mqtt_to_ros2", std::bind(&MqttClient::registerMqttToRos2Service, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
 
@@ -977,9 +977,9 @@ void MqttClient::newRos2ToMqttService(
 
 }
 
-void MqttClient::newMqttToRos2Service(
-  mqtt_client_interfaces::srv::NewMqttToRos2::Request::SharedPtr request,
-  mqtt_client_interfaces::srv::NewMqttToRos2::Response::SharedPtr response){
+void MqttClient::registerMqttToRos2Service(
+  mqtt_client_interfaces::srv::RegisterMqttToRos2::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::RegisterMqttToRos2::Response::SharedPtr response){
 
   //@TODO: Implement a response string
   (void) response; // Avoid compiler warning for unused parameter.
