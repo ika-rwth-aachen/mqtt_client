@@ -1,6 +1,5 @@
-# This service is used to dynamically register new MQTT -> ROS2 mappings. 
-# Syntax is the same as the ones used on config files.
-# Remember to also register ROS2 -> MQTT.
+# This service is used to dynamically register new MQTT -> ROS mappings.
+
 string ros_topic
 string mqtt_topic 
 bool primitive false 
