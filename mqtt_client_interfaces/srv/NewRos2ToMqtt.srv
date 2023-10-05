@@ -3,9 +3,9 @@
 # Remember to also register MQTT -> ROS2.
 string ros_topic
 string mqtt_topic
-bool is_primitive false
+bool primitive false
 bool inject_timestamp false
-int32 queue_size 1
-int32 qos 0
-bool is_retained false
+uint32 ros_queue_size 1
+uint8 mqtt_qos 0
+bool mqtt_retained false
 ---
