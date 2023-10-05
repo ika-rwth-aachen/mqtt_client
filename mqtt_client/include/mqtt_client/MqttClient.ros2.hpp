@@ -280,7 +280,7 @@ class MqttClient : public rclcpp::Node,
     mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
 
   /**
-   * @brief ROS service that dynamically creates a ROS2 -> MQTT mapping. 
+   * @brief ROS service that dynamically creates a ROS -> MQTT mapping. 
    *
    * @param request  service request
    * @param response service response
@@ -290,7 +290,7 @@ class MqttClient : public rclcpp::Node,
     mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Response::SharedPtr response);
 
   /**
-   * @brief ROS service that dynamically creates an MQTT -> ROS2 mapping. 
+   * @brief ROS service that dynamically creates an MQTT -> ROS mapping. 
    *
    * @param request  service request
    * @param response service response
@@ -461,7 +461,7 @@ class MqttClient : public rclcpp::Node,
     register_ros2_to_mqtt_service_;
 
   /**
-   * @brief ROS Service server for providing dynamic MQTT to ROS2 mappings.
+   * @brief ROS Service server for providing dynamic MQTT to ROS mappings.
    */
   rclcpp::Service<mqtt_client_interfaces::srv::RegisterMqttToRos2>::SharedPtr
     register_mqtt_to_ros2_service_;
