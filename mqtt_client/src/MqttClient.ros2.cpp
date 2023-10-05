@@ -928,7 +928,7 @@ void MqttClient::registerRos2ToMqttService(
   ros2mqtt.primitive = request->primitive;
   ros2mqtt.stamped = request->inject_timestamp;
   ros2mqtt.ros.queue_size = request->ros_queue_size;
-  ros2mqtt.mqtt.qos = request->mqtt_qos;
+  ros2mqtt.mqtt.qos = request->mqtt_qos; 
   ros2mqtt.mqtt.retained = request->mqtt_retained;
 
   if (ros2mqtt.stamped && ros2mqtt.primitive) {
@@ -951,7 +951,10 @@ void MqttClient::registerRos2ToMqttService(
 
   const auto all_topics_and_types = get_topic_names_and_types();
   if(all_topics_and_types.count(request->ros_topic)){
+
+
     // check if message type has changed
+
       const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
       if (msg_type == ros2mqtt.ros.msg_type) return;
       ros2mqtt.ros.msg_type = msg_type;
@@ -971,10 +974,6 @@ void MqttClient::registerRos2ToMqttService(
       RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
                   request->ros_topic.c_str(), msg_type.c_str());
   }
-
-  // 
-
-
 }
 
 void MqttClient::registerMqttToRos2Service(
