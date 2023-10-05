@@ -947,7 +947,8 @@ void MqttClient::newRos2ToMqttService(
 
   // Setup subscription 
 
-  // Check if Ros2 topic exists.
+  // check if ROS topic exists
+
   const auto all_topics_and_types = get_topic_names_and_types();
   if(all_topics_and_types.count(request->ros_topic)){
     // check if message type has changed
