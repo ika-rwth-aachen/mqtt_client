@@ -7,4 +7,4 @@ uint8 mqtt_qos 0
 uint32 ros_queue_size 1
 bool ros_latched false
 ---
-
+bool success

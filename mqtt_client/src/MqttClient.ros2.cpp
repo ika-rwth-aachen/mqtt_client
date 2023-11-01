@@ -918,9 +918,7 @@ void MqttClient::registerRos2ToMqttService(
   mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Request::SharedPtr request,
   mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Response::SharedPtr response){
 
-  //@TODO: Implement a response string
-  (void) response; // Avoid compiler warning for unused parameter.
-
+ 
 
   // Add mapping definition to ros2mqtt_
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[request->ros_topic];
@@ -953,26 +951,28 @@ void MqttClient::registerRos2ToMqttService(
   if(all_topics_and_types.count(request->ros_topic)){
 
 
-    // check if message type has changed
+  // check if message type has changed
 
-      const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
-      if (msg_type == ros2mqtt.ros.msg_type) return;
-      ros2mqtt.ros.msg_type = msg_type;
+  const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
+  if (msg_type == ros2mqtt.ros.msg_type) return;
+  ros2mqtt.ros.msg_type = msg_type;
 
-      // create new generic subscription, if message type has changed
-      std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)>
-        bound_callback_func = std::bind(&MqttClient::ros2mqtt, this,
-                                        std::placeholders::_1, request->ros_topic);
-      try {
-        ros2mqtt.ros.subscriber = create_generic_subscription(
-          request->ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
-      } catch (rclcpp::exceptions::RCLError& e) {
-        RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
-                     e.what());
-        return;
-      }
-      RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
-                  request->ros_topic.c_str(), msg_type.c_str());
+  // create new generic subscription, if message type has changed
+  std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)>
+    bound_callback_func = std::bind(&MqttClient::ros2mqtt, this,
+                                    std::placeholders::_1, request->ros_topic);
+  try {
+    ros2mqtt.ros.subscriber = create_generic_subscription(
+      request->ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+  } catch (rclcpp::exceptions::RCLError& e) {
+    RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
+                  e.what());
+    response->success = false;
+    return;
+  }
+  RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
+              request->ros_topic.c_str(), msg_type.c_str());
+    response->success = true;
   }
 }
 
@@ -980,8 +980,6 @@ void MqttClient::registerMqttToRos2Service(
   mqtt_client_interfaces::srv::RegisterMqttToRos2::Request::SharedPtr request,
   mqtt_client_interfaces::srv::RegisterMqttToRos2::Response::SharedPtr response){
 
-  //@TODO: Implement a response string
-  (void) response; // Avoid compiler warning for unused parameter.
 
   // Add mapping definition to mqtt2ros_
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[request->mqtt_topic];
@@ -1007,6 +1005,7 @@ void MqttClient::registerMqttToRos2Service(
     mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + request->mqtt_topic;
   client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
   RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
+  response->success = true;
 }
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
