@@ -838,8 +838,8 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
     serializeRosMessage(msg, serialized_msg);
   }
 
-  // if ROS message type has changed
-  if (ros_msg_type != mqtt2ros.ros.msg_type) {
+  // if ROS message type has changed or if mapping is stale
+  if (ros_msg_type != mqtt2ros.ros.msg_type || mqtt2ros.is_stale) {
 
     mqtt2ros.ros.msg_type = ros_msg_type;
     RCLCPP_INFO(get_logger(),
@@ -855,6 +855,7 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
                    e.what());
       return;
     }
+    mqtt2ros.is_stale = false;
   }
 
   // publish
@@ -951,10 +952,8 @@ void MqttClient::registerRos2ToMqttService(
   if(all_topics_and_types.count(request->ros_topic)){
 
 
-  // check if message type has changed
 
   const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
-  if (msg_type == ros2mqtt.ros.msg_type) return;
   ros2mqtt.ros.msg_type = msg_type;
 
   // create new generic subscription, if message type has changed
@@ -1006,6 +1005,8 @@ void MqttClient::registerMqttToRos2Service(
   client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
   RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
   response->success = true;
+  // Mark as stale to force creation of new publisher
+  mqtt2ros.is_stale = true;
 }
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
@@ -1050,8 +1051,8 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
                           kRosMsgTypeMqttTopicPrefix.length());
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
 
-    // if ROS message type has changed
-    if (ros_msg_type.name != mqtt2ros.ros.msg_type) {
+    // if ROS message type has changed or if mapping is stale
+    if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.is_stale) {
 
       mqtt2ros.ros.msg_type = ros_msg_type.name;
       mqtt2ros.stamped = ros_msg_type.stamped;
@@ -1068,7 +1069,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
                      e.what());
         return;
       }
-
+      mqtt2ros.is_stale = false;
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
       RCLCPP_DEBUG(get_logger(), "Subscribed MQTT topic '%s'",
