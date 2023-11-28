@@ -475,9 +475,10 @@ void MqttClient::setupSubscriptions() {
   for (auto& [ros_topic, ros2mqtt] : ros2mqtt_) {
     if (all_topics_and_types.count(ros_topic)) {
 
-      // check if message type has changed
+      // check if message type has changed or if mapping is stale
       const std::string& msg_type = all_topics_and_types.at(ros_topic)[0];
-      if (msg_type == ros2mqtt.ros.msg_type) continue;
+      if (msg_type == ros2mqtt.ros.msg_type && !ros2mqtt.ros.is_stale) continue;
+      ros2mqtt.ros.is_stale = false;
       ros2mqtt.ros.msg_type = msg_type;
 
       // create new generic subscription, if message type has changed
@@ -836,7 +837,7 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
   }
 
   // if ROS message type has changed or if mapping is stale
-  if (ros_msg_type != mqtt2ros.ros.msg_type || mqtt2ros.is_stale) {
+  if (ros_msg_type != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
 
     mqtt2ros.ros.msg_type = ros_msg_type;
     RCLCPP_INFO(get_logger(),
@@ -852,7 +853,7 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
                    e.what());
       return;
     }
-    mqtt2ros.is_stale = false;
+    mqtt2ros.ros.is_stale = false;
   }
 
   // publish
@@ -918,6 +919,7 @@ void MqttClient::newRos2MqttBridge(
 
   // add mapping definition to ros2mqtt_
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[request->ros_topic];
+  ros2mqtt.ros.is_stale = true;
   ros2mqtt.mqtt.topic = request->mqtt_topic;
   ros2mqtt.primitive = request->primitive;
   ros2mqtt.stamped = request->inject_timestamp;
@@ -939,32 +941,10 @@ void MqttClient::newRos2MqttBridge(
                   ros2mqtt.mqtt.topic.c_str(),
                   ros2mqtt.stamped ? "and measuring latency" : "");
 
-  // setup subscription
+  // (re-)setup ROS subscriptions
+  setupSubscriptions();
 
-  // check if ROS topic exists
-  const auto all_topics_and_types = get_topic_names_and_types();
-  if (all_topics_and_types.count(request->ros_topic)) {
-
-    const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
-    ros2mqtt.ros.msg_type = msg_type;
-
-    // create new generic subscription, if message type has changed
-    std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)>
-      bound_callback_func = std::bind(&MqttClient::ros2mqtt, this,
-                                      std::placeholders::_1, request->ros_topic);
-    try {
-      ros2mqtt.ros.subscriber = create_generic_subscription(
-        request->ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
-    } catch (rclcpp::exceptions::RCLError& e) {
-      RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
-                    e.what());
-      response->success = false;
-      return;
-    }
-    RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
-                request->ros_topic.c_str(), msg_type.c_str());
-    response->success = true;
-  }
+  response->success = true;
 }
 
 void MqttClient::newMqtt2RosBridge(
@@ -973,6 +953,7 @@ void MqttClient::newMqtt2RosBridge(
 
   // add mapping definition to mqtt2ros_
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[request->mqtt_topic];
+  mqtt2ros.ros.is_stale = true;
   mqtt2ros.ros.topic = request->ros_topic;
   mqtt2ros.primitive = request->primitive;
   mqtt2ros.mqtt.qos = request->mqtt_qos;
@@ -995,10 +976,8 @@ void MqttClient::newMqtt2RosBridge(
     mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + request->mqtt_topic;
   client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
   RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
-  response->success = true;
 
-  // mark as stale to force creation of new ROS publisher
-  mqtt2ros.is_stale = true;
+  response->success = true;
 }
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
@@ -1044,7 +1023,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
 
     // if ROS message type has changed or if mapping is stale
-    if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.is_stale) {
+    if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
 
       mqtt2ros.ros.msg_type = ros_msg_type.name;
       mqtt2ros.stamped = ros_msg_type.stamped;
@@ -1061,7 +1040,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
                      e.what());
         return;
       }
-      mqtt2ros.is_stale = false;
+      mqtt2ros.ros.is_stale = false;
 
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);

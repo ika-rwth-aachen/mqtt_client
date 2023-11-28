@@ -396,6 +396,7 @@ class MqttClient : public rclcpp::Node,
         subscriber;          ///< generic ROS subscriber
       std::string msg_type;  ///< message type of subscriber
       int queue_size = 1;    ///< ROS subscriber queue size
+      bool is_stale = false; ///< whether a new generic publisher/subscriber is required
     } ros;                   ///< ROS-related variables
     struct {
       std::string topic;      ///< MQTT topic
@@ -421,11 +422,11 @@ class MqttClient : public rclcpp::Node,
         latency_publisher;   ///< ROS publisher for latency
       int queue_size = 1;    ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
+      bool is_stale = false; ///< whether a new generic publisher/subscriber is required
     } ros;                   ///< ROS-related variables
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
-    bool is_stale = false;   ///< whether a new generic publisher/subscriber is required
   };
 
  protected:
