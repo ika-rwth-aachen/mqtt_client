@@ -461,7 +461,6 @@ void MqttClient::setup() {
       "new_mqtt2ros_bridge", std::bind(&MqttClient::newMqtt2RosBridge, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
-
   // setup subscribers; check for new types every second
   check_subscriptions_timer_ =
     create_wall_timer(std::chrono::duration<double>(1.0),
@@ -919,9 +918,7 @@ void MqttClient::newRos2MqttBridge(
   mqtt_client_interfaces::srv::NewRos2MqttBridge::Request::SharedPtr request,
   mqtt_client_interfaces::srv::NewRos2MqttBridge::Response::SharedPtr response){
 
-
-
-  // Add mapping definition to ros2mqtt_
+  // add mapping definition to ros2mqtt_
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[request->ros_topic];
   ros2mqtt.mqtt.topic = request->mqtt_topic;
   ros2mqtt.primitive = request->primitive;
@@ -944,33 +941,30 @@ void MqttClient::newRos2MqttBridge(
                   ros2mqtt.mqtt.topic.c_str(),
                   ros2mqtt.stamped ? "and measuring latency" : "");
 
-  // Setup subscription
+  // setup subscription
 
   // check if ROS topic exists
-
   const auto all_topics_and_types = get_topic_names_and_types();
-  if(all_topics_and_types.count(request->ros_topic)){
+  if (all_topics_and_types.count(request->ros_topic)) {
 
+    const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
+    ros2mqtt.ros.msg_type = msg_type;
 
-
-  const std::string& msg_type = all_topics_and_types.at(request->ros_topic)[0];
-  ros2mqtt.ros.msg_type = msg_type;
-
-  // create new generic subscription, if message type has changed
-  std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)>
-    bound_callback_func = std::bind(&MqttClient::ros2mqtt, this,
-                                    std::placeholders::_1, request->ros_topic);
-  try {
-    ros2mqtt.ros.subscriber = create_generic_subscription(
-      request->ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
-  } catch (rclcpp::exceptions::RCLError& e) {
-    RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
-                  e.what());
-    response->success = false;
-    return;
-  }
-  RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
-              request->ros_topic.c_str(), msg_type.c_str());
+    // create new generic subscription, if message type has changed
+    std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)>
+      bound_callback_func = std::bind(&MqttClient::ros2mqtt, this,
+                                      std::placeholders::_1, request->ros_topic);
+    try {
+      ros2mqtt.ros.subscriber = create_generic_subscription(
+        request->ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+    } catch (rclcpp::exceptions::RCLError& e) {
+      RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
+                    e.what());
+      response->success = false;
+      return;
+    }
+    RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
+                request->ros_topic.c_str(), msg_type.c_str());
     response->success = true;
   }
 }
@@ -979,15 +973,14 @@ void MqttClient::newMqtt2RosBridge(
   mqtt_client_interfaces::srv::NewMqtt2RosBridge::Request::SharedPtr request,
   mqtt_client_interfaces::srv::NewMqtt2RosBridge::Response::SharedPtr response){
 
-
-  // Add mapping definition to mqtt2ros_
+  // add mapping definition to mqtt2ros_
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[request->mqtt_topic];
   mqtt2ros.ros.topic = request->ros_topic;
   mqtt2ros.primitive = request->primitive;
   mqtt2ros.mqtt.qos = request->mqtt_qos;
   mqtt2ros.ros.queue_size = request->ros_queue_size;
   mqtt2ros.ros.latched = request->ros_latched;
-  if(mqtt2ros.ros.latched){
+  if (mqtt2ros.ros.latched) {
     RCLCPP_WARN(get_logger(),
                     fmt::format("Parameter 'bridge.mqtt2ros.{}.advanced.ros.latched' is ignored "
                     "since ROS 2 does not easily support latched topics.", request->mqtt_topic).c_str());
@@ -998,14 +991,15 @@ void MqttClient::newMqtt2RosBridge(
                   request->mqtt_topic.c_str(), mqtt2ros.primitive ? "primitive " : "",
                   mqtt2ros.ros.topic.c_str());
 
-  // Subscribe to the MQTT topic
+  // subscribe to the MQTT topic
   std::string mqtt_topic_to_subscribe = request->mqtt_topic;
-  if(!mqtt2ros.primitive)
+  if (!mqtt2ros.primitive)
     mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + request->mqtt_topic;
   client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
   RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
   response->success = true;
-  // Mark as stale to force creation of new publisher
+
+  // mark as stale to force creation of new ROS publisher
   mqtt2ros.is_stale = true;
 }
 
@@ -1070,6 +1064,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
         return;
       }
       mqtt2ros.is_stale = false;
+
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
       RCLCPP_DEBUG(get_logger(), "Subscribed MQTT topic '%s'",
