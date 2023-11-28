@@ -381,7 +381,7 @@ Enables connected ROS-based devices or robots to exchange ROS messages via an MQ
 
 ###### Services
 
-- `is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
+- `~is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
   Returns whether the client is connected to the MQTT broker.
 
 ###### Parameters
@@ -410,13 +410,13 @@ Enables connected ROS-based devices or robots to exchange ROS messages via an MQ
 
 ###### Services
 
-- `is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
+- `~/is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
   Returns whether the client is connected to the MQTT broker.
 
-- `new_ros2mqtt_bridge` ([`mqtt_client/srv/NewRos2MqttBridge`](mqtt_client_interfaces/srv/NewRos2MqttBridge.srv))
+- `~/new_ros2mqtt_bridge` ([`mqtt_client/srv/NewRos2MqttBridge`](mqtt_client_interfaces/srv/NewRos2MqttBridge.srv))
   Returns whether a new ROS -> MQTT bridge was created.
 
-- `new_mqtt2ros_bridge` ([`mqtt_client/srv/NewMqtt2RosBridge`](mqtt_client_interfaces/srv/NewMqtt2RosBridge.srv))
+- `~/new_mqtt2ros_bridge` ([`mqtt_client/srv/NewMqtt2RosBridge`](mqtt_client_interfaces/srv/NewMqtt2RosBridge.srv))
   Returns whether a new MQTT -> ROS bridge was created.
 
 

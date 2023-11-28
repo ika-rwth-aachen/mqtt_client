@@ -446,19 +446,17 @@ void MqttClient::setup() {
   // create ROS service server
   is_connected_service_ =
     create_service<mqtt_client_interfaces::srv::IsConnected>(
-      "is_connected", std::bind(&MqttClient::isConnectedService, this,
+      "~/is_connected", std::bind(&MqttClient::isConnectedService, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
   // create dynamic mappings services
-
   new_ros2mqtt_bridge_service_ =
   create_service<mqtt_client_interfaces::srv::NewRos2MqttBridge>(
-      "new_ros2mqtt_bridge", std::bind(&MqttClient::newRos2MqttBridge, this,
+      "~/new_ros2mqtt_bridge", std::bind(&MqttClient::newRos2MqttBridge, this,
                                 std::placeholders::_1, std::placeholders::_2));
-
   new_mqtt2ros_bridge_service_ =
   create_service<mqtt_client_interfaces::srv::NewMqtt2RosBridge>(
-      "new_mqtt2ros_bridge", std::bind(&MqttClient::newMqtt2RosBridge, this,
+      "~/new_mqtt2ros_bridge", std::bind(&MqttClient::newMqtt2RosBridge, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
   // setup subscribers; check for new types every second
