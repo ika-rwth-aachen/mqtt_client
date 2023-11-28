@@ -413,11 +413,11 @@ Enables connected ROS-based devices or robots to exchange ROS messages via an MQ
 - `is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
   Returns whether the client is connected to the MQTT broker.
 
-- `register_ros2_to_mqtt` ([`mqtt_client/srv/RegisterRos2ToMqtt`](mqtt_client_interfaces/srv/RegisterRos2ToMqtt.srv))
-  Returns whether the ROS2 -> MQTT mapping was created.
+- `new_ros2mqtt_bridge` ([`mqtt_client/srv/NewRos2MqttBridge`](mqtt_client_interfaces/srv/NewRos2MqttBridge.srv))
+  Returns whether a new ROS -> MQTT bridge was created.
 
-- `register_mqtt_to_ros2` ([`mqtt_client/srv/RegisterMqttToRos2`](mqtt_client_interfaces/srv/RegisterMqttToRos2.srv))
-  Returns whether the MQTT -> ROS2 mapping was created.
+- `new_mqtt2ros_bridge` ([`mqtt_client/srv/NewMqtt2RosBridge`](mqtt_client_interfaces/srv/NewMqtt2RosBridge.srv))
+  Returns whether a new MQTT -> ROS bridge was created.
 
 
 

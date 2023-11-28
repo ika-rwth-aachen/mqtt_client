@@ -35,8 +35,8 @@ SOFTWARE.
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
-#include <mqtt_client_interfaces/srv/register_mqtt_to_ros2.hpp>
-#include <mqtt_client_interfaces/srv/register_ros2_to_mqtt.hpp>
+#include <mqtt_client_interfaces/srv/new_mqtt2_ros_bridge.hpp>
+#include <mqtt_client_interfaces/srv/new_ros2_mqtt_bridge.hpp>
 #include <mqtt/async_client.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -280,24 +280,24 @@ class MqttClient : public rclcpp::Node,
     mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
 
   /**
-   * @brief ROS service that dynamically creates a ROS -> MQTT mapping. 
+   * @brief ROS service that dynamically creates a ROS -> MQTT mapping.
    *
    * @param request  service request
    * @param response service response
    */
-  void registerRos2ToMqttService(
-    mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Request::SharedPtr request,
-    mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Response::SharedPtr response);
+  void newRos2MqttBridge(
+    mqtt_client_interfaces::srv::NewRos2MqttBridge::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::NewRos2MqttBridge::Response::SharedPtr response);
 
   /**
-   * @brief ROS service that dynamically creates an MQTT -> ROS mapping. 
+   * @brief ROS service that dynamically creates an MQTT -> ROS mapping.
    *
    * @param request  service request
    * @param response service response
    */
-  void registerMqttToRos2Service(
-    mqtt_client_interfaces::srv::RegisterMqttToRos2::Request::SharedPtr request,
-    mqtt_client_interfaces::srv::RegisterMqttToRos2::Response::SharedPtr response);
+  void newMqtt2RosBridge(
+    mqtt_client_interfaces::srv::NewMqtt2RosBridge::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::NewMqtt2RosBridge::Response::SharedPtr response);
 
   /**
    * @brief Callback for when the client receives a MQTT message from the
@@ -458,14 +458,14 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief ROS Service server for providing dynamic ROS to MQTT mappings.
    */
-  rclcpp::Service<mqtt_client_interfaces::srv::RegisterRos2ToMqtt>::SharedPtr
-    register_ros2_to_mqtt_service_;
+  rclcpp::Service<mqtt_client_interfaces::srv::NewRos2MqttBridge>::SharedPtr
+    new_ros2mqtt_bridge_service_;
 
   /**
    * @brief ROS Service server for providing dynamic MQTT to ROS mappings.
    */
-  rclcpp::Service<mqtt_client_interfaces::srv::RegisterMqttToRos2>::SharedPtr
-    register_mqtt_to_ros2_service_;
+  rclcpp::Service<mqtt_client_interfaces::srv::NewMqtt2RosBridge>::SharedPtr
+    new_mqtt2ros_bridge_service_;
 
   /**
    * @brief Status variable keeping track of connection status to broker

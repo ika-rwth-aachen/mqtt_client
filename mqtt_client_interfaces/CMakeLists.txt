@@ -14,8 +14,8 @@ if(${ROS_VERSION} EQUAL 2)
   rosidl_generate_interfaces(${PROJECT_NAME}
     msg/RosMsgType.msg
     srv/IsConnected.srv
-    srv/RegisterMqttToRos2.srv
-    srv/RegisterRos2ToMqtt.srv
+    srv/NewMqtt2RosBridge.srv
+    srv/NewRos2MqttBridge.srv
     DEPENDENCIES std_msgs
   )
 

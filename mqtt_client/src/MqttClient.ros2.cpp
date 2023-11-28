@@ -451,14 +451,14 @@ void MqttClient::setup() {
 
   // create dynamic mappings services
 
-  register_ros2_to_mqtt_service_ =
-  create_service<mqtt_client_interfaces::srv::RegisterRos2ToMqtt>(
-      "register_ros2_to_mqtt", std::bind(&MqttClient::registerRos2ToMqttService, this,
+  new_ros2mqtt_bridge_service_ =
+  create_service<mqtt_client_interfaces::srv::NewRos2MqttBridge>(
+      "new_ros2mqtt_bridge", std::bind(&MqttClient::newRos2MqttBridge, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
-  register_mqtt_to_ros2_service_ =
-  create_service<mqtt_client_interfaces::srv::RegisterMqttToRos2>(
-      "register_mqtt_to_ros2", std::bind(&MqttClient::registerMqttToRos2Service, this,
+  new_mqtt2ros_bridge_service_ =
+  create_service<mqtt_client_interfaces::srv::NewMqtt2RosBridge>(
+      "new_mqtt2ros_bridge", std::bind(&MqttClient::newMqtt2RosBridge, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
 
@@ -915,11 +915,11 @@ void MqttClient::isConnectedService(
   response->connected = isConnected();
 }
 
-void MqttClient::registerRos2ToMqttService(
-  mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Request::SharedPtr request,
-  mqtt_client_interfaces::srv::RegisterRos2ToMqtt::Response::SharedPtr response){
+void MqttClient::newRos2MqttBridge(
+  mqtt_client_interfaces::srv::NewRos2MqttBridge::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::NewRos2MqttBridge::Response::SharedPtr response){
 
- 
+
 
   // Add mapping definition to ros2mqtt_
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[request->ros_topic];
@@ -927,7 +927,7 @@ void MqttClient::registerRos2ToMqttService(
   ros2mqtt.primitive = request->primitive;
   ros2mqtt.stamped = request->inject_timestamp;
   ros2mqtt.ros.queue_size = request->ros_queue_size;
-  ros2mqtt.mqtt.qos = request->mqtt_qos; 
+  ros2mqtt.mqtt.qos = request->mqtt_qos;
   ros2mqtt.mqtt.retained = request->mqtt_retained;
 
   if (ros2mqtt.stamped && ros2mqtt.primitive) {
@@ -944,7 +944,7 @@ void MqttClient::registerRos2ToMqttService(
                   ros2mqtt.mqtt.topic.c_str(),
                   ros2mqtt.stamped ? "and measuring latency" : "");
 
-  // Setup subscription 
+  // Setup subscription
 
   // check if ROS topic exists
 
@@ -975,9 +975,9 @@ void MqttClient::registerRos2ToMqttService(
   }
 }
 
-void MqttClient::registerMqttToRos2Service(
-  mqtt_client_interfaces::srv::RegisterMqttToRos2::Request::SharedPtr request,
-  mqtt_client_interfaces::srv::RegisterMqttToRos2::Response::SharedPtr response){
+void MqttClient::newMqtt2RosBridge(
+  mqtt_client_interfaces::srv::NewMqtt2RosBridge::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::NewMqtt2RosBridge::Response::SharedPtr response){
 
 
   // Add mapping definition to mqtt2ros_
