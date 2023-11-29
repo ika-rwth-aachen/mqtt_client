@@ -2,6 +2,14 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.0 (2023-11-29)
+------------------
+* Merge pull request `#35 <https://github.com/ika-rwth-aachen/mqtt_client/issues/35>`_ from mvccogo/main
+  Dynamic registration of topics
+* Merge pull request `#36 <https://github.com/ika-rwth-aachen/mqtt_client/issues/36>`_ from ika-rwth-aachen/fix/ros1-latencies
+  Fix bug in ros1 latency deserialization
+* Contributors: Lennart Reiher, Matheus V. C. Cogo, mvccogo
+
 2.1.0 (2023-09-18)
 ------------------
 * Merge pull request #31 from ika-rwth-aachen/features/ros2-component

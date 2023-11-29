@@ -2,6 +2,12 @@
 Changelog for package mqtt_client_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.0 (2023-11-29)
+------------------
+* Merge pull request `#35 <https://github.com/ika-rwth-aachen/mqtt_client/issues/35>`_ from mvccogo/main
+  Dynamic registration of topics
+* Contributors: Lennart Reiher, Matheus V. C. Cogo, mvccogo
+
 2.1.0 (2023-09-18)
 ------------------
 
