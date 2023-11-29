@@ -35,6 +35,8 @@ SOFTWARE.
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
+#include <mqtt_client_interfaces/srv/new_mqtt2_ros_bridge.hpp>
+#include <mqtt_client_interfaces/srv/new_ros2_mqtt_bridge.hpp>
 #include <mqtt/async_client.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -278,6 +280,26 @@ class MqttClient : public rclcpp::Node,
     mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response);
 
   /**
+   * @brief ROS service that dynamically creates a ROS -> MQTT mapping.
+   *
+   * @param request  service request
+   * @param response service response
+   */
+  void newRos2MqttBridge(
+    mqtt_client_interfaces::srv::NewRos2MqttBridge::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::NewRos2MqttBridge::Response::SharedPtr response);
+
+  /**
+   * @brief ROS service that dynamically creates an MQTT -> ROS mapping.
+   *
+   * @param request  service request
+   * @param response service response
+   */
+  void newMqtt2RosBridge(
+    mqtt_client_interfaces::srv::NewMqtt2RosBridge::Request::SharedPtr request,
+    mqtt_client_interfaces::srv::NewMqtt2RosBridge::Response::SharedPtr response);
+
+  /**
    * @brief Callback for when the client receives a MQTT message from the
    * broker.
    *
@@ -374,6 +396,7 @@ class MqttClient : public rclcpp::Node,
         subscriber;          ///< generic ROS subscriber
       std::string msg_type;  ///< message type of subscriber
       int queue_size = 1;    ///< ROS subscriber queue size
+      bool is_stale = false; ///< whether a new generic publisher/subscriber is required
     } ros;                   ///< ROS-related variables
     struct {
       std::string topic;      ///< MQTT topic
@@ -399,6 +422,7 @@ class MqttClient : public rclcpp::Node,
         latency_publisher;   ///< ROS publisher for latency
       int queue_size = 1;    ///< ROS publisher queue size
       bool latched = false;  ///< whether to latch ROS message
+      bool is_stale = false; ///< whether a new generic publisher/subscriber is required
     } ros;                   ///< ROS-related variables
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
@@ -431,6 +455,18 @@ class MqttClient : public rclcpp::Node,
    */
   rclcpp::Service<mqtt_client_interfaces::srv::IsConnected>::SharedPtr
     is_connected_service_;
+
+  /**
+   * @brief ROS Service server for providing dynamic ROS to MQTT mappings.
+   */
+  rclcpp::Service<mqtt_client_interfaces::srv::NewRos2MqttBridge>::SharedPtr
+    new_ros2mqtt_bridge_service_;
+
+  /**
+   * @brief ROS Service server for providing dynamic MQTT to ROS mappings.
+   */
+  rclcpp::Service<mqtt_client_interfaces::srv::NewMqtt2RosBridge>::SharedPtr
+    new_mqtt2ros_bridge_service_;
 
   /**
    * @brief Status variable keeping track of connection status to broker
