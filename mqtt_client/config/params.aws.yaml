@@ -5,7 +5,7 @@ tls_1_2: &tls_1_2 3
 
 broker:
   # YOU MUST CHANGE THIS ENDPOINT
-  # Can be found by executing: aws iot describe-endpoint
+  # Can be found by executing: aws iot describe-endpoint --endpoint-type iot:Data-ATS
   host: not-a-real-endpoint-please-use-your-own.us-west-2.amazonaws.com
   port: 8883
   tls:
