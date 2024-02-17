@@ -37,9 +37,11 @@ SOFTWARE.
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <rosfmt/full.h> // fmt::format, fmt::join
+#include <ros_msg_parser/ros_parser.hpp>
 #include <topic_tools/shape_shifter.h>
-
-
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 /**
  * @brief Namespace for the mqtt_client package
  */
@@ -385,7 +387,12 @@ class MqttClient : public nodelet::Nodelet,
       bool retained = false;  ///< whether to retain MQTT message
     } mqtt;                   ///< MQTT-related variables
     bool primitive = false;   ///< whether to publish as primitive message
-    bool stamped = false;     ///< whether to inject timestamp in MQTT message
+    bool json = false;        ///< whether the serial messages flowing through MQTT
+                              ///< broker are JSON format
+    std::shared_ptr< RosMsgParser::Parser> json_parser;  ///< parser from json to ROS message and vice-versa
+
+
+    bool stamped = false;  ///< whether to inject timestamp in MQTT message
   };
 
   /**
@@ -405,7 +412,11 @@ class MqttClient : public nodelet::Nodelet,
     } ros;                   ///< ROS-related variables
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
-    bool stamped = false;    ///< whether timestamp is injected
+    bool json = false;  ///< whether the serial messages flowing through MQTT
+                        ///< broker are JSON format
+    std::shared_ptr< RosMsgParser::Parser> json_parser;   ///< parser from json to ROS message and vice-versa
+
+    bool stamped = false;  ///< whether timestamp is injected
   };
 
  protected:
@@ -517,11 +528,11 @@ bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value)
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value,
                                const std::vector<T>& default_value)
-{
+                               {
   const bool found = private_node_handle_.param<T>(key, value, default_value);
   if (!found)
     NODELET_WARN("Parameter '%s' not set, defaulting to '%s'", key.c_str(),
-                  fmt::format("{}", fmt::join(value, ", ")).c_str());
+                 fmt::format("{}", fmt::join(value, ", ")).c_str());
   if (found)
     NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
                   fmt::format("{}", fmt::join(value, ", ")).c_str());

@@ -95,6 +95,7 @@ elseif(${ROS_VERSION} EQUAL 1)
     rosfmt ## For fmt::format.
     std_msgs
     topic_tools
+    ros_msg_parser
   )
 
   ## System dependencies are found with CMake's conventions
