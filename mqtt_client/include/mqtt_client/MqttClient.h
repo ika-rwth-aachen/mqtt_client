@@ -37,7 +37,7 @@ SOFTWARE.
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <rosfmt/full.h> // fmt::format, fmt::join
-#include <ros_msg_parser/ros_parser.hpp>
+#include <rosx_introspection/ros_parser.hpp>
 #include <topic_tools/shape_shifter.h>
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
@@ -389,8 +389,8 @@ class MqttClient : public nodelet::Nodelet,
     bool primitive = false;   ///< whether to publish as primitive message
     bool json = false;        ///< whether the serial messages flowing through MQTT
                               ///< broker are JSON format
-    std::shared_ptr< RosMsgParser::Parser> json_parser;  ///< parser from json to ROS message and vice-versa
-
+    std::shared_ptr< RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>> json_parser;  ///< parser from json to ROS message and vice-versa
+    
 
     bool stamped = false;  ///< whether to inject timestamp in MQTT message
   };
@@ -414,7 +414,7 @@ class MqttClient : public nodelet::Nodelet,
                              ///< coming from non-ROS MQTT client)
     bool json = false;  ///< whether the serial messages flowing through MQTT
                         ///< broker are JSON format
-    std::shared_ptr< RosMsgParser::Parser> json_parser;   ///< parser from json to ROS message and vice-versa
+    std::shared_ptr< RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>> json_parser;   ///< parser from json to ROS message and vice-versa
 
     bool stamped = false;  ///< whether timestamp is injected
   };

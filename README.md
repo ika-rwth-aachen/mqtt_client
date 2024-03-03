@@ -199,6 +199,24 @@ pose:
     z: 0.0
     w: 1.0"
 
+# ROS2
+ros2 topic pub /ping/json geometry_msgs/PoseStamped "header:
+  seq: 1
+  stamp:
+    secs: 0
+    nsecs: 0
+  frame_id: 'map'
+pose:
+  position:
+    x: 1.0
+    y: 2.0
+    z: 3.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0"
+
 ```
 
 ```bash
@@ -206,6 +224,9 @@ pose:
 
 # ROS
 rostopic echo /pong/json
+
+# ROS2
+ros2 topic echo /pong/json
 
 ```
 
@@ -357,6 +378,7 @@ bridge:
     {{ ros_topic_name }}:
       mqtt_topic:          # MQTT topic on which the corresponding ROS messages are sent to the broker
       primitive:           # [false] whether to publish as primitive message
+      json:         # [false] whether message exchanging in in JSON format
       inject_timestamp:    # [false] whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)
       advanced:
         ros:
@@ -370,6 +392,7 @@ bridge:
     {{ mqtt_topic_name }}:
       ros_topic:           # ROS topic on which corresponding MQTT messages are published
       primitive:           # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
+      json:         # [false] whether message exchanging in in JSON format
       advanced:
         mqtt:
           qos:               # [0] MQTT QoS value
@@ -387,8 +410,7 @@ If a ROS-to-MQTT transmission is configured as `json`, the message is published 
 
 If an MQTT-to-ROS transmission is configured as `json`, the MQTT message is interpreted as a JSON string and transformed into a ROS message to be published.
 
-The `json` property of both Ros-to-MQTT and MQTT-to-ROS should be equal. Currently this is only supported for ROS, support of ROS2 will come soon.
-
+The `json` property of both Ros-to-MQTT and MQTT-to-ROS should be equal.
 
 ## Primitive Messages
 

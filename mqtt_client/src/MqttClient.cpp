@@ -539,8 +539,8 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
 
 
       // configure json parser
-      ros2mqtt.json_parser = std::make_shared<RosMsgParser::Parser>(ros_topic, ros_msg_type.name, ros_msg_type.definition);
-
+      ros2mqtt.json_parser = std::make_shared<RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>>();
+      ros2mqtt.json_parser->registerParser(ros2mqtt.mqtt.topic, ros_msg_type.name, ros_msg_type.definition);
       mqtt2ros_[ros2mqtt.mqtt.topic].json_parser = ros2mqtt.json_parser;
     }
 
@@ -550,8 +550,7 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
     tmp_buffer.resize(ros_msg->size());
     ros::serialization::OStream stream(tmp_buffer.data(), tmp_buffer.size());
     ros_msg->write(stream);
-    ros2mqtt.json_parser->deserializeIntoJson(
-      RosMsgParser::Span<uint8_t>(tmp_buffer), &payload, false, false, false);
+    payload =*(ros2mqtt.json_parser->deserializeIntoJson(ros2mqtt.mqtt.topic,RosMsgParser::Span<uint8_t>(tmp_buffer),false));
 
     // parse the created json string from format {topic:{t} , msg: {m}} into {m}
     size_t startIdx = payload.find("msg");
@@ -724,7 +723,7 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
     std::string msgStr = mqtt_msg->get_payload_str();
 
     // convert json into a serialized ROS message, using the json_parser object
-    mqtt2ros.json_parser->serializeFromJson(msg_buffer, &msgStr);
+    msg_buffer= mqtt2ros.json_parser->serializeFromJson( mqtt_topic, &msgStr);
     ros::serialization::OStream msg_stream(&msg_buffer[0], msg_buffer.size());
     // publish via ShapeShifter
     NODELET_DEBUG(
