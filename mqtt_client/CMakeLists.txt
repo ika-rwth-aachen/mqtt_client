@@ -26,7 +26,7 @@ if(${ROS_VERSION} EQUAL 2)
   # find_package(PahoMqttCpp REQUIRED)
   find_library(PahoMqttC_LIBRARY libpaho-mqtt3as.so.1 REQUIRED)
   find_library(PahoMqttCpp_LIBRARY libpaho-mqttpp3.so.1 REQUIRED)
-  set(ROSX_INTROSPECTION_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../rosx_introspection/include)
+  set(ROSX_INTROSPECTION_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../rosx_introspection/include)
   set(rox_introspection_LIBRARY ${ROSX_INTROSPECTION_INCLUDE_DIR}/../build/librosx_introspection.a)
 
   add_library(${PROJECT_NAME}_lib SHARED src/MqttClient.ros2.cpp)
