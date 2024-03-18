@@ -2,6 +2,12 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.1 (2024-03-19)
+------------------
+* Merge pull request #50 from babakc/main
+  Amend AWS IoT CLI command in collect the correct endpoint
+* Contributors: Lennart Reiher
+
 2.2.0 (2023-11-29)
 ------------------
 * Merge pull request `#35 <https://github.com/ika-rwth-aachen/mqtt_client/issues/35>`_ from mvccogo/main
