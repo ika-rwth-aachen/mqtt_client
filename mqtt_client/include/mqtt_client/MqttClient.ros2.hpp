@@ -42,6 +42,7 @@ SOFTWARE.
 #include <rclcpp/serialization.hpp>
 #include <std_msgs/msg/float64.hpp>
 #include <rosx_introspection/ros_parser.hpp>
+#include "rosx_introspection/ros_utils/ros2_helpers.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -409,7 +410,7 @@ class MqttClient : public rclcpp::Node,
     bool primitive = false;   ///< whether to publish as primitive message
     bool json = false;        ///< whether the serial messages flowing through MQTT
                               ///< broker are JSON format
-    std::shared_ptr< RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>> json_parser;  ///< parser from json to ROS message and vice-versa
+    std::shared_ptr< RosMsgParser::ParsersCollection<RosMsgParser::ROS2_Deserializer>> json_parser;  ///< parser from json to ROS message and vice-versa
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
   };
 
@@ -434,7 +435,7 @@ class MqttClient : public rclcpp::Node,
                              ///< coming from non-ROS MQTT client)
     bool json = false;  ///< whether the serial messages flowing through MQTT
                         ///< broker are JSON format
-    std::shared_ptr< RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>> json_parser;   ///< parser from json to ROS message and vice-versa
+    std::shared_ptr< RosMsgParser::ParsersCollection<RosMsgParser::ROS2_Deserializer>> json_parser;   ///< parser from json to ROS message and vice-versa
     bool stamped = false;    ///< whether timestamp is injected
   };
 

@@ -9,8 +9,10 @@ mqtt_client:
           - /ping/ros
         /ping/ros:
           mqtt_topic: pingpong/ros
+          json: true
       mqtt2ros:
         mqtt_topics: 
           - pingpong/ros
         pingpong/ros:
           ros_topic: /pong/ros
+          json: true

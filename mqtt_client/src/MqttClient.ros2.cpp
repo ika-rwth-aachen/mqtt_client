@@ -200,6 +200,8 @@ void MqttClient::loadParameters() {
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.mqtt_topic", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "whether to publish as primitive message";
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.primitive", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "whether the message is in json format";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.json", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
     param_desc.description = "whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)";
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.inject_timestamp", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
     param_desc.description = "ROS subscriber queue size";
@@ -218,6 +220,8 @@ void MqttClient::loadParameters() {
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.ros_topic", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "whether to publish as primitive message (if coming from non-ROS MQTT client)";
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "whether the message is in json format";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.json", mqtt_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
     param_desc.description = "MQTT QoS value";
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.mqtt.qos", mqtt_topic), rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
     param_desc.description = "ROS publisher queue size";
@@ -355,9 +359,9 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), primitive_param))
         mqtt2ros.primitive = primitive_param.as_bool();
 
-      // ros2mqtt[k]/json
+      // mqtt2ros[k]/json
       rclcpp::Parameter json_param;
-      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.json", ros_topic), json_param))
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.json", mqtt_topic), json_param))
         mqtt2ros.json = json_param.as_bool();
 
       // mqtt2ros[k]/advanced/mqtt/qos
@@ -607,10 +611,11 @@ void MqttClient::ros2mqtt(
                ros_msg_type.name.c_str(), ros_topic.c_str());
 
   if (ros2mqtt.json) {
-
+    Mqtt2RosInterface& mqtt2ros = mqtt2ros_[ros2mqtt.mqtt.topic];
+   
    // if ROS message type has changed or if mapping is stale
-    if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
-
+    if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale || ros2mqtt.json_parser.get() == nullptr ) {
+          
       mqtt2ros.ros.msg_type = ros_msg_type.name;
       mqtt2ros.stamped = ros_msg_type.stamped;
       RCLCPP_INFO(get_logger(),
@@ -629,24 +634,22 @@ void MqttClient::ros2mqtt(
       mqtt2ros.ros.is_stale = false;
 
       // subscribe to MQTT topic with actual ROS messages
-      client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
-      RCLCPP_DEBUG(get_logger(), "Subscribed MQTT topic '%s'",
-                   mqtt_data_topic.c_str());
-    
+      client_->subscribe(ros2mqtt.mqtt.topic, mqtt2ros.mqtt.qos);
+
       // configure json parser
-      ros2mqtt.json_parser = std::make_shared<RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>>();
+      ros2mqtt.json_parser = std::make_shared<RosMsgParser::ParsersCollection<RosMsgParser::ROS2_Deserializer>>();
       ros2mqtt.json_parser->registerParser(ros2mqtt.mqtt.topic, RosMsgParser::ROSType(ros_msg_type.name), RosMsgParser::GetMessageDefinition(ros_msg_type.name));
       mqtt2ros_[ros2mqtt.mqtt.topic].json_parser = ros2mqtt.json_parser;
   
     }
 
 
-    // deserialize the shapeshifter message into json
-    std::vector<uint8_t> tmp_buffer;
+    // deserialize the message into json
+    const uint8_t* data_ptr = serialized_msg->get_rcl_serialized_message().buffer;
+    size_t data_size = serialized_msg->get_rcl_serialized_message().buffer_length;
+    std::vector<uint8_t> tmp_buffer(data_size);
+    std::copy(data_ptr, data_ptr + data_size, tmp_buffer.begin());
     std::string payload;
-    tmp_buffer.resize(ros_msg->size());
-    ros::serialization::OStream stream(tmp_buffer.data(), tmp_buffer.size());
-    ros_msg->write(stream);
     payload =*(ros2mqtt.json_parser->deserializeIntoJson(ros2mqtt.mqtt.topic,RosMsgParser::Span<uint8_t>(tmp_buffer),false));
 
     // parse the created json string from format {topic:{t} , msg: {m}} into {m}
@@ -657,9 +660,9 @@ void MqttClient::ros2mqtt(
       if (endIdx != std::string::npos)
         payload = "{" + payload.substr(startIdx, endIdx - startIdx);
       else
-        NODELET_ERROR("not the expected json format");
+        RCLCPP_ERROR(get_logger(),"not the expected json format");
     } else
-      NODELET_ERROR("not the expected json format");
+      RCLCPP_ERROR(get_logger(),"not the expected json format");
 
     // serialize the json string into payload_buffer
     payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
@@ -811,7 +814,7 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
     msg_length -= stamp_length_;
     msg_offset += stamp_length_;
   }
-
+                  
 if (mqtt2ros.json) {
     // the message is a serialized json string
     std::vector<uint8_t> msg_buffer;
@@ -819,11 +822,11 @@ if (mqtt2ros.json) {
 
     // convert json into a serialized ROS message, using the json_parser object
     msg_buffer= mqtt2ros.json_parser->serializeFromJson( mqtt_topic, &msgStr);
-  
+         
     // copy ROS message from MQTT message to generic message buffer
     rclcpp::SerializedMessage serialized_msg(msg_buffer.size());
     std::memcpy(serialized_msg.get_rcl_serialized_message().buffer,
-                &msg_buffer[0], msg_buffer.size());
+                &(msg_buffer[0]), msg_buffer.size());
     serialized_msg.get_rcl_serialized_message().buffer_length = msg_buffer.size();
 
     // publish generic ROS message
@@ -1138,7 +1141,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
       RCLCPP_DEBUG(get_logger(), "Subscribed MQTT topic '%s'",
-                   mqtt_data_topic.c_str());
+                   mqtt_data_topic.c_str()); 
     }
 
   } else {
