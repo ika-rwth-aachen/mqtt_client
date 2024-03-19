@@ -29,6 +29,7 @@ SOFTWARE.
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <thread>
 
 #include <mqtt_client/MqttClient.h>
 #include <mqtt_client_interfaces/RosMsgType.h>
@@ -785,6 +786,8 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
 
     NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
                  mqtt2ros.ros.topic.c_str(), msg_type_name.c_str());
+    //adding small delay in creating publisher
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));  
   }
 
   // publish via ShapeShifter
