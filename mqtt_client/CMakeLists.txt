@@ -6,6 +6,7 @@ set(ROS_VERSION $ENV{ROS_VERSION})
 
 ## Compile as C++17
 add_compile_options(-std=c++17)
+link_libraries("$<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:-lstdc++fs>")
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
