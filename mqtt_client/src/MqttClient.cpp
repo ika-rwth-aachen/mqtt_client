@@ -235,6 +235,10 @@ void MqttClient::loadParameters() {
           if (ros2mqtt_params[k].hasMember("primitive"))
             ros2mqtt.primitive = ros2mqtt_params[k]["primitive"];
 
+          // ros2mqtt[k]/json
+          if (ros2mqtt_params[k].hasMember("json"))
+            ros2mqtt.json = ros2mqtt_params[k]["json"];
+
           // ros2mqtt[k]/inject_timestamp
           if (ros2mqtt_params[k].hasMember("inject_timestamp"))
             ros2mqtt.stamped = ros2mqtt_params[k]["inject_timestamp"];
@@ -294,6 +298,10 @@ void MqttClient::loadParameters() {
           // mqtt2ros[k]/primitive
           if (mqtt2ros_params[k].hasMember("primitive"))
             mqtt2ros.primitive = mqtt2ros_params[k]["primitive"];
+
+          // mqtt2ros[k]/json
+          if (mqtt2ros_params[k].hasMember("json"))
+            mqtt2ros.json = mqtt2ros_params[k]["json"];
 
           // mqtt2ros[k]/advanced
           if (mqtt2ros_params[k].hasMember("advanced")) {
@@ -504,7 +512,64 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
   NODELET_DEBUG("Received ROS message of type '%s' on topic '%s'",
                 ros_msg_type.name.c_str(), ros_topic.c_str());
 
-  if (ros2mqtt.primitive) {  // publish as primitive (string) message
+  if (ros2mqtt.json) {
+
+
+    // if ROS message type has changed
+    if (ros_msg_type.md5 !=
+        mqtt2ros_[ros2mqtt.mqtt.topic].ros.shape_shifter.getMD5Sum()) {
+
+      Mqtt2RosInterface& mqtt2ros = mqtt2ros_[ros2mqtt.mqtt.topic];
+
+      NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
+                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
+
+      // configure ShapeShifter
+      mqtt2ros.ros.shape_shifter.morph(ros_msg_type.md5, ros_msg_type.name,
+                                       ros_msg_type.definition, "");
+
+      // advertise with ROS publisher
+      mqtt2ros.ros.publisher.shutdown();
+      mqtt2ros.ros.publisher = mqtt2ros.ros.shape_shifter.advertise(
+        node_handle_, mqtt2ros.ros.topic, mqtt2ros.ros.queue_size,
+        mqtt2ros.ros.latched);
+
+      // subscribe to MQTT topic with actual ROS messages
+      client_->subscribe(ros2mqtt.mqtt.topic, mqtt2ros.mqtt.qos);
+
+
+      // configure json parser
+      ros2mqtt.json_parser = std::make_shared<RosMsgParser::ParsersCollection<RosMsgParser::ROS_Deserializer>>();
+      ros2mqtt.json_parser->registerParser(ros2mqtt.mqtt.topic, ros_msg_type.name, ros_msg_type.definition);
+      mqtt2ros_[ros2mqtt.mqtt.topic].json_parser = ros2mqtt.json_parser;
+    }
+
+    // deserialize the shapeshifter message into json
+    std::vector<uint8_t> tmp_buffer;
+    std::string payload;
+    tmp_buffer.resize(ros_msg->size());
+    ros::serialization::OStream stream(tmp_buffer.data(), tmp_buffer.size());
+    ros_msg->write(stream);
+    payload =*(ros2mqtt.json_parser->deserializeIntoJson(ros2mqtt.mqtt.topic,RosMsgParser::Span<uint8_t>(tmp_buffer),false));
+
+    // parse the created json string from format {topic:{t} , msg: {m}} into {m}
+    size_t startIdx = payload.find("msg");
+    if (startIdx != std::string::npos) {
+      startIdx += 6;  // Move past "(msg:)"
+      size_t endIdx = payload.rfind("}");
+      if (endIdx != std::string::npos)
+        payload = "{" + payload.substr(startIdx, endIdx - startIdx);
+      else
+        NODELET_ERROR("not the expected json format");
+    } else
+      NODELET_ERROR("not the expected json format");
+
+    // serialize the json string into payload_buffer
+    payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
+  }
+
+
+  else if (ros2mqtt.primitive) {  // publish as primitive (string) message
 
     // resolve ROS messages to primitive strings if possible
     std::string payload;
@@ -606,7 +671,7 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
 
 void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
                           const ros::WallTime& arrival_stamp) {
-
+  
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
   auto& payload = mqtt_msg->get_payload_ref();
@@ -652,19 +717,37 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
     msg_length -= stamp_length;
     msg_offset += stamp_length;
   }
+  if (mqtt2ros.json) {
+    // the message is a serialized json string
+    std::vector<uint8_t> msg_buffer;
+    std::string msgStr = mqtt_msg->get_payload_str();
 
-  // create ROS message buffer on top of MQTT message payload
-  char* non_const_payload = const_cast<char*>(&payload[msg_offset]);
-  uint8_t* msg_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
-  ros::serialization::OStream msg_stream(msg_buffer, msg_length);
+    // convert json into a serialized ROS message, using the json_parser object
+    msg_buffer= mqtt2ros.json_parser->serializeFromJson( mqtt_topic, &msgStr);
+    ros::serialization::OStream msg_stream(&msg_buffer[0], msg_buffer.size());
+    // publish via ShapeShifter
+    NODELET_DEBUG(
+      "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
+      mqtt2ros.ros.shape_shifter.getDataType().c_str(),
+      mqtt2ros.ros.topic.c_str());
 
-  // publish via ShapeShifter
-  NODELET_DEBUG(
-    "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
-    mqtt2ros.ros.shape_shifter.getDataType().c_str(),
-    mqtt2ros.ros.topic.c_str());
-  mqtt2ros.ros.shape_shifter.read(msg_stream);
-  mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
+    mqtt2ros.ros.shape_shifter.read(msg_stream);
+    mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
+  }
+
+  else {  // create ROS message buffer on top of MQTT message payload
+    char* non_const_payload = const_cast<char*>(&payload[msg_offset]);
+    uint8_t* msg_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
+    ros::serialization::OStream msg_stream(msg_buffer, msg_length);
+
+    // publish via ShapeShifter
+    NODELET_DEBUG(
+      "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
+      mqtt2ros.ros.shape_shifter.getDataType().c_str(),
+      mqtt2ros.ros.topic.c_str());
+    mqtt2ros.ros.shape_shifter.read(msg_stream);
+    mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
+  }
 }
 
 

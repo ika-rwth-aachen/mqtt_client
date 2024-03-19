@@ -5,12 +5,14 @@ bridge:
   ros2mqtt:
     - ros_topic: /ping/ros
       mqtt_topic: pingpong/ros
+      json: true
     - ros_topic: /ping/primitive
       mqtt_topic: pingpong/primitive
       primitive: true
   mqtt2ros:
     - mqtt_topic: pingpong/ros
       ros_topic: /pong/ros
+      json: true
     - mqtt_topic: pingpong/primitive
       ros_topic: /pong/primitive
       primitive: true
