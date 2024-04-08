@@ -1,4 +1,4 @@
-mqtt_client:
+/**/*:
   ros__parameters:
     broker:
       host: localhost

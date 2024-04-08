@@ -1,8 +1,10 @@
 <launch>
 
+  <arg name="namespace" default="" />
+  <arg name="node_name" default="mqtt_client" />
   <arg name="params_file" default="$(find-pkg-share mqtt_client)/config/params.ros2.yaml" />
 
-  <node pkg="mqtt_client" exec="mqtt_client" name="mqtt_client" output="screen">
+  <node pkg="mqtt_client" exec="mqtt_client" name="$(var node_name)" namespace="$(var namespace)" output="screen">
     <param from="$(var params_file)" />
   </node>
 
