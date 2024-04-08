@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="namespace" default="mqtt_client" />
+  <arg name="namespace" default="" />
   <arg name="node_name" default="mqtt_client" />
   <arg name="params_file" default="$(find-pkg-share mqtt_client)/config/params.ros2.yaml" />
 
