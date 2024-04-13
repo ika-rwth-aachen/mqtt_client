@@ -20,6 +20,7 @@
   <depend>mqtt_client_interfaces</depend>
   <depend>ros_environment</depend>
   <depend>std_msgs</depend>
+  <depend>rosx_introspection</depend>
 
   <!-- ROS2 -->
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>

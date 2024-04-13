@@ -23,13 +23,12 @@ if(${ROS_VERSION} EQUAL 2)
   find_package(rosidl_typesupport_cpp REQUIRED)
   find_package(std_msgs REQUIRED)
   find_package(fastcdr REQUIRED)
+  find_package(rosx_introspection REQUIRED)
 
   # Paho MQTT C++ apt package doesn't include CMake config
   # find_package(PahoMqttCpp REQUIRED)
   find_library(PahoMqttC_LIBRARY libpaho-mqtt3as.so.1 REQUIRED)
   find_library(PahoMqttCpp_LIBRARY libpaho-mqttpp3.so.1 REQUIRED)
-  set(ROSX_INTROSPECTION_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../rosx_introspection/include)
-  set(rox_introspection_LIBRARY ${ROSX_INTROSPECTION_INCLUDE_DIR}/../build/librosx_introspection.a)
 
   add_library(${PROJECT_NAME}_lib SHARED src/MqttClient.ros2.cpp)
 
@@ -41,14 +40,15 @@ if(${ROS_VERSION} EQUAL 2)
   target_include_directories(${PROJECT_NAME}_lib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
-    ${ROSX_INTROSPECTION_INCLUDE_DIR}
+    ${rosx_introspection_INCLUDE_DIRS}
     )
 
   target_link_libraries(${PROJECT_NAME}_lib
     ${PahoMqttC_LIBRARY}
     ${PahoMqttCpp_LIBRARY}
-    ${rox_introspection_LIBRARY}
+    ${rosx_introspection_LIBRARIES}
     fastcdr
+    
   )
 
   ament_target_dependencies(${PROJECT_NAME}_lib
@@ -59,6 +59,7 @@ if(${ROS_VERSION} EQUAL 2)
     rosbag2_cpp
     rosidl_typesupport_cpp
     std_msgs
+    rosx_introspection
   )
 
   install(TARGETS ${PROJECT_NAME}_lib
@@ -106,14 +107,13 @@ elseif(${ROS_VERSION} EQUAL 1)
     rosfmt ## For fmt::format.
     std_msgs
     topic_tools
+    rosx_introspection
   )
 
   ## System dependencies are found with CMake's conventions
   find_package(PahoMqttCpp REQUIRED)
   set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
   find_package(fastcdr REQUIRED)
-  set(ROSX_INTROSPECTION_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../rosx_introspection/include)
-  set(rox_introspection_LIBRARY ${ROSX_INTROSPECTION_INCLUDE_DIR}/../build/librosx_introspection.a)
 
   ## Uncomment this if the package has a setup.py. This macro ensures
   ## modules and global scripts declared therein get installed
@@ -219,7 +219,6 @@ elseif(${ROS_VERSION} EQUAL 1)
   include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${ROSX_INTROSPECTION_INCLUDE_DIR}
   )
 
   ## Declare a C++ library
@@ -251,7 +250,6 @@ elseif(${ROS_VERSION} EQUAL 1)
   target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
     ${PahoMqttCpp_LIBRARIES}
-    ${rox_introspection_LIBRARY}
     fastcdr
     )
 

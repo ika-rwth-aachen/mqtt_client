@@ -200,22 +200,9 @@ pose:
     w: 1.0"
 
 # ROS2
-ros2 topic pub /ping/json geometry_msgs/PoseStamped "header:
-  seq: 1
-  stamp:
-    secs: 0
-    nsecs: 0
-  frame_id: 'map'
-pose:
-  position:
-    x: 1.0
-    y: 2.0
-    z: 3.0
-  orientation:
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0"
+
+ros2 topic pub /ping/json geometry_msgs/PoseStamped '{header: {stamp: {sec: 1, nanosec: 50}, frame_id: "map"}, pose: {position: {x: 1.2, y: 3.4, z: 5.6}, orientation: {x: 7.8, y: 0.0, z: 0.0, w: 1.0}}}'
+
 
 ```
 
