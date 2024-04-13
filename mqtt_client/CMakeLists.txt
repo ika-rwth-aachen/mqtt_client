@@ -19,7 +19,11 @@ if(${ROS_VERSION} EQUAL 2)
   find_package(mqtt_client_interfaces REQUIRED)
   find_package(rclcpp REQUIRED)
   find_package(rclcpp_components REQUIRED)
+  find_package(rosbag2_cpp REQUIRED)
+  find_package(rosidl_typesupport_cpp REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(fastcdr REQUIRED)
+  find_package(rosx_introspection REQUIRED)
 
   # Paho MQTT C++ apt package doesn't include CMake config
   # find_package(PahoMqttCpp REQUIRED)
@@ -35,11 +39,16 @@ if(${ROS_VERSION} EQUAL 2)
 
   target_include_directories(${PROJECT_NAME}_lib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:include>
+    ${rosx_introspection_INCLUDE_DIRS}
+    )
 
   target_link_libraries(${PROJECT_NAME}_lib
     ${PahoMqttC_LIBRARY}
     ${PahoMqttCpp_LIBRARY}
+    ${rosx_introspection_LIBRARIES}
+    fastcdr
+    
   )
 
   ament_target_dependencies(${PROJECT_NAME}_lib
@@ -47,7 +56,10 @@ if(${ROS_VERSION} EQUAL 2)
     mqtt_client_interfaces
     rclcpp
     rclcpp_components
+    rosbag2_cpp
+    rosidl_typesupport_cpp
     std_msgs
+    rosx_introspection
   )
 
   install(TARGETS ${PROJECT_NAME}_lib
@@ -95,12 +107,13 @@ elseif(${ROS_VERSION} EQUAL 1)
     rosfmt ## For fmt::format.
     std_msgs
     topic_tools
+    rosx_introspection
   )
 
   ## System dependencies are found with CMake's conventions
   find_package(PahoMqttCpp REQUIRED)
   set(PahoMqttCpp_LIBRARIES PahoMqttCpp::paho-mqttpp3)
-
+  find_package(fastcdr REQUIRED)
 
   ## Uncomment this if the package has a setup.py. This macro ensures
   ## modules and global scripts declared therein get installed
@@ -237,7 +250,8 @@ elseif(${ROS_VERSION} EQUAL 1)
   target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
     ${PahoMqttCpp_LIBRARIES}
-  )
+    fastcdr
+    )
 
   #############
   ## Install ##
