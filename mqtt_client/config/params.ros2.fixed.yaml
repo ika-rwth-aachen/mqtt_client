@@ -1,0 +1,20 @@
+/**/*:
+  ros__parameters:
+    broker:
+      host: localhost
+      port: 1883
+    bridge:
+      ros2mqtt:
+        ros_topics:
+          - /ping/primitive
+        /ping/primitive:
+          mqtt_topic: pingpong/primitive
+          primitive: true
+          ros_type: std_msgs/msg/Bool
+      mqtt2ros:
+        mqtt_topics:
+          - pingpong/primitive
+        pingpong/primitive:
+          ros_topic: /pong/primitive
+          primitive: true
+          ros_type: std_msgs/msg/Bool
