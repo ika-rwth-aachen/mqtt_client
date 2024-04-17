@@ -193,7 +193,7 @@ bool primitiveRosMessageToString(
   } else if (msg_type == "std_msgs/msg/Bool") {
     std_msgs::msg::Bool msg;
     deserializeRosMessage(*serialized_msg, msg);
-    primitive = msg.data ? "true" : "false";
+    primitive = msg.data ? "1" : "0";
   } else if (msg_type == "std_msgs/msg/Char") {
     std_msgs::msg::Char msg;
     deserializeRosMessage(*serialized_msg, msg);
