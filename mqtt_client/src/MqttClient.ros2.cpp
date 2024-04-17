@@ -28,6 +28,7 @@ SOFTWARE.
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -649,27 +650,34 @@ void MqttClient::setupSubscriptions() {
       } catch (rclcpp::exceptions::RCLError& e) {
         RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
                      e.what());
-        return;
+        continue;
       }
       RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
                   ros_topic.c_str(), ros2mqtt.ros.msg_type.c_str());
 
-    }
-    if (all_topics_and_types.count(ros_topic)) {
+    } else {
+      const auto &pubs = get_publishers_info_by_topic(ros_topic);
 
+      if (pubs.empty()) continue;
+
+      const auto endpointInfo = pubs.front ();
       // check if message type has changed or if mapping is stale
-      const std::string& msg_type = all_topics_and_types.at(ros_topic)[0];
+      const std::string msg_type = endpointInfo.topic_type();
+
       if (msg_type == ros2mqtt.ros.msg_type && !ros2mqtt.ros.is_stale) continue;
       ros2mqtt.ros.is_stale = false;
       ros2mqtt.ros.msg_type = msg_type;
 
       try {
+        auto qos = endpointInfo.qos_profile ();
         ros2mqtt.ros.subscriber = create_generic_subscription(
-          ros_topic, msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+          ros_topic, msg_type, qos.keep_last(ros2mqtt.ros.queue_size),
+          bound_callback_func);
+
       } catch (rclcpp::exceptions::RCLError& e) {
         RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
                      e.what());
-        return;
+        continue;
       }
       RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
                   ros_topic.c_str(), msg_type.c_str());
