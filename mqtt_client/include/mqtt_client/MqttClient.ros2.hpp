@@ -566,8 +566,7 @@ class MqttClient : public rclcpp::Node,
 
 
 template <typename T>
-bool MqttClient::loadParameter(const std::string& key, T& value)
-{
+bool MqttClient::loadParameter(const std::string& key, T& value) {
   bool found = get_parameter(key, value);
   if (found)
     RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
@@ -578,8 +577,7 @@ bool MqttClient::loadParameter(const std::string& key, T& value)
 
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, T& value,
-                               const T& default_value)
-{
+                               const T& default_value) {
   bool found = get_parameter_or(key, value, default_value);
   if (!found)
     RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'",
@@ -592,8 +590,7 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
 
 
 template <typename T>
-bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value)
-{
+bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value) {
   const bool found = get_parameter(key, value);
   if (found)
     RCLCPP_WARN(get_logger(), "Retrieved parameter '%s' = '[%s]'", key.c_str(),
@@ -604,8 +601,7 @@ bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value)
 
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value,
-                               const std::vector<T>& default_value)
-{
+                               const std::vector<T>& default_value) {
   const bool found = get_parameter_or(key, value, default_value);
   if (!found)
     RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'",
@@ -627,8 +623,7 @@ bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value,
  */
 template <typename T>
 void serializeRosMessage(const T& msg,
-                         rclcpp::SerializedMessage& serialized_msg)
-{
+                         rclcpp::SerializedMessage& serialized_msg) {
 
   rclcpp::Serialization<T> serializer;
   serializer.serialize_message(&msg, &serialized_msg);
@@ -645,8 +640,7 @@ void serializeRosMessage(const T& msg,
  */
 template <typename T>
 void deserializeRosMessage(const rclcpp::SerializedMessage& serialized_msg,
-                           T& msg)
-{
+                           T& msg) {
 
   rclcpp::Serialization<T> serializer;
   serializer.deserialize_message(&serialized_msg, &msg);

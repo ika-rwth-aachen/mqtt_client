@@ -319,8 +319,8 @@ bridge:
         mqtt:
           qos:             # [0] MQTT QoS value
           retained:        # [false] whether to retain MQTT message
-  mqtt2ros:            # Object specifying which MQTT topics to map to which ROS topics
-    mqtt_topics:         # Array specifying which ROS topics to bridge
+  mqtt2ros:                # Object specifying which MQTT topics to map to which ROS topics
+    mqtt_topics:           # Array specifying which ROS topics to bridge
       - {{ mqtt_topic_name }} # The MQTT topic that should be bridged, corresponds to the sub-object in the YAML
     {{ mqtt_topic_name }}:
       ros_topic:           # ROS topic on which corresponding MQTT messages are published
@@ -328,13 +328,13 @@ bridge:
       primitive:           # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
       advanced:
         mqtt:
-          qos:               # [0] MQTT QoS value
+          qos:             # [0] MQTT QoS value
         ros:
-          queue_size:          # [1] ROS publisher queue size
-          latched:             # [false] whether to latch ROS message
+          queue_size:      # [1] ROS publisher queue size
+          latched:         # [false] whether to latch ROS message
           qos:
-            reliability: # [system_default] One of "system_default", "reliable", "best_effort". 
-            durability:  # [system_default] One of "system_default", "volatile", "transient_local". 
+            reliability:   # [system_default] One of "system_default", "reliable", "best_effort". 
+            durability:    # [system_default] One of "system_default", "volatile", "transient_local". 
 ```
 
 ## Primitive Messages
