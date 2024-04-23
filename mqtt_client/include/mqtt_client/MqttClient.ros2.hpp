@@ -30,6 +30,7 @@ SOFTWARE.
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #define FMT_HEADER_ONLY
@@ -72,6 +73,9 @@ class MqttClient : public rclcpp::Node,
   explicit MqttClient(const rclcpp::NodeOptions& options);
 
  protected:
+   class Ros2MqttInterface;
+   class Mqtt2RosInterface;
+
   /**
    * @brief Loads ROS parameters from parameter server.
    */
@@ -178,6 +182,31 @@ class MqttClient : public rclcpp::Node,
    * @brief Initializes broker connection and subscriptions.
    */
   void setup();
+
+  /**
+   * @brief Get the resolved compatible QOS from the interface and the endpoint
+   *
+   * This uses the two endpoints to decide upon a compatible QoS, resolving any "auto" QoS settings
+   *
+   * @param ros_topic the ROS topic we are looking on
+   * @param tei Topic endpoint info
+   * @param ros2mqtt the ROS to MQTT interface spec
+   *
+   * @returns The compatible QoS or nullopt if no compatible combination is found
+   */
+   std::optional<rclcpp::QoS> getCompatibleQoS(
+     const std::string& ros_topic, const rclcpp::TopicEndpointInfo& tei,
+     const Ros2MqttInterface& ros2mqtt) const;
+
+  /**
+   * @brief Get the candiate topic endpoints for subscription matching
+   *
+   * @param ros2mqtt the ROS to MQTT interface spec
+   *
+   * @returns The compatible QoS or nullopt if no compatible combination is found
+   */
+   std::vector<rclcpp::TopicEndpointInfo> getCandidatePublishers(
+     const std::string& ros_topic, const Ros2MqttInterface& ros2mqtt) const;
 
   /**
    * @brief Checks all active ROS topics in order to set up generic subscribers.
@@ -405,6 +434,11 @@ class MqttClient : public rclcpp::Node,
       std::string msg_type;  ///< message type of subscriber
       int queue_size = 1;    ///< ROS subscriber queue size
       bool is_stale = false; ///< whether a new generic publisher/subscriber is required
+      struct {
+        // If these are set to nullopt then that part of the QoS is determine automatically based on discovery
+        std::optional<rclcpp::ReliabilityPolicy> reliability;
+        std::optional<rclcpp::DurabilityPolicy> durability;
+      } qos;
     } ros;                   ///< ROS-related variables
     struct {
       std::string topic;      ///< MQTT topic
