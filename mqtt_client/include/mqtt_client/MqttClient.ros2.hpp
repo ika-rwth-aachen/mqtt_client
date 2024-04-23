@@ -209,9 +209,16 @@ class MqttClient : public rclcpp::Node,
      const std::string& ros_topic, const Ros2MqttInterface& ros2mqtt) const;
 
   /**
-   * @brief Checks all active ROS topics in order to set up generic subscribers.
+   * @brief Setup any subscriptions we can.
+   *
+   * These may be fixed type/QoS, or dynamically matched against active publisher
    */
   void setupSubscriptions();
+
+  /**
+   * @brief Setup any publishers that we can
+   */
+  void setupPublishers();
 
   /**
    * @brief Sets up the client connection options and initializes the client

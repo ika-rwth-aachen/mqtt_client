@@ -448,7 +448,9 @@ void MqttClient::loadParameters() {
       rclcpp::Parameter durability_param;
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.durability", mqtt_topic), durability_param)) {
         const auto p = durability_param.as_string();
-        if (p == "volatile") {
+        if (p == "system_default") {
+          ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::SystemDefault;
+        } else if (p == "volatile") {
           ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::Volatile;
         } else if (p == "transient_local") {
           ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::TransientLocal;
@@ -463,7 +465,9 @@ void MqttClient::loadParameters() {
       rclcpp::Parameter reliability_param;
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.reliability", mqtt_topic), reliability_param)) {
         const auto p = reliability_param.as_string();
-        if (p == "best_effort") {
+        if (p == "system_default") {
+          ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::SystemDefault;
+        } else if (p == "best_effort") {
           ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::BestEffort;
         } else if (p == "reliable") {
           ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::Reliable;
@@ -538,7 +542,9 @@ void MqttClient::loadParameters() {
       rclcpp::Parameter durability_param;
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.qos.durability", mqtt_topic), durability_param)) {
         const auto p = durability_param.as_string();
-        if (p == "volatile") {
+        if (p == "system_default") {
+          mqtt2ros.ros.qos.durability = rclcpp::DurabilityPolicy::SystemDefault;
+        } else if (p == "volatile") {
           mqtt2ros.ros.qos.durability = rclcpp::DurabilityPolicy::Volatile;
         } else if (p == "transient_local") {
           mqtt2ros.ros.qos.durability =
@@ -552,7 +558,9 @@ void MqttClient::loadParameters() {
       rclcpp::Parameter reliability_param;
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.qos.reliability", mqtt_topic), reliability_param)) {
         const auto p = reliability_param.as_string();
-        if (p == "best_effort") {
+        if (p == "system_default") {
+          mqtt2ros.ros.qos.reliability = rclcpp::ReliabilityPolicy::SystemDefault;
+        } else if (p == "best_effort") {
           mqtt2ros.ros.qos.reliability = rclcpp::ReliabilityPolicy::BestEffort;
         } else if (p == "reliable") {
           mqtt2ros.ros.qos.reliability = rclcpp::ReliabilityPolicy::Reliable;
@@ -664,6 +672,8 @@ void MqttClient::setup() {
   check_subscriptions_timer_ =
     create_wall_timer(std::chrono::duration<double>(1.0),
                       std::bind(&MqttClient::setupSubscriptions, this));
+
+  setupPublishers ();
 }
 
 std::optional<rclcpp::QoS> MqttClient::getCompatibleQoS (const std::string &ros_topic, const rclcpp::TopicEndpointInfo &tei,
@@ -808,6 +818,31 @@ void MqttClient::setupSubscriptions() {
           continue;
         }
       }
+    }
+  }
+}
+
+void MqttClient::setupPublishers() {
+
+  for (auto& [mqtt_topic, mqtt2ros] : mqtt2ros_) {
+    if (mqtt2ros.ros.publisher)
+      continue;
+
+    // If the type is not fixed, we require a mqtt message in order to deduce the type
+    if (!mqtt2ros.fixed_type)
+      continue;
+
+    try {
+      const auto qos = rclcpp::QoS(mqtt2ros.ros.queue_size)
+        .durability(mqtt2ros.ros.qos.durability)
+        .reliability(mqtt2ros.ros.qos.reliability);
+      mqtt2ros.ros.publisher = create_generic_publisher(
+        mqtt2ros.ros.topic, mqtt2ros.ros.msg_type, qos);
+
+      mqtt2ros.ros.is_stale = false;
+    } catch (const rclcpp::exceptions::RCLError& e) {
+      RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
+                   e.what());
     }
   }
 }
@@ -1210,6 +1245,7 @@ void MqttClient::mqtt2fixed(mqtt::const_message_ptr mqtt_msg) {
       } catch (const rclcpp::exceptions::RCLError& e) {
         RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
                      e.what());
+        return;
       }
     }
 
