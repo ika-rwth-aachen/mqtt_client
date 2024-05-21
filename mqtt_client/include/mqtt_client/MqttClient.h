@@ -32,11 +32,11 @@ SOFTWARE.
 #include <memory>
 #include <string>
 
+#include <fmt/format.h>
 #include <mqtt_client_interfaces/IsConnected.h>
 #include <mqtt/async_client.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
-#include <rosfmt/full.h> // fmt::format, fmt::join
 #include <topic_tools/shape_shifter.h>
 
 

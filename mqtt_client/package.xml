@@ -17,13 +17,13 @@
   <author email="bastian.lampe@rwth-aachen.de">Bastian Lampe</author>
   <author email="christian.wende@rwth-aachen.de">Christian Wende</author>
 
+  <depend>fmt</depend>
   <depend>mqtt_client_interfaces</depend>
   <depend>ros_environment</depend>
   <depend>std_msgs</depend>
 
   <!-- ROS2 -->
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
-  <depend condition="$ROS_VERSION == 2">fmt</depend>
   <depend condition="$ROS_VERSION == 2">libpaho-mqtt-dev</depend>
   <depend condition="$ROS_VERSION == 2">libpaho-mqttpp-dev</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
@@ -35,7 +35,6 @@
   <depend condition="$ROS_VERSION == 1">nodelet</depend>
   <depend condition="$ROS_VERSION == 1">paho-mqtt-cpp</depend>
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
-  <depend condition="$ROS_VERSION == 1">rosfmt</depend>
   <depend condition="$ROS_VERSION == 1">topic_tools</depend>
 
   <export>
