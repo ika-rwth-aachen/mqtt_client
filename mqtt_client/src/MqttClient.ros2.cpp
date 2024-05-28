@@ -105,84 +105,77 @@ bool fixedMqtt2PrimitiveRos(mqtt::const_message_ptr mqtt_msg,
       msg.data = mqtt_msg->to_string();
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Bool") {
       std_msgs::msg::Bool msg;
       msg.data = mqtt2bool(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Char") {
       std_msgs::msg::Char msg;
       msg.data = mqtt2int<int8_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/UInt8") {
       std_msgs::msg::UInt8 msg;
       msg.data = mqtt2int<uint8_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/UInt16") {
       std_msgs::msg::UInt16 msg;
       msg.data = mqtt2int<uint16_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/UInt32") {
       std_msgs::msg::UInt32 msg;
       msg.data = mqtt2int<uint32_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/UInt64") {
       std_msgs::msg::UInt64 msg;
       msg.data = mqtt2int<uint64_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Int8") {
       std_msgs::msg::Int8 msg;
       msg.data = mqtt2int<int8_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Int16") {
       std_msgs::msg::Int16 msg;
       msg.data = mqtt2int<int16_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Int32") {
       std_msgs::msg::Int32 msg;
       msg.data = mqtt2int<int32_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Int64") {
       std_msgs::msg::Int32 msg;
       msg.data = mqtt2int<int32_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Float32") {
       std_msgs::msg::Float32 msg;
       msg.data = mqtt2float<float>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
     } else if (msg_type == "std_msgs/msg/Float64") {
       std_msgs::msg::Float64 msg;
       msg.data = mqtt2float<double>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
-      return true;
+    } else {
+      throw std::domain_error("Unhandled message type (" + msg_type + ")");
     }
+
+    return true;
+
   } catch (const std::exception &) {
+    return false;
   }
 
-  return false;
+
 }
 
 /**
