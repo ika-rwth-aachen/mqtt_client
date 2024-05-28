@@ -418,12 +418,10 @@ void MqttClient::loadParameters() {
       // ros2mqtt[k]/ros_type
       rclcpp::Parameter ros_type_param;
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), ros_type_param)) {
-
-
         ros2mqtt.ros.msg_type = ros_type_param.as_string();
         ros2mqtt.fixed_type = true;
         ros2mqtt.primitive = true;
-        RCLCPP_DEBUG(get_logger(), "Using explicit ros type %s", ros2mqtt.ros.msg_type.c_str ());
+        RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s'", ros2mqtt.ros.msg_type.c_str());
       }
 
       // ros2mqtt[k]/inject_timestamp
@@ -511,8 +509,6 @@ void MqttClient::loadParameters() {
       Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
       mqtt2ros.ros.topic = ros_topic;
 
-      RCLCPP_DEBUG(get_logger(), "MQTT %s to ROS %s", mqtt_topic.c_str(), ros_topic.c_str ());
-
       // mqtt2ros[k]/primitive
       rclcpp::Parameter primitive_param;
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), primitive_param))
@@ -524,8 +520,7 @@ void MqttClient::loadParameters() {
         mqtt2ros.ros.msg_type = ros_type_param.as_string();
         mqtt2ros.fixed_type = true;
         mqtt2ros.primitive = true;
-
-        RCLCPP_DEBUG(get_logger(), "Using explicit ros type %s for %s", mqtt2ros.ros.msg_type.c_str (), ros_topic.c_str ());
+        RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s' for '%s'", mqtt2ros.ros.msg_type.c_str(), ros_topic.c_str());
       }
 
       // mqtt2ros[k]/advanced/mqtt/qos

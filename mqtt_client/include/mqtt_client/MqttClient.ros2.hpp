@@ -73,8 +73,8 @@ class MqttClient : public rclcpp::Node,
   explicit MqttClient(const rclcpp::NodeOptions& options);
 
  protected:
-   class Ros2MqttInterface;
-   class Mqtt2RosInterface;
+   struct Ros2MqttInterface;
+   struct Mqtt2RosInterface;
 
   /**
    * @brief Loads ROS parameters from parameter server.
