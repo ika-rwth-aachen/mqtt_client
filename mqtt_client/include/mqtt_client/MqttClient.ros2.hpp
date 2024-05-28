@@ -474,7 +474,7 @@ class MqttClient : public rclcpp::Node,
       bool latched = false;  ///< whether to latch ROS message
       bool is_stale = false; ///< whether a new generic publisher/subscriber is required
     } ros;      ///< ROS-related variables
-    bool fixed_type = false;   ///< whether the published ros message type is specified explicitly
+    bool fixed_type = false; ///< whether the published ros message type is specified explicitly
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected

@@ -433,7 +433,6 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), ros_type_param)) {
         ros2mqtt.ros.msg_type = ros_type_param.as_string();
         ros2mqtt.fixed_type = true;
-        ros2mqtt.primitive = true;
         RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s'", ros2mqtt.ros.msg_type.c_str());
       }
 
@@ -532,7 +531,6 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.ros_type", mqtt_topic), ros_type_param)) {
         mqtt2ros.ros.msg_type = ros_type_param.as_string();
         mqtt2ros.fixed_type = true;
-        mqtt2ros.primitive = true;
         RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s' for '%s'", mqtt2ros.ros.msg_type.c_str(), ros_topic.c_str());
       }
 
@@ -1280,11 +1278,17 @@ void MqttClient::connected(const std::string& cause) {
 
   // subscribe MQTT topics
   for (const auto& [mqtt_topic, mqtt2ros] : mqtt2ros_) {
-    std::string mqtt_topic_to_subscribe = mqtt_topic;
-    if (!mqtt2ros.primitive)  // subscribe topics for ROS message types first
-      mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + mqtt_topic;
-    client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
-    RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
+    if (!mqtt2ros.primitive) {
+      std::string const mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + mqtt_topic;
+      client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
+      RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
+    }
+    // If not primitive and not fixed, we need the message type before we can public. In that case
+    // wait for the type to come in before subscribing to the data topic
+    if (mqtt2ros.primitive || mqtt2ros.fixed_type) {
+      client_->subscribe(mqtt_topic, mqtt2ros.mqtt.qos);
+      RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic.c_str());
+    }
   }
 }
 
@@ -1395,13 +1399,12 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
   if (mqtt2ros_.count(mqtt_topic) > 0) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
 
-    if (mqtt2ros.fixed_type) {
-      mqtt2fixed(mqtt_msg);
-      return;
-    }
-
     if (mqtt2ros.primitive) {
-      mqtt2primitive(mqtt_msg);
+      if (mqtt2ros.fixed_type) {
+        mqtt2fixed(mqtt_msg);
+      } else {
+        mqtt2primitive(mqtt_msg);
+      }
       return;
     }
   }
@@ -1431,6 +1434,21 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
     // if ROS message type has changed or if mapping is stale
     if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
+
+      if (mqtt2ros.fixed_type) {
+        // We should never be in this situation if the type has been set explicitly. As fixed_type
+        // is not currently supported through the service based bridge creation and the type name
+        // not matching means the fixed type specified in the configuration does not match the
+        // one we just recieved
+        if (ros_msg_type.name != mqtt2ros.ros.msg_type)
+          RCLCPP_ERROR(get_logger(),
+                       "Unexpected type name received for topic %s (expected %s but received %s)",
+                       mqtt2ros.ros.topic.c_str(), mqtt2ros.ros.msg_type.c_str(), ros_msg_type.name.c_str());
+        if (mqtt2ros.ros.is_stale)
+          RCLCPP_ERROR(get_logger(), "Topic %s has been unexpectedly marked stale",
+                       mqtt2ros.ros.topic.c_str());
+        return;
+      }
 
       mqtt2ros.ros.msg_type = ros_msg_type.name;
       mqtt2ros.stamped = ros_msg_type.stamped;

@@ -9,7 +9,7 @@
           - /ping/primitive
         /ping/primitive:
           mqtt_topic: pingpong/primitive
-          primitive: false
+          primitive: true
           ros_type: std_msgs/msg/Bool
           advanced:
             ros:
@@ -22,7 +22,7 @@
           - pingpong/primitive
         pingpong/primitive:
           ros_topic: /pong/primitive
-          primitive: false
+          primitive: true
           ros_type: std_msgs/msg/Bool
           advanced:
             ros:
