@@ -62,6 +62,18 @@ const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
 const std::string MqttClient::kLatencyRosTopicPrefix = "~/latencies/";
 
 template <typename T>
+T mqtt2float(mqtt::const_message_ptr mqtt_msg) {
+  auto str_msg = mqtt_msg->to_string ();
+  std::size_t pos;
+  const T v = std::stold(str_msg, &pos);
+
+  if (pos != str_msg.size())
+    throw std::invalid_argument ("not all charaters processed");
+
+  return v;
+}
+
+template <typename T>
 T mqtt2int(mqtt::const_message_ptr mqtt_msg) {
   auto str_msg = mqtt_msg->to_string ();
   std::size_t pos;
@@ -155,9 +167,17 @@ bool fixedMqtt2PrimitiveRos(mqtt::const_message_ptr mqtt_msg,
       serializeRosMessage(msg, serialized_msg);
       return true;
     } else if (msg_type == "std_msgs/msg/Float32") {
-      /// TODO
+      std_msgs::msg::Float32 msg;
+      msg.data = mqtt2float<float>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+      return true;
     } else if (msg_type == "std_msgs/msg/Float64") {
-      /// TODO
+      std_msgs::msg::Float64 msg;
+      msg.data = mqtt2float<double>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+      return true;
     }
   } catch (const std::exception &) {
   }
