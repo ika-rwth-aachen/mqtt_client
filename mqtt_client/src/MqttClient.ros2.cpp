@@ -452,7 +452,7 @@ void MqttClient::loadParameters() {
         ros2mqtt.ros.queue_size = queue_size_param.as_int();
 
       rclcpp::Parameter durability_param;
-      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.durability", mqtt_topic), durability_param)) {
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.durability", ros_topic), durability_param)) {
         const auto p = durability_param.as_string();
         if (p == "system_default") {
           ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::SystemDefault;
@@ -469,7 +469,7 @@ void MqttClient::loadParameters() {
       }
 
       rclcpp::Parameter reliability_param;
-      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.reliability", mqtt_topic), reliability_param)) {
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.reliability", ros_topic), reliability_param)) {
         const auto p = reliability_param.as_string();
         if (p == "system_default") {
           ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::SystemDefault;
@@ -778,8 +778,12 @@ void MqttClient::setupSubscriptions() {
         if (ros2mqtt.ros.subscriber)
           continue;
 
+        auto  const qos = rclcpp::QoS(ros2mqtt.ros.queue_size)
+                            .reliability(*ros2mqtt.ros.qos.reliability)
+                            .durability(*ros2mqtt.ros.qos.durability);
+
         ros2mqtt.ros.subscriber = create_generic_subscription(
-          ros_topic, ros2mqtt.ros.msg_type, ros2mqtt.ros.queue_size, bound_callback_func);
+          ros_topic, ros2mqtt.ros.msg_type, qos, bound_callback_func);
         ros2mqtt.ros.is_stale = false;
         RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
                     ros_topic.c_str(), ros2mqtt.ros.msg_type.c_str());
