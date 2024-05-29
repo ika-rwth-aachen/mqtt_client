@@ -12,6 +12,7 @@ jobs:
           - noetic
           - humble
           - iron
+          - jazzy
           - rolling
         ROS_REPO:
           - testing
