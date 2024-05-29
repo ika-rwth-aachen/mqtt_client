@@ -30,16 +30,18 @@ SOFTWARE.
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
+#include <mqtt/async_client.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
 #include <mqtt_client_interfaces/srv/new_mqtt2_ros_bridge.hpp>
 #include <mqtt_client_interfaces/srv/new_ros2_mqtt_bridge.hpp>
-#include <mqtt/async_client.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
+#include <rclcpp/qos.hpp>
 #include <std_msgs/msg/float64.hpp>
 
 
@@ -71,6 +73,9 @@ class MqttClient : public rclcpp::Node,
   explicit MqttClient(const rclcpp::NodeOptions& options);
 
  protected:
+   struct Ros2MqttInterface;
+   struct Mqtt2RosInterface;
+
   /**
    * @brief Loads ROS parameters from parameter server.
    */
@@ -98,8 +103,7 @@ class MqttClient : public rclcpp::Node,
    * @return  true         if parameter was successfully retrieved
    * @return  false        if parameter was not found or default was used
    */
-  bool loadParameter(const std::string& key, std::string& value,
-                     const std::string& default_value);
+  bool loadParameter(const std::string& key, std::string& value, const std::string& default_value);
 
   /**
    * @brief Loads requested ROS parameter from parameter server.
@@ -180,9 +184,41 @@ class MqttClient : public rclcpp::Node,
   void setup();
 
   /**
-   * @brief Checks all active ROS topics in order to set up generic subscribers.
+   * @brief Get the resolved compatible QOS from the interface and the endpoint
+   *
+   * This uses the two endpoints to decide upon a compatible QoS, resolving any "auto" QoS settings
+   *
+   * @param ros_topic the ROS topic we are looking on
+   * @param tei Topic endpoint info
+   * @param ros2mqtt the ROS to MQTT interface spec
+   *
+   * @returns The compatible QoS or nullopt if no compatible combination is found
+   */
+   std::optional<rclcpp::QoS> getCompatibleQoS(
+     const std::string& ros_topic, const rclcpp::TopicEndpointInfo& tei,
+     const Ros2MqttInterface& ros2mqtt) const;
+
+  /**
+   * @brief Get the candiate topic endpoints for subscription matching
+   *
+   * @param ros2mqtt the ROS to MQTT interface spec
+   *
+   * @returns The compatible QoS or nullopt if no compatible combination is found
+   */
+   std::vector<rclcpp::TopicEndpointInfo> getCandidatePublishers(
+     const std::string& ros_topic, const Ros2MqttInterface& ros2mqtt) const;
+
+  /**
+   * @brief Setup any subscriptions we can.
+   *
+   * These may be fixed type/QoS, or dynamically matched against active publisher
    */
   void setupSubscriptions();
+
+  /**
+   * @brief Setup any publishers that we can
+   */
+  void setupPublishers();
 
   /**
    * @brief Sets up the client connection options and initializes the client
@@ -236,11 +272,16 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief Publishes a primitive message received via MQTT to ROS.
    *
-   * Currently not implemented.
-   *
    * @param   mqtt_msg     MQTT message
    */
   void mqtt2primitive(mqtt::const_message_ptr mqtt_msg);
+
+  /**
+   * @brief Publishes a primitive message received via MQTT to ROS.
+   *
+   * @param   mqtt_msg     MQTT message
+   */
+  void mqtt2fixed(mqtt::const_message_ptr mqtt_msg);
 
   /**
    * @brief Callback for when the client has successfully connected to the
@@ -351,10 +392,9 @@ class MqttClient : public rclcpp::Node,
     std::string user;  ///< username
     std::string pass;  ///< password
     struct {
-      bool enabled;  ///< whether to connect via SSL/TLS
-      std::filesystem::path
-        ca_certificate;  ///< public CA certificate trusted by client
-    } tls;               ///< SSL/TLS-related variables
+      bool enabled;                          ///< whether to connect via SSL/TLS
+      std::filesystem::path ca_certificate;  ///< public CA certificate trusted by client
+    } tls;                                   ///< SSL/TLS-related variables
   };
 
   /**
@@ -377,14 +417,14 @@ class MqttClient : public rclcpp::Node,
     double keep_alive_interval;  ///< keep-alive interval
     int max_inflight;            ///< maximum number of inflight messages
     struct {
-      std::filesystem::path certificate;    ///< client certificate
-      std::filesystem::path key;            ///< client private keyfile
-      std::string password;                 ///< decryption password for private key
-      int version;                          ///< TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
-      bool verify;                          ///< Verify the client should conduct
-                                            ///< post-connect checks
-      std::vector<std::string> alpn_protos; ///< list of ALPN protocols
-    } tls;                   ///< SSL/TLS-related variables
+      std::filesystem::path certificate;     ///< client certificate
+      std::filesystem::path key;             ///< client private keyfile
+      std::string password;                  ///< decryption password for private key
+      int version;                           ///< TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
+      bool verify;                           ///< Verify the client should conduct
+                                             ///< post-connect checks
+      std::vector<std::string> alpn_protos;  ///< list of ALPN protocols
+    } tls;                                   ///< SSL/TLS-related variables
   };
 
   /**
@@ -397,12 +437,18 @@ class MqttClient : public rclcpp::Node,
       std::string msg_type;  ///< message type of subscriber
       int queue_size = 1;    ///< ROS subscriber queue size
       bool is_stale = false; ///< whether a new generic publisher/subscriber is required
+      struct {
+        // If these are set to nullopt then that part of the QoS is determine automatically based on discovery
+        std::optional<rclcpp::ReliabilityPolicy> reliability;
+        std::optional<rclcpp::DurabilityPolicy> durability;
+      } qos;
     } ros;                   ///< ROS-related variables
     struct {
       std::string topic;      ///< MQTT topic
       int qos = 0;            ///< MQTT QoS value
       bool retained = false;  ///< whether to retain MQTT message
     } mqtt;                   ///< MQTT-related variables
+    bool fixed_type = false;  ///< whether the published message type is specified explicitly
     bool primitive = false;   ///< whether to publish as primitive message
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
   };
@@ -412,8 +458,8 @@ class MqttClient : public rclcpp::Node,
    */
   struct Mqtt2RosInterface {
     struct {
-      int qos = 0;  ///< MQTT QoS value
-    } mqtt;         ///< MQTT-related variables
+      int qos = 0;      ///< MQTT QoS value
+    } mqtt;             ///< MQTT-related variables
     struct {
       std::string topic;     ///< ROS topic
       std::string msg_type;  ///< message type of publisher
@@ -421,9 +467,14 @@ class MqttClient : public rclcpp::Node,
       rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
         latency_publisher;   ///< ROS publisher for latency
       int queue_size = 1;    ///< ROS publisher queue size
+      struct {
+        rclcpp::ReliabilityPolicy reliability = rclcpp::ReliabilityPolicy::SystemDefault;
+        rclcpp::DurabilityPolicy durability = rclcpp::DurabilityPolicy::SystemDefault;
+      } qos;
       bool latched = false;  ///< whether to latch ROS message
       bool is_stale = false; ///< whether a new generic publisher/subscriber is required
-    } ros;                   ///< ROS-related variables
+    } ros;      ///< ROS-related variables
+    bool fixed_type = false; ///< whether the published ros message type is specified explicitly
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
@@ -535,27 +586,25 @@ bool MqttClient::loadParameter(const std::string& key, T& value,
 
 
 template <typename T>
-bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value)
-{
+bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value) {
   const bool found = get_parameter(key, value);
   if (found)
     RCLCPP_WARN(get_logger(), "Retrieved parameter '%s' = '[%s]'", key.c_str(),
-                  fmt::format("{}", fmt::join(value, ", ")).c_str());
+                fmt::format("{}", fmt::join(value, ", ")).c_str());
   return found;
 }
 
 
 template <typename T>
 bool MqttClient::loadParameter(const std::string& key, std::vector<T>& value,
-                               const std::vector<T>& default_value)
-{
+                               const std::vector<T>& default_value) {
   const bool found = get_parameter_or(key, value, default_value);
   if (!found)
     RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'",
                 key.c_str(), fmt::format("{}", fmt::join(value, ", ")).c_str());
   if (found)
     RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
-                  fmt::format("{}", fmt::join(value, ", ")).c_str());
+                 fmt::format("{}", fmt::join(value, ", ")).c_str());
   return found;
 }
 
