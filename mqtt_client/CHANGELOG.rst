@@ -2,6 +2,19 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.3.0 (2024-05-30)
+------------------
+* Merge pull request `#61 <https://github.com/ika-rwth-aachen/mqtt_client/issues/61>`_ from Chance-Maritime-Technologies/dev-explicitTypes
+  Added the ability to explicitly set type names and some QoS settings
+* Merge remote-tracking branch 'upstream/main' into dev-explicitTypes
+* Merge pull request `#63 <https://github.com/ika-rwth-aachen/mqtt_client/issues/63>`_ from tecnalia-medical-robotics/system-fmt
+  Use system version of libfmt instead of rosfmt vendored one on ROS 1
+* Merge pull request `#60 <https://github.com/ika-rwth-aachen/mqtt_client/issues/60>`_ from ika-rwth-aachen/feature/nodename_in_params_file
+  Modify ROS2 node name in params files
+* Merge pull request `#58 <https://github.com/ika-rwth-aachen/mqtt_client/issues/58>`_ from ika-rwth-aachen/feature/configure_node_name
+  Make ROS/ROS2 node name configurable via launch file
+* Contributors: JayHerpin, Lennart Reiher
+
 2.2.1 (2024-03-19)
 ------------------
 * Merge pull request #50 from babakc/main

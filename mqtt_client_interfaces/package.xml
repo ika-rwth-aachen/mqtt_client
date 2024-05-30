@@ -2,7 +2,7 @@
 <package format="3">
 
   <name>mqtt_client_interfaces</name>
-  <version>2.2.1</version>
+  <version>2.3.0</version>
   <description>Message and service definitions for mqtt_client</description>
 
   <maintainer email="lennart.reiher@rwth-aachen.de">Lennart Reiher</maintainer>
