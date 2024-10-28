@@ -7,7 +7,7 @@ jobs:
   ros:
     runs-on: ubuntu-latest
     steps:
-      - uses: ika-rwth-aachen/docker-ros@main
+      - uses: ika-rwth-aachen/docker-ros@fix/slim-github-ci
         with:
           platform: amd64,arm64
           target: run
@@ -19,7 +19,7 @@ jobs:
   ros2:
     runs-on: ubuntu-latest
     steps:
-      - uses: ika-rwth-aachen/docker-ros@main
+      - uses: ika-rwth-aachen/docker-ros@fix/slim-github-ci
         with:
           platform: amd64,arm64
           target: run
