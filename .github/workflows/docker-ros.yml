@@ -9,20 +9,22 @@ jobs:
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
         with:
+          platform: amd64,arm64
+          target: run
           image-tag: ros
           base-image: rwthika/ros:latest
           command: roslaunch mqtt_client standalone.launch
-          platform: amd64,arm64
-          target: run
+          enable-industrial-ci: 'true'
 
   ros2:
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
         with:
-          image-tag: ros2
-          base-image: rwthika/ros2:latest
-          command: ros2 launch mqtt_client standalone.launch.ros2.xml
           platform: amd64,arm64
           target: run
+          image-tag: ros2
           enable-push-as-latest: 'true'
+          base-image: rwthika/ros2:latest
+          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          enable-industrial-ci: 'true'
