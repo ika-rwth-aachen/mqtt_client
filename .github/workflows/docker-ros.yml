@@ -28,3 +28,4 @@ jobs:
           base-image: rwthika/ros2:latest
           command: ros2 launch mqtt_client standalone.launch.ros2.xml
           enable-industrial-ci: 'true'
+          rmw-implementation: rmw_zenoh_cpp
