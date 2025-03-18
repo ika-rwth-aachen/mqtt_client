@@ -18,7 +18,7 @@ ros2:
     strategy: depend
   variables:
     IMAGE_TAG: ros2
-    BASE_IMAGE: rwthika/ros2:latest
+    BASE_IMAGE: rwthika/ros2:humble
     COMMAND: ros2 launch mqtt_client standalone.launch.ros2.xml
     PLATFORM: amd64,arm64
     TARGET: dev,run
