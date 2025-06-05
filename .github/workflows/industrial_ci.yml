@@ -9,10 +9,10 @@ jobs:
     strategy:
       matrix:
         ROS_DISTRO:
-          - noetic
           - humble
           - iron
           - jazzy
+          - kilted
           - rolling
         ROS_REPO:
           - testing

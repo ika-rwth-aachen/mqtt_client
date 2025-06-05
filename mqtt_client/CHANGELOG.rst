@@ -2,6 +2,11 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.4.0 (2024-06-05)
+------------------
+* Dropped ROS 1 support
+* Added compatibility with ROS 2 Kilted
+
 2.3.0 (2024-05-30)
 ------------------
 * Merge pull request `#61 <https://github.com/ika-rwth-aachen/mqtt_client/issues/61>`_ from Chance-Maritime-Technologies/dev-explicitTypes

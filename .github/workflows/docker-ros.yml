@@ -4,18 +4,6 @@ on: push
 
 jobs:
 
-  ros:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: ika-rwth-aachen/docker-ros@main
-        with:
-          platform: amd64,arm64
-          target: run
-          image-tag: ros
-          base-image: rwthika/ros:latest
-          command: roslaunch mqtt_client standalone.launch
-          enable-industrial-ci: 'true'
-
   ros2:
     runs-on: ubuntu-latest
     steps:

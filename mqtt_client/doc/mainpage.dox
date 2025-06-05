@@ -4,7 +4,7 @@
 
 \htmlinclude manifest.html
 
-\b mqtt_client provides a ROS nodelet that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the MQTT protocol. This works generically for arbitrary ROS message types.
+\b mqtt_client provides a ROS 2 component node that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the MQTT protocol. This works generically for arbitrary ROS message types.
 
 Please note that this is the Code API Documentation. Check out the <a href=https://github.com/ika-rwth-aachen/mqtt_client>GitHub repository</a> for more information on how to use the package, including a <i>Quick Start</i> guide.
 
