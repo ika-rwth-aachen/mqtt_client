@@ -14,7 +14,6 @@ jobs:
           - kilted
           - rolling
         ROS_REPO:
-          - testing
           - main
     steps:
       - uses: actions/checkout@v3

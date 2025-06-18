@@ -4,15 +4,51 @@ on: push
 
 jobs:
 
-  ros2:
+  ros2-humble:
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
         with:
           platform: amd64,arm64
           target: run
-          image-tag: ros2
-          enable-push-as-latest: 'true'
-          base-image: rwthika/ros2:latest
+          base-image: rwthika/ros2:humble
           command: ros2 launch mqtt_client standalone.launch.ros2.xml
-          enable-industrial-ci: 'true'
+          image-tag: humble
+          rmw-implementation: rmw_zenoh_cpp
+
+  ros2-jazzy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ika-rwth-aachen/docker-ros@main
+        with:
+          platform: amd64,arm64
+          target: run
+          base-image: rwthika/ros2:jazzy
+          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          image-tag: jazzy
+          enable-push-as-latest: 'true'
+          rmw-implementation: rmw_zenoh_cpp
+
+  ros2-kilted:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ika-rwth-aachen/docker-ros@main
+        with:
+          platform: amd64,arm64
+          target: run
+          base-image: rwthika/ros2:kilted
+          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          image-tag: kilted
+          rmw-implementation: rmw_zenoh_cpp
+
+  ros2-rolling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ika-rwth-aachen/docker-ros@main
+        with:
+          platform: amd64,arm64
+          target: run
+          base-image: rwthika/ros2:rolling
+          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          image-tag: rolling
+          rmw-implementation: rmw_zenoh_cpp

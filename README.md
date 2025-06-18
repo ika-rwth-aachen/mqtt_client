@@ -53,7 +53,7 @@ colcon build --packages-up-to mqtt_client --cmake-args -DCMAKE_BUILD_TYPE=Releas
 
 ```bash
 # ROS 2
-docker run --rm ghcr.io/ika-rwth-aachen/mqtt_client:ros2
+docker run --rm ghcr.io/ika-rwth-aachen/mqtt_client:latest # or distro-specific tags, e.g., :rolling
 ```
 
 
