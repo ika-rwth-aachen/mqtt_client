@@ -5,12 +5,11 @@
   <img src="https://img.shields.io/github/license/ika-rwth-aachen/mqtt_client"/></a>
   <a href="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/industrial_ci.yml"><img src="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/industrial_ci.yml/badge.svg"/></a>
   <a href="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/docker-ros.yml"><img src="https://github.com/ika-rwth-aachen/mqtt_client/actions/workflows/docker-ros.yml/badge.svg"/></a>
-  <img src="https://img.shields.io/badge/ROS-noetic-blueviolet"/>
-  <img src="https://img.shields.io/badge/ROS 2-humble|iron|jazzy|rolling-blueviolet"/>
+  <img src="https://img.shields.io/badge/ROS 2-humble|jazzy|kilted|rolling-293754"/>
   <a href="https://github.com/ika-rwth-aachen/mqtt_client"><img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
 </p>
 
-The *mqtt_client* package provides a ROS nodelet or ROS 2 component node that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types. The *mqtt_client* can also exchange primitive messages with MQTT clients running on devices not based on ROS.
+The *mqtt_client* package provides a ROS 2 component node that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types. The *mqtt_client* can also exchange primitive messages with MQTT clients running on devices not based on ROS.
 
 > [!IMPORTANT]  
 > This repository is open-sourced and maintained by the [**Institute for Automotive Engineering (ika) at RWTH Aachen University**](https://www.ika.rwth-aachen.de/).  
@@ -27,29 +26,23 @@ The *mqtt_client* package provides a ROS nodelet or ROS 2 component node that en
 - [Primitive Messages](#primitive-messages)
 - [Latency Computation](#latency-computation)
 - [Package Summary](#package-summary)
-- [How It Works](#how-it-works)
 - [Acknowledgements](#acknowledgements)
 
 ## Installation
 
-The *mqtt_client* package is released as an official ROS / ROS 2 package and can easily be installed via a package manager.
+The *mqtt_client* package is released as an official ROS 2 package and can easily be installed via a package manager.
 
 ```bash
 sudo apt update
 sudo apt install ros-$ROS_DISTRO-mqtt-client
 ```
 
-If you would like to install *mqtt_client* from source, simply clone this repository into your ROS workspace. All dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
+If you would like to install *mqtt_client* from source, simply clone this repository into your ROS 2 workspace. All dependencies that are listed in the ROS [`package.xml`](package.xml) can be installed using [*rosdep*](http://wiki.ros.org/rosdep).
 
 ```bash
 # mqtt_client$
 rosdep install -r --ignore-src --from-paths .
 
-# ROS
-# workspace$
-catkin build -DCMAKE_BUILD_TYPE=Release mqtt_client
-
-# ROS 2
 # workspace$
 colcon build --packages-up-to mqtt_client --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
@@ -59,11 +52,7 @@ colcon build --packages-up-to mqtt_client --cmake-args -DCMAKE_BUILD_TYPE=Releas
 *mqtt_client* is also available as a Docker image, containerized through [*docker-ros*](https://github.com/ika-rwth-aachen/docker-ros).
 
 ```bash
-# ROS
-docker run --rm ghcr.io/ika-rwth-aachen/mqtt_client:ros
-
-# ROS 2
-docker run --rm ghcr.io/ika-rwth-aachen/mqtt_client:ros2
+docker run --rm ghcr.io/ika-rwth-aachen/mqtt_client:latest # or distro-specific tags, e.g., :rolling
 ```
 
 
@@ -89,7 +78,7 @@ For a more advanced setup of your own broker, check out our instructions for run
 
 #### Demo Configuration
 
-The *mqtt_client* is best configured with a ROS parameter *yaml* file. The configuration shown below (also see [`params.yaml`](mqtt_client/config/params.yaml) / [`params.ros2.yaml`](mqtt_client/config/params.ros2.yaml)) allows an exchange of messages as follows:
+The *mqtt_client* is best configured with a ROS parameter *yaml* file. The configuration shown below (also see [`params.yaml`](mqtt_client/config/params.yaml) / [`params.yaml`](mqtt_client/config/params.yaml)) allows an exchange of messages as follows:
 
 - ROS messages received locally on ROS topic `/ping/ros` are sent to the broker on MQTT topic `pingpong/ros`;
 - MQTT messages received from the broker on MQTT topic `pingpong/ros` are published locally on ROS topic `/pong/ros`;
@@ -117,14 +106,10 @@ bridge:
 
 #### Demo Client Launch
 
-After building your ROS workspace, launch the *mqtt_client* node with the pre-configured demo parameters using *roslaunch*, which should yield the following output.
+Launch the *mqtt_client* node with the pre-configured demo parameters:
 
 ```bash
-# ROS
-roslaunch mqtt_client standalone.launch
-
-# ROS 2
-ros2 launch mqtt_client standalone.launch.ros2.xml
+ros2 launch mqtt_client standalone.launch.xml
 ```
 
 ```txt
@@ -148,49 +133,28 @@ In order to test the communication among *mqtt_clients*, publish any ROS message
 
 ```bash
 # 1st terminal: publish ROS message to /ping
-
-# ROS
-rostopic pub -r 1 /ping/ros std_msgs/String "Hello MQTT"
-
-# ROS 2
 ros2 topic pub /ping/ros std_msgs/msg/String "{data: \"Hello MQTT\"}"
 ```
 
 ```bash
 # 2nd terminal: listen for ROS messages on /pong
-
-# ROS
-rostopic echo /pong/ros
-
-# ROS 2
 ros2 topic echo /pong/ros
 ```
 
 In order to test the communication between *mqtt_client* and other MQTT clients, publish a primitive ROS message on ROS topic `/ping/primitive`, directly publish a primitive MQTT message on MQTT topic `pingpong/primitive` and wait for responses on ROS topic `/pong/primitive`. Note that you need to restart the ROS 2 *mqtt_client* with a different config file.
 
 ```bash
-# ROS 2
 # mqtt_client$
-ros2 launch mqtt_client standalone.launch.ros2.xml params_file:=$(ros2 pkg prefix mqtt_client)/share/mqtt_client/config/params.ros2.primitive.yaml
+ros2 launch mqtt_client standalone.launch.xml params_file:=$(ros2 pkg prefix mqtt_client)/share/mqtt_client/config/params.primitive.yaml
 ```
 
 ```bash
 # 3rd terminal: publish primitive ROS message to /ping/primitive
-
-# ROS
-rostopic pub -r 1 /ping/primitive std_msgs/Int32 42
-
-# ROS2
 ros2 topic pub /ping/primitive std_msgs/msg/Int32 "{data: 42}"
 ```
 
 ```bash
 # 4th terminal: listen for primitive ROS messages on /pong/primitive
-
-# ROS
-rostopic echo /pong/primitive
-
-# ROS2
 ros2 topic echo /pong/primitive
 ```
 
@@ -206,24 +170,16 @@ If everything works as expected, the second terminal should print a message at 1
 You can start the *mqtt_client* node with:
 
 ```bash
-# ROS
-roslaunch mqtt_client standalone.launch
-
-# ROS 2
-ros2 launch mqtt_client standalone.launch.ros2.xml
+ros2 launch mqtt_client standalone.launch.xml
 ```
 
-This will automatically load the provided demo [`params.yaml`](mqtt_client/config/params.yaml) / [`params.ros2.yaml`](mqtt_client/config/params.ros2.yaml). If you wish to load your custom configuration file, simply pass `params_file`.
+This will automatically load the provided demo [`params.yaml`](mqtt_client/config/params.yaml) / [`params.yaml`](mqtt_client/config/params.yaml). If you wish to load your custom configuration file, simply pass `params_file`.
 
 ```bash
-# ROS
-roslaunch mqtt_client standalone.launch params_file:="</PATH/TO/PARAMS.YAML>"
-
-# ROS 2
-ros2 launch mqtt_client standalone.launch.ros2.xml params_file:="</PATH/TO/PARAMS.YAML>"
+ros2 launch mqtt_client standalone.launch.xml params_file:="</PATH/TO/PARAMS.YAML>"
 ```
 
-In order to exploit the benefits of *mqtt_client* being a ROS nodelet / ROS 2 component, load the nodelet / component to your own nodelet manager / component container.
+In order to exploit the benefits of *mqtt_client* being a ROS 2 component, load the component into your own component container.
 
 ### Configuration
 
@@ -268,35 +224,6 @@ client:
 ```
 
 #### Bridge Parameters
-
-##### ROS
-
-```yaml
-bridge:
-  ros2mqtt:              # Array specifying which ROS topics to map to which MQTT topics
-    - ros_topic:         # ROS topic whose messages are transformed to MQTT messages
-      mqtt_topic:        # MQTT topic on which the corresponding ROS messages are sent to the broker
-      primitive:         # [false] whether to publish as primitive message
-      inject_timestamp:  # [false] whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)
-      advanced:
-        ros:
-          queue_size:    # [1] ROS subscriber queue size
-        mqtt:
-          qos:           # [0] MQTT QoS value
-          retained:      # [false] whether to retain MQTT message
-  mqtt2ros:              # Array specifying which MQTT topics to map to which ROS topics
-    - mqtt_topic:        # MQTT topic on which messages are received from the broker
-      ros_topic:         # ROS topic on which corresponding MQTT messages are published
-      primitive:         # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
-      advanced:
-        mqtt:
-          qos:           # [0] MQTT QoS value
-        ros:
-          queue_size:    # [1] ROS publisher queue size
-          latched:       # [false] whether to latch ROS message
-```
-
-##### ROS 2
 
 ```yaml
 bridge:
@@ -350,23 +277,15 @@ The *mqtt_client* provides built-in functionality to measure the latency of tran
 
 In order to inject the current timestamp into outgoing MQTT messages, the parameter `inject_timestamp` has to be set for the corresponding `bridge/ros2mqtt` entry. The receiving *mqtt_client* will then automatically publish the measured latency in seconds as a ROS `std_msgs/Float64` message on topic `/<mqtt_client_name>/latencies/<mqtt2ros/ros_topic>`.
 
-These latencies can be printed easily with *rostopic echo*
+These latencies can be printed easily with:
 
 ```bash
-# ROS
-rostopic echo --clear /<mqtt_client_name>/latencies/<mqtt2ros/ros_topic>/data
-
-# ROS 2
 ros2 topic echo /<mqtt_client_name>/latencies/<mqtt2ros/ros_topic>/data
 ```
 
 or plotted with [rqt_plot](http://wiki.ros.org/rqt_plot):
 
 ```bash
-# ROS
-rosrun rqt_plot rqt_plot /<mqtt_client_name>/latencies/<mqtt2ros/ros_topic>/data
-
-# ROS 2
 ros2 run rqt_plot rqt_plot /<mqtt_client_name>/latencies/<mqtt2ros/ros_topic>/data
 ```
 
@@ -375,56 +294,25 @@ ros2 run rqt_plot rqt_plot /<mqtt_client_name>/latencies/<mqtt2ros/ros_topic>/da
 
 This short package summary documents the package in line with the [ROS Wiki Style Guide](http://wiki.ros.org/StyleGuide).
 
-### ROS
+### Components
 
-#### Nodelets
-
-##### `mqtt_client/MqttClient`
+#### `mqtt_client/MqttClient`
 
 Enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol.
 
-###### Subscribed Topics
-
-- `<bridge/ros2mqtt[*]/ros_topic>` ([`topic_tools/ShapeShifter`](http://wiki.ros.org/topic_tools))
-  ROS topic whose messages are transformed to MQTT messages and sent to the MQTT broker. May have arbitrary ROS message type.
-
-###### Published Topics
-
-- `<bridge/mqtt2ros[*]/ros_topic>` ([`topic_tools/ShapeShifter`](http://wiki.ros.org/topic_tools))
-  ROS topic on which MQTT messages received from the MQTT broker are published. May have arbitrary ROS message type.
-- `~/latencies/<bridge/mqtt2ros[*]/ros_topic>` ([`std_msgs/Float64`](https://docs.ros.org/en/api/std_msgs/html/msg/Float64.html))
-  Latencies measured on the message transfer to `<bridge/mqtt2ros[*]/ros_topic>` are published here, if the received messages have a timestamp injected (see [Latency Computation](#latency-computation)).
-
-###### Services
-
-- `~is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
-  Returns whether the client is connected to the MQTT broker.
-
-###### Parameters
-
-See [Configuration](#configuration).
-
-### ROS 2
-
-#### Components
-
-##### `mqtt_client/MqttClient`
-
-Enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol.
-
-###### Subscribed Topics
+##### Subscribed Topics
 
 - `<bridge/ros2mqtt/ros_topic>` ([`rclcpp::SerializedMessage`](https://docs.ros.org/en/ros2_packages/rolling/api/rclcpp/generated/classrclcpp_1_1GenericSubscription.html))
   ROS topic whose messages are transformed to MQTT messages and sent to the MQTT broker. May have arbitrary ROS message type.
 
-###### Published Topics
+##### Published Topics
 
 - `<bridge/mqtt2ros/ros_topic>` ([`rclcpp::SerializedMessage`](https://docs.ros.org/en/ros2_packages/rolling/api/rclcpp/generated/classrclcpp_1_1GenericPublisher.html))
   ROS topic on which MQTT messages received from the MQTT broker are published. May have arbitrary ROS message type.
 - `~/latencies/<bridge/mqtt2ros/ros_topic>` ([`std_msgs/Float64`](https://docs.ros.org/en/api/std_msgs/html/msg/Float64.html))
   Latencies measured on the message transfer to `<bridge/mqtt2ros/ros_topic>` are published here, if the received messages have a timestamp injected (see [Latency Computation](#latency-computation)).
 
-###### Services
+##### Services
 
 - `~/is_connected` ([`mqtt_client/srv/IsConnected`](mqtt_client_interfaces/srv/IsConnected.srv))
   Returns whether the client is connected to the MQTT broker.
@@ -435,55 +323,9 @@ Enables connected ROS-based devices or robots to exchange ROS messages via an MQ
 - `~/new_mqtt2ros_bridge` ([`mqtt_client/srv/NewMqtt2RosBridge`](mqtt_client_interfaces/srv/NewMqtt2RosBridge.srv))
   Returns whether a new MQTT -> ROS bridge was created.
 
-
-
-###### Parameters
+##### Parameters
 
 See [Configuration](#configuration).
-
-
-## How It Works
-
-### ROS
-
-The *mqtt_client* is able to bridge ROS messages of arbitrary message type to an MQTT broker. To this end, it needs to employ generic ROS subscribers and publishers, which only take shape at runtime.
-
-These generic ROS subscribers and publishers are realized through [topic_tools::ShapeShifter](http://docs.ros.org/diamondback/api/topic_tools/html/classtopic__tools_1_1ShapeShifter.html). For each pair of `ros_topic` and `mqtt_topic` specified under `bridge/ros2mqtt/`, a ROS subscriber is setup with the following callback signature:
-
-```cpp
-void ros2mqtt(topic_tools::ShapeShifter::ConstPtr&, std::string&)
-```
-
-Inside the callback, the generic messages received on the `ros_topic` are serialized using [ros::serialization](http://wiki.ros.org/roscpp/Overview/MessagesSerializationAndAdaptingTypes). The serialized form is then ready to be sent to the MQTT broker on the specified `mqtt_topic`.
-
-Upon retrieval of an MQTT message, it is republished as a ROS message on the ROS network. To this end, [topic_tools::ShapeShifter::morph](http://docs.ros.org/indigo/api/topic_tools/html/classtopic__tools_1_1ShapeShifter.html#a2b74b522fb49dac05d48f466b6b87d2d) is used to have the ShapeShifter publisher take the shape of the specific ROS message type.
-
-The required metainformation on the ROS message type can however only be extracted in the ROS subscriber callback of the publishing *mqtt_client* with calls to [topic_tools::ShapeShifter::getMD5Sum](http://docs.ros.org/indigo/api/topic_tools/html/classtopic__tools_1_1ShapeShifter.html#af05fbf42757658e4c6a0f99ff72f7daa), [topic_tools::ShapeShifter::getDataType](http://docs.ros.org/indigo/api/topic_tools/html/classtopic__tools_1_1ShapeShifter.html#a9d57b2285213fda5e878ce7ebc42f0fb), and [topic_tools::ShapeShifter::getMessageDefinition](http://docs.ros.org/indigo/api/topic_tools/html/classtopic__tools_1_1ShapeShifter.html#a503af7234eeba0ccefca64c4d0cc1df0). These attributes are wrapped in a ROS message of custom type [mqtt_client::RosMsgType](mqtt_client_interfaces/msg/RosMsgType.msg), serialized using [ros::serialization](http://wiki.ros.org/roscpp/Overview/MessagesSerializationAndAdaptingTypes) and also shared via the MQTT broker on a special topic.
-
-When an *mqtt_client* receives such ROS message type metainformation, it configures the corresponding ROS ShapeShifter publisher using [topic_tools::ShapeShifter::morph](http://docs.ros.org/indigo/api/topic_tools/html/classtopic__tools_1_1ShapeShifter.html#a2b74b522fb49dac05d48f466b6b87d2d).
-
-The *mqtt_client* also provides functionality to measure the latency of transferring a ROS message via an MQTT broker back to ROS. To this end, the sending client injects the current timestamp into the MQTT message. The receiving client can then compute the latency between message reception time and the injected timestamp. The information about whether a timestamp is injected is also included in the custom [mqtt_client::RosMsgType](mqtt_client_interfaces/msg/RosMsgType.msg) message that is sent before. The actual `std::vector<uint8>` message payload takes on one of the following forms:
-
-```txt
-[... serialized timestamp ... | ... serialized ROS messsage ...]
-[... serialized ROS messsage ...]
-```
-
-To summarize, the dataflow is as follows:
-
-- a ROS message of arbitrary type is received on ROS topic `<ros2mqtt_ros_topic>` and passed to the generic callback
-  - ROS message type information is extracted and wrapped as a `RosMsgType`
-  - ROS message type information is serialized and sent via the MQTT broker on MQTT topic `mqtt_client/ros_msg_type/<ros2mqtt_mqtt_topic>`
-  - the actual ROS message is serialized
-  - if `inject_timestamp`, the current timestamp is serialized and concatenated with the message
-  - the actual MQTT message is sent via the MQTT broker on MQTT topic `<ros2mqtt_mqtt_topic>`
-- an MQTT message containing the ROS message type information is received on MQTT topic `mqtt_client/ros_msg_type/<ros2mqtt_mqtt_topic>`
-  - message type information is extracted and the ShapeShifter ROS publisher is configured
-  - information about whether a timestamp is injected is stored for the specific topic
-- an MQTT message containing the actual ROS message is received
-  - depending on whether a timestamp is injected, it is decoded into the serialized ROS message and the serialized timestamp
-  - if the message contained a timestamp, the latency is computed and published on ROS topic `~/latencies/<mqtt2ros_ros_topic>`
-  - the serialized ROS message is published using the *ShapeShifter* on ROS topic `<mqtt2ros_ros_topic>`
 
 
 ## Acknowledgements

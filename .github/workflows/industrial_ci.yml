@@ -9,13 +9,11 @@ jobs:
     strategy:
       matrix:
         ROS_DISTRO:
-          - noetic
           - humble
-          - iron
           - jazzy
+          - kilted
           - rolling
         ROS_REPO:
-          - testing
           - main
     steps:
       - uses: actions/checkout@v3

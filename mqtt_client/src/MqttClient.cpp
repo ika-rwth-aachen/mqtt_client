@@ -28,30 +28,29 @@ SOFTWARE.
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <memory>
+#include <stdexcept>
 #include <vector>
 
-#include <mqtt_client/MqttClient.h>
-#include <mqtt_client_interfaces/RosMsgType.h>
-#include <pluginlib/class_list_macros.h>
-#include <ros/message_traits.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Char.h>
-#include <std_msgs/Float32.h>
-#include <std_msgs/Float64.h>
-#include <std_msgs/Int16.h>
-#include <std_msgs/Int32.h>
-#include <std_msgs/Int64.h>
-#include <std_msgs/Int8.h>
-#include <std_msgs/String.h>
-#include <std_msgs/UInt16.h>
-#include <std_msgs/UInt32.h>
-#include <std_msgs/UInt64.h>
-#include <std_msgs/UInt8.h>
-#include <xmlrpcpp/XmlRpcException.h>
-#include <xmlrpcpp/XmlRpcValue.h>
+#include <mqtt_client/MqttClient.hpp>
+#include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
+#include <rcpputils/env.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/char.hpp>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/float64.hpp>
+#include <std_msgs/msg/int16.hpp>
+#include <std_msgs/msg/int32.hpp>
+#include <std_msgs/msg/int64.hpp>
+#include <std_msgs/msg/int8.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <std_msgs/msg/u_int16.hpp>
+#include <std_msgs/msg/u_int32.hpp>
+#include <std_msgs/msg/u_int64.hpp>
+#include <std_msgs/msg/u_int8.hpp>
 
-
-PLUGINLIB_EXPORT_CLASS(mqtt_client::MqttClient, nodelet::Nodelet)
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(mqtt_client::MqttClient)
 
 
 namespace mqtt_client {
@@ -60,82 +59,198 @@ namespace mqtt_client {
 const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
   "mqtt_client/ros_msg_type/";
 
-const std::string MqttClient::kLatencyRosTopicPrefix = "latencies/";
+const std::string MqttClient::kLatencyRosTopicPrefix = "~/latencies/";
 
+template <typename T>
+T mqtt2float(mqtt::const_message_ptr mqtt_msg) {
+  auto str_msg = mqtt_msg->to_string ();
+  std::size_t pos;
+  const T v = std::stold(str_msg, &pos);
+
+  if (pos != str_msg.size())
+    throw std::invalid_argument ("not all characters processed");
+
+  return v;
+}
+
+template <typename T>
+T mqtt2int(mqtt::const_message_ptr mqtt_msg) {
+  auto str_msg = mqtt_msg->to_string ();
+  std::size_t pos;
+  const T v = std::stoll(str_msg, &pos);
+
+  if (pos != str_msg.size())
+    throw std::invalid_argument ("not all characters processed");
+
+  return v;
+}
+
+bool mqtt2bool(mqtt::const_message_ptr mqtt_msg) {
+  const std::string str_msg = mqtt_msg->to_string ();
+  std::string bool_str = mqtt_msg->to_string ();
+  std::transform(str_msg.cbegin(), str_msg.cend(), bool_str.begin(),
+                 ::tolower);
+  if (bool_str == "true" || bool_str == "1") return true;
+  if (bool_str == "false" || bool_str == "0") return false;
+
+  throw std::invalid_argument ("unable to decode string");
+}
+
+bool fixedMqtt2PrimitiveRos(mqtt::const_message_ptr mqtt_msg,
+                            const std::string& msg_type,
+                            rclcpp::SerializedMessage &serialized_msg) {
+  try {
+    if (msg_type == "std_msgs/msg/String") {
+      std_msgs::msg::String msg;
+      msg.data = mqtt_msg->to_string();
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Bool") {
+      std_msgs::msg::Bool msg;
+      msg.data = mqtt2bool(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Char") {
+      std_msgs::msg::Char msg;
+      msg.data = mqtt2int<int8_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/UInt8") {
+      std_msgs::msg::UInt8 msg;
+      msg.data = mqtt2int<uint8_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/UInt16") {
+      std_msgs::msg::UInt16 msg;
+      msg.data = mqtt2int<uint16_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/UInt32") {
+      std_msgs::msg::UInt32 msg;
+      msg.data = mqtt2int<uint32_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/UInt64") {
+      std_msgs::msg::UInt64 msg;
+      msg.data = mqtt2int<uint64_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Int8") {
+      std_msgs::msg::Int8 msg;
+      msg.data = mqtt2int<int8_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Int16") {
+      std_msgs::msg::Int16 msg;
+      msg.data = mqtt2int<int16_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Int32") {
+      std_msgs::msg::Int32 msg;
+      msg.data = mqtt2int<int32_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Int64") {
+      std_msgs::msg::Int64 msg;
+      msg.data = mqtt2int<int64_t>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Float32") {
+      std_msgs::msg::Float32 msg;
+      msg.data = mqtt2float<float>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else if (msg_type == "std_msgs/msg/Float64") {
+      std_msgs::msg::Float64 msg;
+      msg.data = mqtt2float<double>(mqtt_msg);
+
+      serializeRosMessage(msg, serialized_msg);
+    } else {
+      throw std::domain_error("Unhandled message type (" + msg_type + ")");
+    }
+
+    return true;
+
+  } catch (const std::exception &) {
+    return false;
+  }
+
+
+}
 
 /**
  * @brief Extracts string of primitive data types from ROS message.
  *
  * This is helpful to extract the actual data payload of a primitive ROS
- * message. If e.g. an std_msgs/String is serialized to a string
+ * message. If e.g. an std_msgs/msg/String is serialized to a string
  * representation, it also contains the field name 'data'. This function
  * instead returns the underlying value as string.
  *
- * The following primitive ROS message types are supported:
- *   std_msgs/String
- *   std_msgs/Bool
- *   std_msgs/Char
- *   std_msgs/UInt8
- *   std_msgs/UInt16
- *   std_msgs/UInt32
- *   std_msgs/UInt64
- *   std_msgs/Int8
- *   std_msgs/Int16
- *   std_msgs/Int32
- *   std_msgs/Int64
- *   std_msgs/Float32
- *   std_msgs/Float64
- *
- * @param [in]  msg        generic ShapeShifter ROS message
- * @param [out] primitive  string representation of primitive message data
+ * @param [in]  serialized_msg  generic serialized ROS message
+ * @param [in]  msg_type        ROS message type, e.g. `std_msgs/msg/String`
+ * @param [out] primitive       string representation of primitive message data
  *
  * @return true  if primitive ROS message type was found
  * @return false if ROS message type is not primitive
  */
-bool primitiveRosMessageToString(const topic_tools::ShapeShifter::ConstPtr& msg,
-                                 std::string& primitive) {
+bool primitiveRosMessageToString(
+  const std::shared_ptr<rclcpp::SerializedMessage>& serialized_msg,
+  const std::string& msg_type, std::string& primitive) {
 
   bool found_primitive = true;
-  const std::string& msg_type_md5 = msg->getMD5Sum();
 
-  if (msg_type_md5 == ros::message_traits::MD5Sum<std_msgs::String>::value()) {
-    primitive = msg->instantiate<std_msgs::String>()->data;
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Bool>::value()) {
-    primitive = msg->instantiate<std_msgs::Bool>()->data ? "true" : "false";
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Char>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Char>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::UInt8>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::UInt8>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::UInt16>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::UInt16>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::UInt32>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::UInt32>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::UInt64>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::UInt64>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Int8>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Int8>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Int16>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Int16>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Int32>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Int32>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Int64>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Int64>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Float32>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Float32>()->data);
-  } else if (msg_type_md5 ==
-             ros::message_traits::MD5Sum<std_msgs::Float64>::value()) {
-    primitive = std::to_string(msg->instantiate<std_msgs::Float64>()->data);
+  if (msg_type == "std_msgs/msg/String") {
+    std_msgs::msg::String msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = msg.data;
+  } else if (msg_type == "std_msgs/msg/Bool") {
+    std_msgs::msg::Bool msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = msg.data ? "true" : "false";
+  } else if (msg_type == "std_msgs/msg/Char") {
+    std_msgs::msg::Char msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/UInt8") {
+    std_msgs::msg::UInt8 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/UInt16") {
+    std_msgs::msg::UInt16 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/UInt32") {
+    std_msgs::msg::UInt32 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/UInt64") {
+    std_msgs::msg::UInt64 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/Int8") {
+    std_msgs::msg::Int8 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/Int16") {
+    std_msgs::msg::Int16 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/Int32") {
+    std_msgs::msg::Int32 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/Int64") {
+    std_msgs::msg::Int64 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/Float32") {
+    std_msgs::msg::Float32 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
+  } else if (msg_type == "std_msgs/msg/Float64") {
+    std_msgs::msg::Float64 msg;
+    deserializeRosMessage(*serialized_msg, msg);
+    primitive = std::to_string(msg.data);
   } else {
     found_primitive = false;
   }
@@ -144,11 +259,7 @@ bool primitiveRosMessageToString(const topic_tools::ShapeShifter::ConstPtr& msg,
 }
 
 
-void MqttClient::onInit() {
-
-  // get nodehandles
-  node_handle_ = this->getMTNodeHandle();
-  private_node_handle_ = this->getMTPrivateNodeHandle();
+MqttClient::MqttClient(const rclcpp::NodeOptions& options) : Node("mqtt_client", options) {
 
   loadParameters();
   setup();
@@ -157,46 +268,135 @@ void MqttClient::onInit() {
 
 void MqttClient::loadParameters() {
 
+  rcl_interfaces::msg::ParameterDescriptor param_desc;
+
+  param_desc.description = "IP address or hostname of the machine running the MQTT broker";
+  declare_parameter("broker.host", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "port the MQTT broker is listening on";
+  declare_parameter("broker.port", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "username used for authenticating to the broker (if empty, will try to connect anonymously)";
+  declare_parameter("broker.user", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "password used for authenticating to the broker";
+  declare_parameter("broker.pass", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "whether to connect via SSL/TLS";
+  declare_parameter("broker.tls.enabled", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "CA certificate file trusted by client (relative to ROS_HOME)";
+  declare_parameter("broker.tls.ca_certificate", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+
+  param_desc.description = "unique ID used to identify the client (broker may allow empty ID and automatically generate one)";
+  declare_parameter("client.id", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "maximum number of messages buffered by the bridge when not connected to broker (only available if client ID is not empty)";
+  declare_parameter("client.buffer.size", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "directory used to buffer messages when not connected to broker (relative to ROS_HOME)";
+  declare_parameter("client.buffer.directory", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "topic used for this client's last-will message (no last will, if not specified)";
+  declare_parameter("client.last_will.topic", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "last-will message";
+  declare_parameter("client.last_will.message", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "QoS value for last-will message";
+  declare_parameter("client.last_will.qos", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "whether to retain last-will message";
+  declare_parameter("client.last_will.retained", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "whether to use a clean session for this client";
+  declare_parameter("client.clean_session", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  param_desc.description = "keep-alive interval in seconds";
+  declare_parameter("client.keep_alive_interval", rclcpp::ParameterType::PARAMETER_DOUBLE, param_desc);
+  param_desc.description = "maximum number of inflight messages";
+  declare_parameter("client.max_inflight", rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+  param_desc.description = "client certificate file (only needed if broker requires client certificates; relative to ROS_HOME)";
+  declare_parameter("client.tls.certificate", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "client private key file (relative to ROS_HOME)";
+  declare_parameter("client.tls.key", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "client private key password";
+  declare_parameter("client.tls.password", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+
+  param_desc.description = "The list of topics to bridge from ROS to MQTT";
+  const auto ros2mqtt_ros_topics = declare_parameter<std::vector<std::string>>("bridge.ros2mqtt.ros_topics", std::vector<std::string>(), param_desc);
+  for (const auto& ros_topic : ros2mqtt_ros_topics)
+  {
+    param_desc.description = "MQTT topic on which the corresponding ROS messages are sent to the broker";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.mqtt_topic", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "whether to publish as primitive message";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.primitive", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the publisher";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.inject_timestamp", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "ROS subscriber queue size";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.queue_size", ros_topic), rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+    param_desc.description = "ROS subscriber QoS reliability";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.reliability", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "ROS subscriber QoS durability";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.durability", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "MQTT QoS value";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.mqtt.qos", ros_topic), rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+    param_desc.description = "whether to retain MQTT message";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.mqtt.retained", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  }
+
+  param_desc.description = "The list of topics to bridge from MQTT to ROS";
+  const auto mqtt2ros_mqtt_topics = declare_parameter<std::vector<std::string>>("bridge.mqtt2ros.mqtt_topics", std::vector<std::string>(), param_desc);
+  for (const auto& mqtt_topic : mqtt2ros_mqtt_topics)
+  {
+    param_desc.description = "ROS topic on which corresponding MQTT messages are published";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.ros_topic", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "whether to publish as primitive message (if coming from non-ROS MQTT client)";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the MQTT message";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.ros_type", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "MQTT QoS value";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.mqtt.qos", mqtt_topic), rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+    param_desc.description = "ROS publisher queue size";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.queue_size", mqtt_topic), rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
+    param_desc.description = "ROS publisher QoS durability";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.qos.durability", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "ROS publisher QoS reliability";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.qos.reliability", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+    param_desc.description = "whether to latch ROS message";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.latched", mqtt_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+  }
+
   // load broker parameters from parameter server
   std::string broker_tls_ca_certificate;
-  loadParameter("broker/host", broker_config_.host, "localhost");
-  loadParameter("broker/port", broker_config_.port, 1883);
-  if (loadParameter("broker/user", broker_config_.user)) {
-    loadParameter("broker/pass", broker_config_.pass, "");
+  loadParameter("broker.host", broker_config_.host, "localhost");
+  loadParameter("broker.port", broker_config_.port, 1883);
+  if (loadParameter("broker.user", broker_config_.user)) {
+    loadParameter("broker.pass", broker_config_.pass, "");
   }
-  if (loadParameter("broker/tls/enabled", broker_config_.tls.enabled, false)) {
-    loadParameter("broker/tls/ca_certificate", broker_tls_ca_certificate,
+  if (loadParameter("broker.tls.enabled", broker_config_.tls.enabled, false)) {
+    loadParameter("broker.tls.ca_certificate", broker_tls_ca_certificate,
                   "/etc/ssl/certs/ca-certificates.crt");
   }
 
   // load client parameters from parameter server
   std::string client_buffer_directory, client_tls_certificate, client_tls_key;
-  loadParameter("client/id", client_config_.id, "");
+  loadParameter("client.id", client_config_.id, "");
   client_config_.buffer.enabled = !client_config_.id.empty();
   if (client_config_.buffer.enabled) {
-    loadParameter("client/buffer/size", client_config_.buffer.size, 0);
-    loadParameter("client/buffer/directory", client_buffer_directory, "buffer");
+    loadParameter("client.buffer.size", client_config_.buffer.size, 0);
+    loadParameter("client.buffer.directory", client_buffer_directory, "buffer");
   } else {
-    NODELET_WARN("Client buffer can not be enabled when client ID is empty");
+    RCLCPP_WARN(get_logger(),
+                "Client buffer can not be enabled when client ID is empty");
   }
-  if (loadParameter("client/last_will/topic", client_config_.last_will.topic)) {
-    loadParameter("client/last_will/message", client_config_.last_will.message,
+  if (loadParameter("client.last_will.topic", client_config_.last_will.topic)) {
+    loadParameter("client.last_will.message", client_config_.last_will.message,
                   "offline");
-    loadParameter("client/last_will/qos", client_config_.last_will.qos, 0);
-    loadParameter("client/last_will/retained",
+    loadParameter("client.last_will.qos", client_config_.last_will.qos, 0);
+    loadParameter("client.last_will.retained",
                   client_config_.last_will.retained, false);
   }
-  loadParameter("client/clean_session", client_config_.clean_session, true);
-  loadParameter("client/keep_alive_interval",
+  loadParameter("client.clean_session", client_config_.clean_session, true);
+  loadParameter("client.keep_alive_interval",
                 client_config_.keep_alive_interval, 60.0);
-  loadParameter("client/max_inflight", client_config_.max_inflight, 65535);
+  loadParameter("client.max_inflight", client_config_.max_inflight, 65535);
   if (broker_config_.tls.enabled) {
-    if (loadParameter("client/tls/certificate", client_tls_certificate)) {
-      loadParameter("client/tls/key", client_tls_key);
-      loadParameter("client/tls/password", client_config_.tls.password);
-      loadParameter("client/tls/version", client_config_.tls.version);
-      loadParameter("client/tls/verify", client_config_.tls.verify);
-      loadParameter("client/tls/alpn_protos", client_config_.tls.alpn_protos);
+    if (loadParameter("client.tls.certificate", client_tls_certificate)) {
+      loadParameter("client.tls.key", client_tls_key);
+      loadParameter("client.tls.password", client_config_.tls.password);
+      loadParameter("client.tls.version", client_config_.tls.version);
+      loadParameter("client.tls.verify", client_config_.tls.verify);
+      loadParameter("client.tls.alpn_protos", client_config_.tls.alpn_protos);
     }
   }
 
@@ -206,158 +406,218 @@ void MqttClient::loadParameters() {
   client_config_.tls.certificate = resolvePath(client_tls_certificate);
   client_config_.tls.key = resolvePath(client_tls_key);
 
-  // load bridge parameters from parameter server
-  XmlRpc::XmlRpcValue bridge;
-  if (!private_node_handle_.getParam("bridge", bridge)) {
-    NODELET_ERROR("Parameter 'bridge' is required");
-    exit(EXIT_FAILURE);
+  // parse bridge parameters
+
+  // ros2mqtt
+  for (const auto& ros_topic : ros2mqtt_ros_topics) {
+
+    rclcpp::Parameter mqtt_topic_param;
+    if (get_parameter(fmt::format("bridge.ros2mqtt.{}.mqtt_topic", ros_topic), mqtt_topic_param)) {
+
+      // ros2mqtt[k]/ros_topic and ros2mqtt[k]/mqtt_topic
+      const std::string mqtt_topic = mqtt_topic_param.as_string();
+      Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
+      ros2mqtt.mqtt.topic = mqtt_topic;
+
+      // ros2mqtt[k]/primitive
+      rclcpp::Parameter primitive_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.primitive", ros_topic), primitive_param))
+        ros2mqtt.primitive = primitive_param.as_bool();
+
+      // ros2mqtt[k]/ros_type
+      rclcpp::Parameter ros_type_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), ros_type_param)) {
+        ros2mqtt.ros.msg_type = ros_type_param.as_string();
+        ros2mqtt.fixed_type = true;
+        RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s'", ros2mqtt.ros.msg_type.c_str());
+      }
+
+      // ros2mqtt[k]/inject_timestamp
+      rclcpp::Parameter stamped_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.inject_timestamp", ros_topic), stamped_param))
+        ros2mqtt.stamped = stamped_param.as_bool();
+      if (ros2mqtt.stamped && ros2mqtt.primitive) {
+        RCLCPP_WARN(
+          get_logger(),
+          "Timestamp will not be injected into primitive messages on ROS "
+          "topic '%s'",
+          ros_topic.c_str());
+        ros2mqtt.stamped = false;
+      }
+
+      // ros2mqtt[k]/advanced/ros/queue_size
+      rclcpp::Parameter queue_size_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.queue_size", ros_topic),
+                        queue_size_param))
+        ros2mqtt.ros.queue_size = queue_size_param.as_int();
+
+      rclcpp::Parameter durability_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.durability", ros_topic), durability_param)) {
+        const auto p = durability_param.as_string();
+        if (p == "system_default") {
+          ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::SystemDefault;
+        } else if (p == "volatile") {
+          ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::Volatile;
+        } else if (p == "transient_local") {
+          ros2mqtt.ros.qos.durability = rclcpp::DurabilityPolicy::TransientLocal;
+        } else if (p == "auto") {
+          ros2mqtt.ros.qos.durability = {};
+        } else {
+          RCLCPP_ERROR(get_logger(), "Unexpected durability %s", p.c_str ());
+          exit(EXIT_FAILURE);
+        }
+      }
+
+      rclcpp::Parameter reliability_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.qos.reliability", ros_topic), reliability_param)) {
+        const auto p = reliability_param.as_string();
+        if (p == "system_default") {
+          ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::SystemDefault;
+        } else if (p == "best_effort") {
+          ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::BestEffort;
+        } else if (p == "reliable") {
+          ros2mqtt.ros.qos.reliability = rclcpp::ReliabilityPolicy::Reliable;
+        } else if (p == "auto") {
+          ros2mqtt.ros.qos.reliability = {};
+        } else {
+          RCLCPP_ERROR(get_logger(), "Unexpected reliability %s", p.c_str ());
+          exit(EXIT_FAILURE);
+        }
+      }
+
+      // ros2mqtt[k]/advanced/mqtt/qos
+      rclcpp::Parameter qos_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.mqtt.qos", ros_topic), qos_param))
+        ros2mqtt.mqtt.qos = qos_param.as_int();
+
+      // ros2mqtt[k]/advanced/mqtt/retained
+      rclcpp::Parameter retained_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.mqtt.retained", ros_topic), retained_param))
+        ros2mqtt.mqtt.retained = retained_param.as_bool();
+
+      RCLCPP_INFO(get_logger(), "Bridging %sROS topic '%s' to MQTT topic '%s' %s",
+                  ros2mqtt.primitive ? "primitive " : "", ros_topic.c_str(),
+                  ros2mqtt.mqtt.topic.c_str(),
+                  ros2mqtt.stamped ? "and measuring latency" : "");
+    } else {
+      RCLCPP_WARN(get_logger(),
+                  fmt::format("Parameter 'bridge.ros2mqtt.{}' is missing subparameter "
+                  "'mqtt_topic', will be ignored", ros_topic).c_str());
+    }
   }
 
-  // parse bridge parameters
-  try {
+  // mqtt2ros
+  for (const auto& mqtt_topic : mqtt2ros_mqtt_topics) {
 
-    // ros2mqtt
-    if (bridge.hasMember("ros2mqtt")) {
+    rclcpp::Parameter ros_topic_param;
+    if (get_parameter(fmt::format("bridge.mqtt2ros.{}.ros_topic", mqtt_topic), ros_topic_param)) {
 
-      // loop over array
-      XmlRpc::XmlRpcValue& ros2mqtt_params = bridge["ros2mqtt"];
-      for (int k = 0; k < ros2mqtt_params.size(); k++) {
+      // mqtt2ros[k]/mqtt_topic and mqtt2ros[k]/ros_topic
+      const std::string ros_topic = ros_topic_param.as_string();
+      Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
+      mqtt2ros.ros.topic = ros_topic;
 
-        if (ros2mqtt_params[k].hasMember("ros_topic") &&
-            ros2mqtt_params[k].hasMember("mqtt_topic")) {
+      // mqtt2ros[k]/primitive
+      rclcpp::Parameter primitive_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), primitive_param))
+        mqtt2ros.primitive = primitive_param.as_bool();
 
-          // ros2mqtt[k]/ros_topic and ros2mqtt[k]/mqtt_topic
-          std::string& ros_topic = ros2mqtt_params[k]["ros_topic"];
-          Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
-          ros2mqtt.mqtt.topic = std::string(ros2mqtt_params[k]["mqtt_topic"]);
 
-          // ros2mqtt[k]/primitive
-          if (ros2mqtt_params[k].hasMember("primitive"))
-            ros2mqtt.primitive = ros2mqtt_params[k]["primitive"];
+      rclcpp::Parameter ros_type_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.ros_type", mqtt_topic), ros_type_param)) {
+        mqtt2ros.ros.msg_type = ros_type_param.as_string();
+        mqtt2ros.fixed_type = true;
+        RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s' for '%s'", mqtt2ros.ros.msg_type.c_str(), ros_topic.c_str());
+      }
 
-          // ros2mqtt[k]/inject_timestamp
-          if (ros2mqtt_params[k].hasMember("inject_timestamp"))
-            ros2mqtt.stamped = ros2mqtt_params[k]["inject_timestamp"];
-          if (ros2mqtt.stamped && ros2mqtt.primitive) {
-            NODELET_WARN(
-              "Timestamp will not be injected into primitive messages on ROS "
-              "topic '%s'",
-              ros_topic.c_str());
-            ros2mqtt.stamped = false;
-          }
+      // mqtt2ros[k]/advanced/mqtt/qos
+      rclcpp::Parameter qos_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.mqtt.qos", mqtt_topic), qos_param))
+        mqtt2ros.mqtt.qos = qos_param.as_int();
 
-          // ros2mqtt[k]/advanced
-          if (ros2mqtt_params[k].hasMember("advanced")) {
-            XmlRpc::XmlRpcValue& advanced_params =
-              ros2mqtt_params[k]["advanced"];
-            if (advanced_params.hasMember("ros")) {
-              if (advanced_params["ros"].hasMember("queue_size"))
-                ros2mqtt.ros.queue_size = advanced_params["ros"]["queue_size"];
-            }
-            if (advanced_params.hasMember("mqtt")) {
-              if (advanced_params["mqtt"].hasMember("qos"))
-                ros2mqtt.mqtt.qos = advanced_params["mqtt"]["qos"];
-              if (advanced_params["mqtt"].hasMember("retained"))
-                ros2mqtt.mqtt.retained = advanced_params["mqtt"]["retained"];
-            }
-          }
+      // mqtt2ros[k]/advanced/ros/queue_size
+      rclcpp::Parameter queue_size_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.queue_size", mqtt_topic),
+                        queue_size_param))
+        mqtt2ros.ros.queue_size = queue_size_param.as_int();
 
-          NODELET_INFO("Bridging %sROS topic '%s' to MQTT topic '%s' %s",
-                       ros2mqtt.primitive ? "primitive " : "",
-                       ros_topic.c_str(), ros2mqtt.mqtt.topic.c_str(),
-                       ros2mqtt.stamped ? "and measuring latency" : "");
+      rclcpp::Parameter durability_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.qos.durability", mqtt_topic), durability_param)) {
+        const auto p = durability_param.as_string();
+        if (p == "system_default") {
+          mqtt2ros.ros.qos.durability = rclcpp::DurabilityPolicy::SystemDefault;
+        } else if (p == "volatile") {
+          mqtt2ros.ros.qos.durability = rclcpp::DurabilityPolicy::Volatile;
+        } else if (p == "transient_local") {
+          mqtt2ros.ros.qos.durability =
+            rclcpp::DurabilityPolicy::TransientLocal;
         } else {
-          NODELET_WARN(
-            "Parameter 'bridge/ros2mqtt[%d]' is missing subparameter "
-            "'ros_topic' or 'mqtt_topic', will be ignored",
-            k);
+          RCLCPP_ERROR(get_logger(), "Unexpected durability %s", p.c_str ());
+          exit(EXIT_FAILURE);
         }
       }
-    }
 
-    // mqtt2ros
-    if (bridge.hasMember("mqtt2ros")) {
-
-      // loop over array
-      XmlRpc::XmlRpcValue& mqtt2ros_params = bridge["mqtt2ros"];
-      for (int k = 0; k < mqtt2ros_params.size(); k++) {
-
-
-        if (mqtt2ros_params[k].hasMember("mqtt_topic") &&
-            mqtt2ros_params[k].hasMember("ros_topic")) {
-
-          // mqtt2ros[k]/mqtt_topic and mqtt2ros[k]/ros_topic
-          std::string& mqtt_topic = mqtt2ros_params[k]["mqtt_topic"];
-          Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
-          mqtt2ros.ros.topic = std::string(mqtt2ros_params[k]["ros_topic"]);
-
-          // mqtt2ros[k]/primitive
-          if (mqtt2ros_params[k].hasMember("primitive"))
-            mqtt2ros.primitive = mqtt2ros_params[k]["primitive"];
-
-          // mqtt2ros[k]/advanced
-          if (mqtt2ros_params[k].hasMember("advanced")) {
-            XmlRpc::XmlRpcValue& advanced_params =
-              mqtt2ros_params[k]["advanced"];
-            if (advanced_params.hasMember("mqtt")) {
-              if (advanced_params["mqtt"].hasMember("qos"))
-                mqtt2ros.mqtt.qos = advanced_params["mqtt"]["qos"];
-            }
-            if (advanced_params.hasMember("ros")) {
-              if (advanced_params["ros"].hasMember("queue_size"))
-                mqtt2ros.ros.queue_size = advanced_params["ros"]["queue_size"];
-              if (advanced_params["ros"].hasMember("latched"))
-                mqtt2ros.ros.latched = advanced_params["ros"]["latched"];
-            }
-          }
-
-          NODELET_INFO(
-            "Bridging MQTT topic '%s' to %sROS topic '%s'", mqtt_topic.c_str(),
-            mqtt2ros.primitive ? "primitive " : "", mqtt2ros.ros.topic.c_str());
+      rclcpp::Parameter reliability_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.qos.reliability", mqtt_topic), reliability_param)) {
+        const auto p = reliability_param.as_string();
+        if (p == "system_default") {
+          mqtt2ros.ros.qos.reliability = rclcpp::ReliabilityPolicy::SystemDefault;
+        } else if (p == "best_effort") {
+          mqtt2ros.ros.qos.reliability = rclcpp::ReliabilityPolicy::BestEffort;
+        } else if (p == "reliable") {
+          mqtt2ros.ros.qos.reliability = rclcpp::ReliabilityPolicy::Reliable;
         } else {
-          NODELET_WARN(
-            "Parameter 'bridge/mqtt2ros[%d]' is missing subparameter "
-            "'mqtt_topic' or 'ros_topic', will be ignored",
-            k);
+          RCLCPP_ERROR(get_logger(), "Unexpected reliability %s", p.c_str ());
+          exit(EXIT_FAILURE);
         }
       }
-    }
 
-    if (ros2mqtt_.empty() && mqtt2ros_.empty()) {
-      NODELET_ERROR("No valid ROS-MQTT bridge found in parameter 'bridge'");
-      exit(EXIT_FAILURE);
-    }
+      // mqtt2ros[k]/advanced/ros/latched
+      rclcpp::Parameter latched_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.advanced.ros.latched", mqtt_topic), latched_param)) {
+        mqtt2ros.ros.latched = latched_param.as_bool();
+        RCLCPP_WARN(get_logger(),
+                    fmt::format("Parameter 'bridge.mqtt2ros.{}.advanced.ros.latched' is ignored "
+                    "since ROS 2 does not easily support latched topics.", mqtt_topic).c_str());
+      }
 
-  } catch (XmlRpc::XmlRpcException e) {
-    NODELET_ERROR("Parameter 'bridge' could not be parsed (XmlRpc %d: %s)",
-                  e.getCode(), e.getMessage().c_str());
+      RCLCPP_INFO(get_logger(), "Bridging MQTT topic '%s' to %sROS topic '%s'",
+                  mqtt_topic.c_str(), mqtt2ros.primitive ? "primitive " : "",
+                  mqtt2ros.ros.topic.c_str());
+    }
+    else {
+      RCLCPP_WARN(get_logger(),
+                fmt::format("Parameter 'bridge.ros2mqtt.{}' is missing subparameter "
+                "'ros_topic', will be ignored", mqtt_topic).c_str());
+    }
+  }
+
+  if (ros2mqtt_.empty() && mqtt2ros_.empty()) {
+    RCLCPP_ERROR(get_logger(),
+                 "No valid ROS-MQTT bridge found in parameter 'bridge'");
     exit(EXIT_FAILURE);
   }
 }
 
 
 bool MqttClient::loadParameter(const std::string& key, std::string& value) {
-  bool found = private_node_handle_.getParam(key, value);
+  bool found = get_parameter(key, value);
   if (found)
-    NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
-                  value.c_str());
+    RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
+                 value.c_str());
   return found;
 }
 
 
 bool MqttClient::loadParameter(const std::string& key, std::string& value,
                                const std::string& default_value) {
-  bool found =
-    private_node_handle_.param<std::string>(key, value, default_value);
-  if (!found) {
-    if (private_node_handle_.hasParam(key))
-      NODELET_ERROR("Parameter '%s' has wrong data type", key.c_str());
-    NODELET_WARN("Parameter '%s' not set, defaulting to '%s'", key.c_str(),
-                 default_value.c_str());
-  }
+  bool found = get_parameter_or(key, value, default_value);
+  if (!found)
+    RCLCPP_WARN(get_logger(), "Parameter '%s' not set, defaulting to '%s'",
+                key.c_str(), default_value.c_str());
   if (found)
-    NODELET_DEBUG("Retrieved parameter '%s' = '%s'", key.c_str(),
-                  value.c_str());
+    RCLCPP_DEBUG(get_logger(), "Retrieved parameter '%s' = '%s'", key.c_str(),
+                 value.c_str());
   return found;
 }
 
@@ -367,21 +627,26 @@ std::filesystem::path MqttClient::resolvePath(const std::string& path_string) {
   std::filesystem::path path(path_string);
   if (path_string.empty()) return path;
   if (!path.has_root_path()) {
-    std::string ros_home;
-    ros::get_environment_variable(ros_home, "ROS_HOME");
+    std::string ros_home = rcpputils::get_env_var("ROS_HOME");
     if (ros_home.empty())
       ros_home = std::string(std::filesystem::current_path());
     path = std::filesystem::path(ros_home);
     path.append(path_string);
   }
   if (!std::filesystem::exists(path))
-    NODELET_WARN("Requested path '%s' does not exist",
-                 std::string(path).c_str());
+    RCLCPP_WARN(get_logger(), "Requested path '%s' does not exist",
+                std::string(path).c_str());
   return path;
 }
 
 
 void MqttClient::setup() {
+
+  // pre-compute timestamp length
+  builtin_interfaces::msg::Time tmp_stamp;
+  rclcpp::SerializedMessage tmp_serialized_stamp;
+  serializeRosMessage(tmp_stamp, tmp_serialized_stamp);
+  stamp_length_ = tmp_serialized_stamp.size();
 
   // initialize MQTT client
   setupClient();
@@ -390,22 +655,203 @@ void MqttClient::setup() {
   connect();
 
   // create ROS service server
-  is_connected_service_ = private_node_handle_.advertiseService(
-    "is_connected", &MqttClient::isConnectedService, this);
+  is_connected_service_ =
+    create_service<mqtt_client_interfaces::srv::IsConnected>(
+      "~/is_connected", std::bind(&MqttClient::isConnectedService, this,
+                                std::placeholders::_1, std::placeholders::_2));
 
-  // create ROS subscribers
-  for (auto& ros2mqtt_p : ros2mqtt_) {
-    const std::string& ros_topic = ros2mqtt_p.first;
-    Ros2MqttInterface& ros2mqtt = ros2mqtt_p.second;
-    const std::string& mqtt_topic = ros2mqtt.mqtt.topic;
-    ros2mqtt.ros.subscriber =
-      private_node_handle_.subscribe<topic_tools::ShapeShifter>(
-        ros_topic, ros2mqtt.ros.queue_size,
-        boost::bind(&MqttClient::ros2mqtt, this, _1, ros_topic));
-    NODELET_DEBUG("Subscribed ROS topic '%s'", ros_topic.c_str());
+  // create dynamic mappings services
+  new_ros2mqtt_bridge_service_ =
+  create_service<mqtt_client_interfaces::srv::NewRos2MqttBridge>(
+      "~/new_ros2mqtt_bridge", std::bind(&MqttClient::newRos2MqttBridge, this,
+                                std::placeholders::_1, std::placeholders::_2));
+  new_mqtt2ros_bridge_service_ =
+  create_service<mqtt_client_interfaces::srv::NewMqtt2RosBridge>(
+      "~/new_mqtt2ros_bridge", std::bind(&MqttClient::newMqtt2RosBridge, this,
+                                std::placeholders::_1, std::placeholders::_2));
+
+  // setup subscribers; check for new types every second
+  check_subscriptions_timer_ =
+    create_wall_timer(std::chrono::duration<double>(1.0),
+                      std::bind(&MqttClient::setupSubscriptions, this));
+
+  setupPublishers ();
+}
+
+std::optional<rclcpp::QoS> MqttClient::getCompatibleQoS (const std::string &ros_topic, const rclcpp::TopicEndpointInfo &tei,
+                                                         const Ros2MqttInterface &ros2mqtt) const
+{
+  // the basic premise here is that we take the QoS from the publisher, overwrite any parts that are explicitly set
+  // via configuration then check if the result is compatible with the publisher
+  auto qos = tei.qos_profile ();
+
+  if (auto r = ros2mqtt.ros.qos.reliability)
+    qos.reliability (*r);
+  if (auto d = ros2mqtt.ros.qos.durability)
+    qos.durability (*d);
+  qos.keep_last (ros2mqtt.ros.queue_size);
+
+  const auto qres = rclcpp::qos_check_compatible (tei.qos_profile (), qos);
+
+  switch (qres.compatibility)
+  {
+    case rclcpp::QoSCompatibility::Ok:
+      return qos;
+    case rclcpp::QoSCompatibility::Warning:
+      RCLCPP_DEBUG(get_logger(), "QoS compatibility warning on topic %s - %s", ros_topic.c_str(), qres.reason.c_str ());
+      // presumably this is still compatible
+      return qos;
+    case rclcpp::QoSCompatibility::Error:
+    default:
+      return {};
+  }
+
+}
+
+std::vector<rclcpp::TopicEndpointInfo> MqttClient::getCandidatePublishers(
+  const std::string& ros_topic, const Ros2MqttInterface& ros2mqtt) const
+{
+  const auto &pubs = get_publishers_info_by_topic(ros_topic);
+
+  if (pubs.empty ())
+    return {};
+
+  std::vector<rclcpp::TopicEndpointInfo> ret;
+
+  ret.reserve (pubs.size ());
+
+  for (const auto &p : pubs)
+  {
+    const std::string msg_type = p.topic_type();
+
+    // if the type isn't set, match aginst all t ypes, otherwise only match against mtching types
+    if (ros2mqtt.ros.msg_type.empty () || msg_type == ros2mqtt.ros.msg_type)
+      ret.push_back (p);
+  }
+
+  // If we found any matching types, return those
+  if (! ret.empty ())
+    return ret;
+
+  // If we didn't and we aren't fix type, then just return the full set of publishers
+  if (! ros2mqtt.fixed_type)
+    return pubs;
+
+  // None of these publishers will work... :sad_panda:
+  return {};
+}
+
+void MqttClient::setupSubscriptions() {
+
+  // For each ros2mqtt interface, check if we need to do a lazy subscription (eg, lazy subscription would be if we
+  // are determining either the type of QoS dynamically). If we don't, then just make the fixed subscriber if its not
+  // already made.
+  //
+  // If we do, we check each publisher for a potential match. The first step is to filter down the list of
+  // publishers based on the type. If we are fixed type then that list only includes publishers with matching types.
+  // If we aren't its a little trickier. For dynamic types, if we already have matched against a type previously, the
+  // candidate list will include all publishers which have matching types if any exist. If none of the publishers
+  // have matching types, then the list will include all publishers.
+  //
+  // Then for each candidate publisher, check if their QoS is compatible with the QoS specic in the configuration. This
+  // is really just needed because there is the potential for someone to set half of the QoS to auto and half to
+  // explicit.
+  // Condition for requiring "lazy" subscription where we need to walk the
+  const auto requires_lazy_subscription = [] (const Ros2MqttInterface &ros2mqtt)
+  {
+          if (! ros2mqtt.fixed_type)
+                  return true;
+          if (ros2mqtt.ros.qos.reliability == std::nullopt ||
+              ros2mqtt.ros.qos.durability == std::nullopt)
+                  return true;
+          return false;
+  };
+
+  for (auto& [ros_topic, ros2mqtt] : ros2mqtt_) {
+
+    std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)> bound_callback_func =
+      std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic);
+
+    if (! requires_lazy_subscription (ros2mqtt))
+    {
+      try {
+        if (ros2mqtt.ros.subscriber)
+          continue;
+
+        auto  const qos = rclcpp::QoS(ros2mqtt.ros.queue_size)
+                            .reliability(*ros2mqtt.ros.qos.reliability)
+                            .durability(*ros2mqtt.ros.qos.durability);
+
+        ros2mqtt.ros.subscriber = create_generic_subscription(
+          ros_topic, ros2mqtt.ros.msg_type, qos, bound_callback_func);
+        ros2mqtt.ros.is_stale = false;
+        RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
+                    ros_topic.c_str(), ros2mqtt.ros.msg_type.c_str());
+      } catch (rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
+                     e.what());
+        continue;
+      }
+    } else {
+      const auto &pubs = getCandidatePublishers (ros_topic, ros2mqtt);
+
+      if (pubs.empty()) continue;
+
+      for (auto endpointInfo : pubs) {
+        try {
+          // check if message type has changed or if mapping is stale
+          const std::string msg_type = endpointInfo.topic_type();
+
+          if (msg_type == ros2mqtt.ros.msg_type && !ros2mqtt.ros.is_stale && ros2mqtt.ros.subscriber)
+            continue;
+
+          auto const qos = getCompatibleQoS (ros_topic, endpointInfo, ros2mqtt);
+
+          if (! qos)
+            continue;
+
+          ros2mqtt.ros.is_stale = false;
+          ros2mqtt.ros.msg_type = msg_type;
+
+          ros2mqtt.ros.subscriber = create_generic_subscription(
+            ros_topic, msg_type, *qos, bound_callback_func);
+
+          RCLCPP_INFO(get_logger(), "Subscribed ROS topic '%s' of type '%s'",
+                     ros_topic.c_str(), msg_type.c_str());
+        } catch (rclcpp::exceptions::RCLError& e) {
+          RCLCPP_ERROR(get_logger(), "Failed to create generic subscriber: %s",
+                       e.what());
+          continue;
+        }
+      }
+    }
   }
 }
 
+void MqttClient::setupPublishers() {
+
+  for (auto& [mqtt_topic, mqtt2ros] : mqtt2ros_) {
+    if (mqtt2ros.ros.publisher)
+      continue;
+
+    // If the type is not fixed, we require a mqtt message in order to deduce the type
+    if (!mqtt2ros.fixed_type)
+      continue;
+
+    try {
+      const auto qos = rclcpp::QoS(mqtt2ros.ros.queue_size)
+        .durability(mqtt2ros.ros.qos.durability)
+        .reliability(mqtt2ros.ros.qos.reliability);
+      mqtt2ros.ros.publisher = create_generic_publisher(
+        mqtt2ros.ros.topic, mqtt2ros.ros.msg_type, qos);
+
+      mqtt2ros.ros.is_stale = false;
+    } catch (const rclcpp::exceptions::RCLError& e) {
+      RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
+                   e.what());
+    }
+  }
+}
 
 void MqttClient::setupClient() {
 
@@ -460,7 +906,7 @@ void MqttClient::setupClient() {
         new mqtt::async_client(uri, client_config_.id));
     }
   } catch (const mqtt::exception& e) {
-    ROS_ERROR("Client could not be initialized: %s", e.what());
+    RCLCPP_ERROR(get_logger(), "Client could not be initialized: %s", e.what());
     exit(EXIT_FAILURE);
   }
 
@@ -475,129 +921,131 @@ void MqttClient::connect() {
     client_config_.id.empty()
       ? ""
       : std::string(" as '") + client_config_.id + std::string("'");
-  NODELET_INFO("Connecting to broker at '%s'%s ...",
-               client_->get_server_uri().c_str(), as_client.c_str());
+  RCLCPP_INFO(get_logger(), "Connecting to broker at '%s'%s ...",
+              client_->get_server_uri().c_str(), as_client.c_str());
 
   try {
     client_->connect(connect_options_, nullptr, *this);
   } catch (const mqtt::exception& e) {
-    ROS_ERROR("Connection to broker failed: %s", e.what());
+    RCLCPP_ERROR(get_logger(), "Connection to broker failed: %s", e.what());
     exit(EXIT_FAILURE);
   }
 }
 
 
-void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
-                          const std::string& ros_topic) {
+void MqttClient::ros2mqtt(
+  const std::shared_ptr<rclcpp::SerializedMessage>& serialized_msg,
+  const std::string& ros_topic) {
 
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
   std::string mqtt_topic = ros2mqtt.mqtt.topic;
   std::vector<uint8_t> payload_buffer;
 
   // gather information on ROS message type in special ROS message
-  mqtt_client_interfaces::RosMsgType ros_msg_type;
-  ros_msg_type.md5 = ros_msg->getMD5Sum();
-  ros_msg_type.name = ros_msg->getDataType();
-  ros_msg_type.definition = ros_msg->getMessageDefinition();
+  mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
+  ros_msg_type.name = ros2mqtt.ros.msg_type;
   ros_msg_type.stamped = ros2mqtt.stamped;
 
-  NODELET_DEBUG("Received ROS message of type '%s' on topic '%s'",
-                ros_msg_type.name.c_str(), ros_topic.c_str());
+  RCLCPP_DEBUG(get_logger(), "Received ROS message of type '%s' on topic '%s'",
+               ros_msg_type.name.c_str(), ros_topic.c_str());
 
   if (ros2mqtt.primitive) {  // publish as primitive (string) message
 
     // resolve ROS messages to primitive strings if possible
     std::string payload;
-    bool found_primitive = primitiveRosMessageToString(ros_msg, payload);
+    bool found_primitive =
+      primitiveRosMessageToString(serialized_msg, ros_msg_type.name, payload);
     if (found_primitive) {
       payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
     } else {
-      NODELET_WARN(
-        "Cannot send ROS message of type '%s' as primitive message, "
-        "check supported primitive types",
-        ros_msg_type.name.c_str());
+      RCLCPP_WARN(get_logger(),
+                  "Cannot send ROS message of type '%s' as primitive message, "
+                  "check supported primitive types",
+                  ros_msg_type.name.c_str());
       return;
     }
 
   } else {  // publish as complete ROS message incl. ROS message type
 
-    // serialize ROS message type to buffer
-    uint32_t msg_type_length =
-      ros::serialization::serializationLength(ros_msg_type);
-    std::vector<uint8_t> msg_type_buffer;
-    msg_type_buffer.resize(msg_type_length);
-    ros::serialization::OStream msg_type_stream(msg_type_buffer.data(),
-                                                msg_type_length);
-    ros::serialization::serialize(msg_type_stream, ros_msg_type);
+    // serialize ROS message type
+    rclcpp::SerializedMessage serialized_ros_msg_type;
+    serializeRosMessage(ros_msg_type, serialized_ros_msg_type);
+    uint32_t msg_type_length = serialized_ros_msg_type.size();
+    std::vector<uint8_t> msg_type_buffer = std::vector<uint8_t>(
+      serialized_ros_msg_type.get_rcl_serialized_message().buffer,
+      serialized_ros_msg_type.get_rcl_serialized_message().buffer + msg_type_length);
 
     // send ROS message type information to MQTT broker
     mqtt_topic = kRosMsgTypeMqttTopicPrefix + ros2mqtt.mqtt.topic;
     try {
-      NODELET_DEBUG("Sending ROS message type to MQTT broker on topic '%s' ...",
-                    mqtt_topic.c_str());
+      RCLCPP_DEBUG(get_logger(),
+                   "Sending ROS message type to MQTT broker on topic '%s' ...",
+                   mqtt_topic.c_str());
       mqtt::message_ptr mqtt_msg =
         mqtt::make_message(mqtt_topic, msg_type_buffer.data(),
                            msg_type_buffer.size(), ros2mqtt.mqtt.qos, true);
       client_->publish(mqtt_msg);
     } catch (const mqtt::exception& e) {
-      NODELET_WARN(
+      RCLCPP_WARN(
+        get_logger(),
         "Publishing ROS message type information to MQTT topic '%s' failed: %s",
         mqtt_topic.c_str(), e.what());
     }
 
     // build MQTT payload for ROS message (R) as [R]
     // or [S, R] if timestamp (S) is included
-    uint32_t msg_length = ros::serialization::serializationLength(*ros_msg);
+    uint32_t msg_length = serialized_msg->size();
     uint32_t payload_length = msg_length;
-    uint32_t stamp_length =
-      ros::serialization::serializationLength(ros::Time());
     uint32_t msg_offset = 0;
     if (ros2mqtt.stamped) {
-      // allocate buffer with appropriate size to hold [S, R]
-      msg_offset += stamp_length;
-      payload_length += stamp_length;
-      payload_buffer.resize(payload_length);
-    } else {
-      // allocate buffer with appropriate size to hold [R]
-      payload_buffer.resize(payload_length);
-    }
 
-    // serialize ROS message to payload [-, R]
-    ros::serialization::OStream msg_stream(&payload_buffer[msg_offset],
-                                           msg_length);
-    ros::serialization::serialize(msg_stream, *ros_msg);
+      // allocate buffer with appropriate size to hold [S, R]
+      msg_offset += stamp_length_;
+      payload_length += stamp_length_;
+      payload_buffer.resize(payload_length);
+
+      // copy serialized ROS message to payload [-, R]
+      std::copy(serialized_msg->get_rcl_serialized_message().buffer,
+                serialized_msg->get_rcl_serialized_message().buffer + msg_length,
+                payload_buffer.begin() + msg_offset);
+    } else {
+
+      // directly build payload buffer on top of serialized message
+      payload_buffer = std::vector<uint8_t>(
+        serialized_msg->get_rcl_serialized_message().buffer,
+        serialized_msg->get_rcl_serialized_message().buffer + msg_length);
+    }
 
     // inject timestamp as final step
     if (ros2mqtt.stamped) {
 
       // take current timestamp
-      ros::WallTime stamp_wall = ros::WallTime::now();
-      ros::Time stamp(stamp_wall.sec, stamp_wall.nsec);
-      if (stamp.isZero())
-        NODELET_WARN(
-          "Injected ROS time 0 into MQTT payload on topic %s, is a ROS clock "
-          "running?",
-          ros2mqtt.mqtt.topic.c_str());
+      builtin_interfaces::msg::Time stamp(rclcpp::Clock(RCL_SYSTEM_TIME).now());
 
-      // serialize timestamp to payload [S, R]
-      ros::serialization::OStream stamp_stream(&payload_buffer[0],
-                                               stamp_length);
-      ros::serialization::serialize(stamp_stream, stamp);
+      // copy serialized timestamp to payload [S, R]
+      rclcpp::SerializedMessage serialized_stamp;
+      serializeRosMessage(stamp, serialized_stamp);
+      std::copy(
+        serialized_stamp.get_rcl_serialized_message().buffer,
+        serialized_stamp.get_rcl_serialized_message().buffer + stamp_length_,
+        payload_buffer.begin());
     }
   }
 
   // send ROS message to MQTT broker
   mqtt_topic = ros2mqtt.mqtt.topic;
   try {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "Sending ROS message of type '%s' to MQTT broker on topic '%s' ...",
-      ros_msg->getDataType().c_str(), mqtt_topic.c_str());
+      ros_msg_type.name.c_str(), mqtt_topic.c_str());
     mqtt::message_ptr mqtt_msg = mqtt::make_message(
       mqtt_topic, payload_buffer.data(), payload_buffer.size(),
       ros2mqtt.mqtt.qos, ros2mqtt.mqtt.retained);
     client_->publish(mqtt_msg);
   } catch (const mqtt::exception& e) {
-    NODELET_WARN(
+    RCLCPP_WARN(
+      get_logger(),
       "Publishing ROS message type information to MQTT topic '%s' failed: %s",
       mqtt_topic.c_str(), e.what());
   }
@@ -605,8 +1053,7 @@ void MqttClient::ros2mqtt(const topic_tools::ShapeShifter::ConstPtr& ros_msg,
 
 
 void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
-                          const ros::WallTime& arrival_stamp) {
-
+                          const rclcpp::Time& arrival_stamp) {
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
   auto& payload = mqtt_msg->get_payload_ref();
@@ -620,51 +1067,46 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
   // if stamped, compute latency
   if (mqtt2ros.stamped) {
 
-    // create ROS message buffer on top of MQTT message payload
-    char* non_const_payload = const_cast<char*>(&payload[msg_offset]);
-    uint8_t* stamp_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
+    // copy stamp to generic message buffer
+    rclcpp::SerializedMessage serialized_stamp(stamp_length_);
+    std::memcpy(serialized_stamp.get_rcl_serialized_message().buffer,
+                &(payload[msg_offset]), stamp_length_);
+    serialized_stamp.get_rcl_serialized_message().buffer_length = stamp_length_;
 
     // deserialize stamp
-    ros::Time stamp;
-    uint32_t stamp_length = ros::serialization::serializationLength(stamp);
-    ros::serialization::IStream stamp_stream(stamp_buffer, stamp_length);
-    ros::serialization::deserialize(stamp_stream, stamp);
+    builtin_interfaces::msg::Time stamp;
+    deserializeRosMessage(serialized_stamp, stamp);
 
     // compute ROS2MQTT latency
-    ros::Time now(arrival_stamp.sec, arrival_stamp.nsec);
-    if (now.isZero())
-      NODELET_WARN(
-        "Cannot compute latency for MQTT topic %s when ROS time is 0, is a ROS "
-        "clock running?",
-        mqtt_topic.c_str());
-    ros::Duration latency = now - stamp;
-    std_msgs::Float64 latency_msg;
-    latency_msg.data = latency.toSec();
+    rclcpp::Duration latency = arrival_stamp - stamp;
+    std_msgs::msg::Float64 latency_msg;
+    latency_msg.data = latency.seconds();
 
     // publish latency
-    if (mqtt2ros.ros.latency_publisher.getTopic().empty()) {
+    if (!mqtt2ros.ros.latency_publisher) {
       std::string latency_topic = kLatencyRosTopicPrefix + mqtt2ros.ros.topic;
+      latency_topic.replace(latency_topic.find("//"), 2, "/");
       mqtt2ros.ros.latency_publisher =
-        private_node_handle_.advertise<std_msgs::Float64>(latency_topic, 1);
+        create_publisher<std_msgs::msg::Float64>(latency_topic, 1);
     }
-    mqtt2ros.ros.latency_publisher.publish(latency_msg);
+    mqtt2ros.ros.latency_publisher->publish(latency_msg);
 
-    msg_length -= stamp_length;
-    msg_offset += stamp_length;
+    msg_length -= stamp_length_;
+    msg_offset += stamp_length_;
   }
 
-  // create ROS message buffer on top of MQTT message payload
-  char* non_const_payload = const_cast<char*>(&payload[msg_offset]);
-  uint8_t* msg_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
-  ros::serialization::OStream msg_stream(msg_buffer, msg_length);
+  // copy ROS message from MQTT message to generic message buffer
+  rclcpp::SerializedMessage serialized_msg(msg_length);
+  std::memcpy(serialized_msg.get_rcl_serialized_message().buffer,
+              &(payload[msg_offset]), msg_length);
+  serialized_msg.get_rcl_serialized_message().buffer_length = msg_length;
 
-  // publish via ShapeShifter
-  NODELET_DEBUG(
+  // publish generic ROS message
+  RCLCPP_DEBUG(
+    get_logger(),
     "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
-    mqtt2ros.ros.shape_shifter.getDataType().c_str(),
-    mqtt2ros.ros.topic.c_str());
-  mqtt2ros.ros.shape_shifter.read(msg_stream);
-  mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
+    mqtt2ros.ros.msg_type.c_str(), mqtt2ros.ros.topic.c_str());
+  mqtt2ros.ros.publisher->publish(serialized_msg);
 }
 
 
@@ -672,13 +1114,11 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
 
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
-  const std::string str_msg = mqtt_msg->to_string();
 
+  const std::string str_msg = mqtt_msg->to_string();
   bool found_primitive = false;
-  std::string msg_type_md5;
-  std::string msg_type_name;
-  std::string msg_type_definition;
-  std::vector<uint8_t> msg_buffer;
+  std::string ros_msg_type = "std_msgs/msg/String";
+  rclcpp::SerializedMessage serialized_msg;
 
   // check for bool
   if (!found_primitive) {
@@ -690,16 +1130,11 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
       bool bool_msg = (bool_str == "true");
 
       // construct and serialize ROS message
-      std_msgs::Bool msg;
+      std_msgs::msg::Bool msg;
       msg.data = bool_msg;
-      serializeRosMessage(msg, msg_buffer);
+      serializeRosMessage(msg, serialized_msg);
 
-      // collect ROS message type information
-      msg_type_md5 = ros::message_traits::MD5Sum<std_msgs::Bool>::value();
-      msg_type_name = ros::message_traits::DataType<std_msgs::Bool>::value();
-      msg_type_definition =
-        ros::message_traits::Definition<std_msgs::Bool>::value();
-
+      ros_msg_type = "std_msgs/msg/Bool";
       found_primitive = true;
     }
   }
@@ -712,16 +1147,11 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
       if (pos == str_msg.size()) {
 
         // construct and serialize ROS message
-        std_msgs::Int32 msg;
+        std_msgs::msg::Int32 msg;
         msg.data = int_msg;
-        serializeRosMessage(msg, msg_buffer);
+        serializeRosMessage(msg, serialized_msg);
 
-        // collect ROS message type information
-        msg_type_md5 = ros::message_traits::MD5Sum<std_msgs::Int32>::value();
-        msg_type_name = ros::message_traits::DataType<std_msgs::Int32>::value();
-        msg_type_definition =
-          ros::message_traits::Definition<std_msgs::Int32>::value();
-
+        ros_msg_type = "std_msgs/msg/Int32";
         found_primitive = true;
       }
     } catch (const std::invalid_argument& ex) {
@@ -737,17 +1167,11 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
       if (pos == str_msg.size()) {
 
         // construct and serialize ROS message
-        std_msgs::Float32 msg;
+        std_msgs::msg::Float32 msg;
         msg.data = float_msg;
-        serializeRosMessage(msg, msg_buffer);
+        serializeRosMessage(msg, serialized_msg);
 
-        // collect ROS message type information
-        msg_type_md5 = ros::message_traits::MD5Sum<std_msgs::Float32>::value();
-        msg_type_name =
-          ros::message_traits::DataType<std_msgs::Float32>::value();
-        msg_type_definition =
-          ros::message_traits::Definition<std_msgs::Float32>::value();
-
+        ros_msg_type = "std_msgs/msg/Float32";
         found_primitive = true;
       }
     } catch (const std::invalid_argument& ex) {
@@ -759,70 +1183,122 @@ void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
   if (!found_primitive) {
 
     // construct and serialize ROS message
-    std_msgs::String msg;
+    std_msgs::msg::String msg;
     msg.data = str_msg;
-    serializeRosMessage(msg, msg_buffer);
-
-    // collect ROS message type information
-    msg_type_md5 = ros::message_traits::MD5Sum<std_msgs::String>::value();
-    msg_type_name = ros::message_traits::DataType<std_msgs::String>::value();
-    msg_type_definition =
-      ros::message_traits::Definition<std_msgs::String>::value();
+    serializeRosMessage(msg, serialized_msg);
   }
 
-  // if ROS message type has changed
-  if (msg_type_md5 != mqtt2ros.ros.shape_shifter.getMD5Sum()) {
+  // if ROS message type has changed or if mapping is stale
+  if (ros_msg_type != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
 
-    // configure ShapeShifter
-    mqtt2ros.ros.shape_shifter.morph(msg_type_md5, msg_type_name,
-                                     msg_type_definition, "");
+    mqtt2ros.ros.msg_type = ros_msg_type;
+    RCLCPP_INFO(get_logger(),
+                "ROS publisher message type on topic '%s' set to '%s'",
+                mqtt2ros.ros.topic.c_str(), ros_msg_type.c_str());
 
-    // advertise with ROS publisher
-    mqtt2ros.ros.publisher.shutdown();
-    mqtt2ros.ros.publisher = mqtt2ros.ros.shape_shifter.advertise(
-      node_handle_, mqtt2ros.ros.topic, mqtt2ros.ros.queue_size,
-      mqtt2ros.ros.latched);
-
-    NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
-                 mqtt2ros.ros.topic.c_str(), msg_type_name.c_str());
+    // recreate generic publisher
+    try {
+      const auto qos = rclcpp::QoS(mqtt2ros.ros.queue_size)
+          .durability(mqtt2ros.ros.qos.durability)
+          .reliability(mqtt2ros.ros.qos.reliability);
+      mqtt2ros.ros.publisher = create_generic_publisher(
+        mqtt2ros.ros.topic, ros_msg_type, qos);
+    } catch (rclcpp::exceptions::RCLError& e) {
+      RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
+                   e.what());
+      return;
+    }
+    mqtt2ros.ros.is_stale = false;
   }
 
-  // publish via ShapeShifter
-  ros::serialization::OStream msg_stream(msg_buffer.data(), msg_buffer.size());
-  NODELET_DEBUG(
+  // publish
+  RCLCPP_DEBUG(
+    get_logger(),
     "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
-    mqtt2ros.ros.shape_shifter.getDataType().c_str(),
-    mqtt2ros.ros.topic.c_str());
-  mqtt2ros.ros.shape_shifter.read(msg_stream);
-  mqtt2ros.ros.publisher.publish(mqtt2ros.ros.shape_shifter);
+    mqtt2ros.ros.msg_type.c_str(), mqtt2ros.ros.topic.c_str());
+  mqtt2ros.ros.publisher->publish(serialized_msg);
+}
+
+void MqttClient::mqtt2fixed(mqtt::const_message_ptr mqtt_msg) {
+
+  std::string mqtt_topic = mqtt_msg->get_topic();
+  Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
+
+  rclcpp::SerializedMessage serialized_msg;
+
+  if (!fixedMqtt2PrimitiveRos(mqtt_msg, mqtt2ros.ros.msg_type, serialized_msg)) {
+    RCLCPP_WARN(
+      get_logger(),
+      "Could not convert mqtt message into type %s on topic %s ...",
+      mqtt2ros.ros.msg_type.c_str(), mqtt2ros.ros.topic.c_str());
+  } else {
+
+    if (!mqtt2ros.ros.publisher)
+    {
+      RCLCPP_INFO(get_logger(),
+                  "ROS publisher message type on topic '%s' set to '%s'",
+                  mqtt2ros.ros.topic.c_str(), mqtt2ros.ros.msg_type.c_str());
+
+      // recreate generic publisher
+      try {
+        const auto qos = rclcpp::QoS(mqtt2ros.ros.queue_size)
+          .durability(mqtt2ros.ros.qos.durability)
+          .reliability(mqtt2ros.ros.qos.reliability);
+        mqtt2ros.ros.publisher = create_generic_publisher(
+          mqtt2ros.ros.topic, mqtt2ros.ros.msg_type, qos);
+
+        mqtt2ros.ros.is_stale = false;
+      } catch (const rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
+                     e.what());
+        return;
+      }
+    }
+
+    RCLCPP_DEBUG(get_logger(),
+                 "Sending ROS message of type '%s' from MQTT broker to ROS "
+                 "topic '%s' ...",
+                 mqtt2ros.ros.msg_type.c_str(), mqtt2ros.ros.topic.c_str());
+    mqtt2ros.ros.publisher->publish(serialized_msg);
+  }
 }
 
 
 void MqttClient::connected(const std::string& cause) {
+
+  (void) cause; // Avoid compiler warning for unused parameter.
 
   is_connected_ = true;
   std::string as_client =
     client_config_.id.empty()
       ? ""
       : std::string(" as '") + client_config_.id + std::string("'");
-  NODELET_INFO("Connected to broker at '%s'%s",
-               client_->get_server_uri().c_str(), as_client.c_str());
+  RCLCPP_INFO(get_logger(), "Connected to broker at '%s'%s",
+              client_->get_server_uri().c_str(), as_client.c_str());
 
   // subscribe MQTT topics
-  for (auto& mqtt2ros_p : mqtt2ros_) {
-    Mqtt2RosInterface& mqtt2ros = mqtt2ros_p.second;
-    std::string mqtt_topic = mqtt2ros_p.first;
-    if (!mqtt2ros.primitive)  // subscribe topics for ROS message types first
-      mqtt_topic = kRosMsgTypeMqttTopicPrefix + mqtt_topic;
-    client_->subscribe(mqtt_topic, mqtt2ros.mqtt.qos);
-    NODELET_DEBUG("Subscribed MQTT topic '%s'", mqtt_topic.c_str());
+  for (const auto& [mqtt_topic, mqtt2ros] : mqtt2ros_) {
+    if (!mqtt2ros.primitive) {
+      std::string const mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + mqtt_topic;
+      client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
+      RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
+    }
+    // If not primitive and not fixed, we need the message type before we can public. In that case
+    // wait for the type to come in before subscribing to the data topic
+    if (mqtt2ros.primitive || mqtt2ros.fixed_type) {
+      client_->subscribe(mqtt_topic, mqtt2ros.mqtt.qos);
+      RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic.c_str());
+    }
   }
 }
 
 
 void MqttClient::connection_lost(const std::string& cause) {
 
-  NODELET_ERROR("Connection to broker lost, will try to reconnect...");
+  (void) cause; // Avoid compiler warning for unused parameter.
+
+  RCLCPP_ERROR(get_logger(),
+               "Connection to broker lost, will try to reconnect...");
   is_connected_ = false;
   connect();
 }
@@ -834,28 +1310,101 @@ bool MqttClient::isConnected() {
 }
 
 
-bool MqttClient::isConnectedService(
-  mqtt_client_interfaces::IsConnected::Request& request,
-  mqtt_client_interfaces::IsConnected::Response& response) {
+void MqttClient::isConnectedService(
+  mqtt_client_interfaces::srv::IsConnected::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::IsConnected::Response::SharedPtr response) {
 
-  response.connected = isConnected();
-  return true;
+  (void) request; // Avoid compiler warning for unused parameter.
+  response->connected = isConnected();
 }
 
+void MqttClient::newRos2MqttBridge(
+  mqtt_client_interfaces::srv::NewRos2MqttBridge::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::NewRos2MqttBridge::Response::SharedPtr response){
+
+  // add mapping definition to ros2mqtt_
+  Ros2MqttInterface& ros2mqtt = ros2mqtt_[request->ros_topic];
+  ros2mqtt.ros.is_stale = true;
+  ros2mqtt.mqtt.topic = request->mqtt_topic;
+  ros2mqtt.primitive = request->primitive;
+  ros2mqtt.stamped = request->inject_timestamp;
+  ros2mqtt.ros.queue_size = request->ros_queue_size;
+  ros2mqtt.mqtt.qos = request->mqtt_qos;
+  ros2mqtt.mqtt.retained = request->mqtt_retained;
+
+  if (ros2mqtt.stamped && ros2mqtt.primitive) {
+        RCLCPP_WARN(
+          get_logger(),
+          "Timestamp will not be injected into primitive messages on ROS "
+          "topic '%s'",
+          request->ros_topic.c_str());
+        ros2mqtt.stamped = false;
+  }
+
+  RCLCPP_INFO(get_logger(), "Bridging %sROS topic '%s' to MQTT topic '%s' %s",
+                  ros2mqtt.primitive ? "primitive " : "", request->ros_topic.c_str(),
+                  ros2mqtt.mqtt.topic.c_str(),
+                  ros2mqtt.stamped ? "and measuring latency" : "");
+
+  // (re-)setup ROS subscriptions
+  setupSubscriptions();
+
+  response->success = true;
+}
+
+void MqttClient::newMqtt2RosBridge(
+  mqtt_client_interfaces::srv::NewMqtt2RosBridge::Request::SharedPtr request,
+  mqtt_client_interfaces::srv::NewMqtt2RosBridge::Response::SharedPtr response){
+
+  // add mapping definition to mqtt2ros_
+  Mqtt2RosInterface& mqtt2ros = mqtt2ros_[request->mqtt_topic];
+  mqtt2ros.ros.is_stale = true;
+  mqtt2ros.ros.topic = request->ros_topic;
+  mqtt2ros.primitive = request->primitive;
+  mqtt2ros.mqtt.qos = request->mqtt_qos;
+  mqtt2ros.ros.queue_size = request->ros_queue_size;
+  mqtt2ros.ros.latched = request->ros_latched;
+  if (mqtt2ros.ros.latched) {
+    RCLCPP_WARN(get_logger(),
+                    fmt::format("Parameter 'bridge.mqtt2ros.{}.advanced.ros.latched' is ignored "
+                    "since ROS 2 does not easily support latched topics.", request->mqtt_topic).c_str());
+
+  }
+
+  RCLCPP_INFO(get_logger(), "Bridging MQTT topic '%s' to %sROS topic '%s'",
+                  request->mqtt_topic.c_str(), mqtt2ros.primitive ? "primitive " : "",
+                  mqtt2ros.ros.topic.c_str());
+
+  // subscribe to the MQTT topic
+  std::string mqtt_topic_to_subscribe = request->mqtt_topic;
+  if (!mqtt2ros.primitive)
+    mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + request->mqtt_topic;
+  client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
+  RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
+
+  response->success = true;
+}
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
   // instantly take arrival timestamp
-  ros::WallTime arrival_stamp = ros::WallTime::now();
+  rclcpp::Time arrival_stamp(
+    builtin_interfaces::msg::Time(rclcpp::Clock(RCL_SYSTEM_TIME).now()));
 
   std::string mqtt_topic = mqtt_msg->get_topic();
-  NODELET_DEBUG("Received MQTT message on topic '%s'", mqtt_topic.c_str());
+  RCLCPP_DEBUG(get_logger(), "Received MQTT message on topic '%s'",
+               mqtt_topic.c_str());
 
   // publish directly if primitive
   if (mqtt2ros_.count(mqtt_topic) > 0) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
+
     if (mqtt2ros.primitive) {
-      mqtt2primitive(mqtt_msg);
+      if (mqtt2ros.fixed_type) {
+        mqtt2fixed(mqtt_msg);
+      } else {
+        mqtt2primitive(mqtt_msg);
+      }
       return;
     }
   }
@@ -865,25 +1414,17 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
     mqtt_topic.find(kRosMsgTypeMqttTopicPrefix) != std::string::npos;
   if (msg_contains_ros_msg_type) {
 
-    // create ROS message buffer on top of MQTT message payload
+    // copy message type to generic message buffer
     auto& payload = mqtt_msg->get_payload_ref();
     uint32_t payload_length = static_cast<uint32_t>(payload.size());
-    char* non_const_payload = const_cast<char*>(&payload[0]);
-    uint8_t* msg_type_buffer = reinterpret_cast<uint8_t*>(non_const_payload);
+    rclcpp::SerializedMessage serialized_ros_msg_type(payload_length);
+    std::memcpy(serialized_ros_msg_type.get_rcl_serialized_message().buffer,
+                &(payload[0]), payload_length);
+    serialized_ros_msg_type.get_rcl_serialized_message().buffer_length = payload_length;
 
     // deserialize ROS message type
-    mqtt_client_interfaces::RosMsgType ros_msg_type;
-    ros::serialization::IStream msg_type_stream(msg_type_buffer,
-                                                payload_length);
-    try {
-      ros::serialization::deserialize(msg_type_stream, ros_msg_type);
-    } catch (ros::serialization::StreamOverrunException) {
-      NODELET_ERROR(
-        "Failed to deserialize ROS message type from MQTT message received on "
-        "topic '%s', got message:\n%s",
-        mqtt_topic.c_str(), mqtt_msg->to_string().c_str());
-      return;
-    }
+    mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
+    deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
 
     // reconstruct corresponding MQTT data topic
     std::string mqtt_data_topic = mqtt_topic;
@@ -891,35 +1432,58 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
                           kRosMsgTypeMqttTopicPrefix.length());
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
 
-    // if ROS message type has changed
-    if (ros_msg_type.md5 != mqtt2ros.ros.shape_shifter.getMD5Sum()) {
+    // if ROS message type has changed or if mapping is stale
+    if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
 
+      if (mqtt2ros.fixed_type) {
+        // We should never be in this situation if the type has been set explicitly. As fixed_type
+        // is not currently supported through the service based bridge creation and the type name
+        // not matching means the fixed type specified in the configuration does not match the
+        // one we just recieved
+        if (ros_msg_type.name != mqtt2ros.ros.msg_type)
+          RCLCPP_ERROR(get_logger(),
+                       "Unexpected type name received for topic %s (expected %s but received %s)",
+                       mqtt2ros.ros.topic.c_str(), mqtt2ros.ros.msg_type.c_str(), ros_msg_type.name.c_str());
+        if (mqtt2ros.ros.is_stale)
+          RCLCPP_ERROR(get_logger(), "Topic %s has been unexpectedly marked stale",
+                       mqtt2ros.ros.topic.c_str());
+        return;
+      }
+
+      mqtt2ros.ros.msg_type = ros_msg_type.name;
       mqtt2ros.stamped = ros_msg_type.stamped;
-      NODELET_INFO("ROS publisher message type on topic '%s' set to '%s'",
-                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
+      RCLCPP_INFO(get_logger(),
+                  "ROS publisher message type on topic '%s' set to '%s'",
+                  mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
 
-      // configure ShapeShifter
-      mqtt2ros.ros.shape_shifter.morph(ros_msg_type.md5, ros_msg_type.name,
-                                       ros_msg_type.definition, "");
-
-      // advertise with ROS publisher
-      mqtt2ros.ros.publisher.shutdown();
-      mqtt2ros.ros.publisher = mqtt2ros.ros.shape_shifter.advertise(
-        node_handle_, mqtt2ros.ros.topic, mqtt2ros.ros.queue_size,
-        mqtt2ros.ros.latched);
+      // recreate generic publisher
+      try {
+        const auto qos = rclcpp::QoS(mqtt2ros.ros.queue_size)
+          .durability(mqtt2ros.ros.qos.durability)
+          .reliability(mqtt2ros.ros.qos.reliability);
+        mqtt2ros.ros.publisher = create_generic_publisher(
+          mqtt2ros.ros.topic, ros_msg_type.name, qos);
+      } catch (rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(get_logger(), "Failed to create generic publisher: %s",
+                     e.what());
+        return;
+      }
+      mqtt2ros.ros.is_stale = false;
 
       // subscribe to MQTT topic with actual ROS messages
       client_->subscribe(mqtt_data_topic, mqtt2ros.mqtt.qos);
-      NODELET_DEBUG("Subscribed MQTT topic '%s'", mqtt_data_topic.c_str());
+      RCLCPP_DEBUG(get_logger(), "Subscribed MQTT topic '%s'",
+                   mqtt_data_topic.c_str());
     }
 
   } else {
 
     // publish ROS message, if publisher initialized
-    if (!mqtt2ros_[mqtt_topic].ros.publisher.getTopic().empty()) {
+    if (!mqtt2ros_[mqtt_topic].ros.msg_type.empty()) {
       mqtt2ros(mqtt_msg, arrival_stamp);
     } else {
-      NODELET_WARN(
+      RCLCPP_WARN(
+        get_logger(),
         "ROS publisher for data from MQTT topic '%s' is not yet initialized: "
         "ROS message type not yet known",
         mqtt_topic.c_str());
@@ -928,18 +1492,23 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 }
 
 
-void MqttClient::delivery_complete(mqtt::delivery_token_ptr token) {}
+void MqttClient::delivery_complete(mqtt::delivery_token_ptr token) {
+
+  (void) token; // Avoid compiler warning for unused parameter.
+}
 
 
 void MqttClient::on_success(const mqtt::token& token) {
 
+  (void) token; // Avoid compiler warning for unused parameter.
   is_connected_ = true;
 }
 
 
 void MqttClient::on_failure(const mqtt::token& token) {
 
-  ROS_ERROR(
+  RCLCPP_ERROR(
+    get_logger(),
     "Connection to broker failed (return code %d), will automatically "
     "retry...",
     token.get_return_code());

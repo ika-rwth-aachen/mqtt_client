@@ -1,26 +1,11 @@
-ros:
-  trigger:
-    include:
-      - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
-    strategy: depend
-  variables:
-    IMAGE_TAG: ros
-    BASE_IMAGE: rwthika/ros:latest
-    COMMAND: roslaunch mqtt_client standalone.launch
-    PLATFORM: amd64,arm64
-    TARGET: dev,run
-    ENABLE_INDUSTRIAL_CI: 'true'
-
 ros2:
   trigger:
     include:
       - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
     strategy: depend
   variables:
-    IMAGE_TAG: ros2
-    BASE_IMAGE: rwthika/ros2:latest
-    COMMAND: ros2 launch mqtt_client standalone.launch.ros2.xml
     PLATFORM: amd64,arm64
     TARGET: dev,run
-    ENABLE_INDUSTRIAL_CI: 'true'
-    ENABLE_PUSH_AS_LATEST: 'true'
+    BASE_IMAGE: rwthika/ros2:jazzy
+    COMMAND: ros2 launch mqtt_client standalone.launch.xml
+    RMW_IMPLEMENTATION: rmw_zenoh_cpp
