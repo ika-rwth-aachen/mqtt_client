@@ -6,6 +6,6 @@ ros2:
   variables:
     PLATFORM: amd64,arm64
     TARGET: dev,run
-    BASE_IMAGE: rwthika/ros2:latest
+    BASE_IMAGE: rwthika/ros2:jazzy
     COMMAND: ros2 launch mqtt_client standalone.launch.xml
     RMW_IMPLEMENTATION: rmw_zenoh_cpp
