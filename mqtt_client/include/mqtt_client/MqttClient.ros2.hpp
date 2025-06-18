@@ -199,7 +199,7 @@ class MqttClient : public rclcpp::Node,
      const Ros2MqttInterface& ros2mqtt) const;
 
   /**
-   * @brief Get the candiate topic endpoints for subscription matching
+   * @brief Get the candidate topic endpoints for subscription matching
    *
    * @param ros2mqtt the ROS to MQTT interface spec
    *
