@@ -2,11 +2,6 @@
 Changelog for package mqtt_client_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.4.0 (2024-06-05)
-------------------
-* Dropped ROS 1 support
-* Added compatibility with ROS 2 Kilted
-
 2.3.0 (2024-05-30)
 ------------------
 
