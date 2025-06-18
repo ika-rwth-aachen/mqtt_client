@@ -1,16 +1,16 @@
-broker:
-  host: localhost
-  port: 1883
-bridge:
-  ros2mqtt:
-    - ros_topic: /ping/ros
-      mqtt_topic: pingpong/ros
-    - ros_topic: /ping/primitive
-      mqtt_topic: pingpong/primitive
-      primitive: true
-  mqtt2ros:
-    - mqtt_topic: pingpong/ros
-      ros_topic: /pong/ros
-    - mqtt_topic: pingpong/primitive
-      ros_topic: /pong/primitive
-      primitive: true
+/**/*:
+  ros__parameters:
+    broker:
+      host: localhost
+      port: 1883
+    bridge:
+      ros2mqtt:
+        ros_topics: 
+          - /ping/ros
+        /ping/ros:
+          mqtt_topic: pingpong/ros
+      mqtt2ros:
+        mqtt_topics: 
+          - pingpong/ros
+        pingpong/ros:
+          ros_topic: /pong/ros

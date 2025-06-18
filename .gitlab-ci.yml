@@ -19,7 +19,7 @@ ros2:
   variables:
     IMAGE_TAG: ros2
     BASE_IMAGE: rwthika/ros2:latest
-    COMMAND: ros2 launch mqtt_client standalone.launch.ros2.xml
+    COMMAND: ros2 launch mqtt_client standalone.launch.xml
     PLATFORM: amd64,arm64
     TARGET: dev,run
     ENABLE_INDUSTRIAL_CI: 'true'

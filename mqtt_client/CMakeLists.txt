@@ -19,7 +19,7 @@ find_package(std_msgs REQUIRED)
 find_library(PahoMqttC_LIBRARY libpaho-mqtt3as.so.1 REQUIRED)
 find_library(PahoMqttCpp_LIBRARY libpaho-mqttpp3.so.1 REQUIRED)
 
-add_library(${PROJECT_NAME}_lib SHARED src/MqttClient.ros2.cpp)
+add_library(${PROJECT_NAME}_lib SHARED src/MqttClient.cpp)
 
 rclcpp_components_register_node(${PROJECT_NAME}_lib
   PLUGIN "mqtt_client::MqttClient"

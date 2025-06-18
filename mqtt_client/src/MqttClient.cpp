@@ -32,7 +32,7 @@ SOFTWARE.
 #include <stdexcept>
 #include <vector>
 
-#include <mqtt_client/MqttClient.ros2.hpp>
+#include <mqtt_client/MqttClient.hpp>
 #include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
 #include <rcpputils/env.hpp>
 #include <std_msgs/msg/bool.hpp>

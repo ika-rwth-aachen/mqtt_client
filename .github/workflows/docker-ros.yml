@@ -12,7 +12,7 @@ jobs:
           platform: amd64,arm64
           target: run
           base-image: rwthika/ros2:humble
-          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          command: ros2 launch mqtt_client standalone.launch.xml
           image-tag: humble
           rmw-implementation: rmw_zenoh_cpp
 
@@ -24,7 +24,7 @@ jobs:
           platform: amd64,arm64
           target: run
           base-image: rwthika/ros2:jazzy
-          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          command: ros2 launch mqtt_client standalone.launch.xml
           image-tag: jazzy
           enable-push-as-latest: 'true'
           rmw-implementation: rmw_zenoh_cpp
@@ -37,7 +37,7 @@ jobs:
           platform: amd64,arm64
           target: run
           base-image: rwthika/ros2:kilted
-          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          command: ros2 launch mqtt_client standalone.launch.xml
           image-tag: kilted
           rmw-implementation: rmw_zenoh_cpp
 
@@ -49,6 +49,6 @@ jobs:
           platform: amd64,arm64
           target: run
           base-image: rwthika/ros2:rolling
-          command: ros2 launch mqtt_client standalone.launch.ros2.xml
+          command: ros2 launch mqtt_client standalone.launch.xml
           image-tag: rolling
           rmw-implementation: rmw_zenoh_cpp
