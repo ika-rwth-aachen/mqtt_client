@@ -2,6 +2,17 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.4.0 (2025-06-18)
+------------------
+* Merge pull request `#83 <https://github.com/ika-rwth-aachen/mqtt_client/issues/83>`_ from ika-rwth-aachen/codex/deprecate-ros-1-and-prepare-ros-2-for-kilted-release
+  Drop ROS 1 support; add ROS 2 Kilted
+* Merge branch 'main' into codex/deprecate-ros-1-and-prepare-ros-2-for-kilted-release
+* Merge pull request `#84 <https://github.com/ika-rwth-aachen/mqtt_client/issues/84>`_ from ika-rwth-aachen/codex/finde-codeprobleme-und-verbesserungsvorschläge
+  Fix typos and Int64 handling, add test
+* Merge pull request `#46 <https://github.com/ika-rwth-aachen/mqtt_client/issues/46>`_ from prbelarmino/main
+  Update CMakeLists file to run on a raspbian buster system
+* Contributors: Lennart Reiher
+
 2.3.0 (2024-05-30)
 ------------------
 * Merge pull request `#61 <https://github.com/ika-rwth-aachen/mqtt_client/issues/61>`_ from Chance-Maritime-Technologies/dev-explicitTypes
