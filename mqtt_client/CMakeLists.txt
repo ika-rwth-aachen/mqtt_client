@@ -52,13 +52,11 @@ install(TARGETS ${PROJECT_NAME}_lib
 install(
   DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
-  FILES_MATCHING PATTERN "*ros2*"
 )
 
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
-  FILES_MATCHING PATTERN "*ros2*"
 )
 
 ament_package()
