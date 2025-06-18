@@ -10,7 +10,6 @@ jobs:
       matrix:
         ROS_DISTRO:
           - humble
-          - iron
           - jazzy
           - kilted
           - rolling
