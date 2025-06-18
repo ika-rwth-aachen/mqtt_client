@@ -68,7 +68,7 @@ T mqtt2float(mqtt::const_message_ptr mqtt_msg) {
   const T v = std::stold(str_msg, &pos);
 
   if (pos != str_msg.size())
-    throw std::invalid_argument ("not all charaters processed");
+    throw std::invalid_argument ("not all characters processed");
 
   return v;
 }
@@ -80,7 +80,7 @@ T mqtt2int(mqtt::const_message_ptr mqtt_msg) {
   const T v = std::stoll(str_msg, &pos);
 
   if (pos != str_msg.size())
-    throw std::invalid_argument ("not all charaters processed");
+    throw std::invalid_argument ("not all characters processed");
 
   return v;
 }
@@ -151,8 +151,8 @@ bool fixedMqtt2PrimitiveRos(mqtt::const_message_ptr mqtt_msg,
 
       serializeRosMessage(msg, serialized_msg);
     } else if (msg_type == "std_msgs/msg/Int64") {
-      std_msgs::msg::Int32 msg;
-      msg.data = mqtt2int<int32_t>(mqtt_msg);
+      std_msgs::msg::Int64 msg;
+      msg.data = mqtt2int<int64_t>(mqtt_msg);
 
       serializeRosMessage(msg, serialized_msg);
     } else if (msg_type == "std_msgs/msg/Float32") {
