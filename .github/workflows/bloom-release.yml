@@ -1,21 +1,25 @@
-name: bloom-release
+# It currently seems to not be possible to automate bloom-release because 'libpaho-mqttpp-dev' cannot be found for Debian 8;
+# this failure can be ignored manually; see pipeline failure here
+# https://github.com/ika-rwth-aachen/mqtt_client/actions/runs/15732735405/job/44337521624#step:3:161
 
-on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+# name: bloom-release
 
-jobs:
-  bloom-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Release
-        uses: at-wat/bloom-release-action@v0
-        with:
-          ros_distro: humble jazzy kilted rolling
-          github_token_bloom: ${{ secrets.GH_TOKEN_FOR_BLOOM_RELEASE }}
-          github_user: lreiher
-          git_user: Lennart Reiher
-          git_email: lennart.reiher@ika.rwth-aachen.de
-          release_repository_push_url: https://github.com/ros2-gbp/mqtt_client-release.git
-          open_pr: false
+# on:
+#   push:
+#     tags:
+#       - 'v[0-9]+.[0-9]+.[0-9]+'
+
+# jobs:
+#   bloom-release:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Release
+#         uses: at-wat/bloom-release-action@v0
+#         with:
+#           ros_distro: humble jazzy kilted rolling
+#           github_token_bloom: ${{ secrets.GH_TOKEN_FOR_BLOOM_RELEASE }}
+#           github_user: lreiher
+#           git_user: Lennart Reiher
+#           git_email: lennart.reiher@ika.rwth-aachen.de
+#           release_repository_push_url: https://github.com/ros2-gbp/mqtt_client-release.git
+#           open_pr: false
