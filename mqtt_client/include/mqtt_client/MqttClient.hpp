@@ -423,6 +423,7 @@ class MqttClient : public rclcpp::Node,
       int version;                           ///< TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
       bool verify;                           ///< Verify the client should conduct
                                              ///< post-connect checks
+      bool server_cert_auth;                 ///< whether to verify the server certificate
       std::vector<std::string> alpn_protos;  ///< list of ALPN protocols
     } tls;                                   ///< SSL/TLS-related variables
   };

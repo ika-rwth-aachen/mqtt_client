@@ -309,6 +309,8 @@ void MqttClient::loadParameters() {
   declare_parameter("client.tls.key", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
   param_desc.description = "client private key password";
   declare_parameter("client.tls.password", rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  param_desc.description = "whether to verify the server certificate";
+  declare_parameter("client.tls.server_cert_auth", rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
 
   param_desc.description = "The list of topics to bridge from ROS to MQTT";
   const auto ros2mqtt_ros_topics = declare_parameter<std::vector<std::string>>("bridge.ros2mqtt.ros_topics", std::vector<std::string>(), param_desc);
@@ -398,6 +400,7 @@ void MqttClient::loadParameters() {
       loadParameter("client.tls.verify", client_config_.tls.verify);
       loadParameter("client.tls.alpn_protos", client_config_.tls.alpn_protos);
     }
+    loadParameter("client.tls.server_cert_auth", client_config_.tls.server_cert_auth, true);
   }
 
   // resolve filepaths
@@ -886,6 +889,7 @@ void MqttClient::setupClient() {
       if (!client_config_.tls.password.empty())
         ssl.set_private_key_password(client_config_.tls.password);
     }
+    ssl.set_enable_server_cert_auth(client_config_.tls.server_cert_auth);
     ssl.set_ssl_version(client_config_.tls.version);
     ssl.set_verify(client_config_.tls.verify);
     ssl.set_alpn_protos(client_config_.tls.alpn_protos);
