@@ -221,6 +221,7 @@ client:
     version:              # TLS version (https://github.com/eclipse/paho.mqtt.cpp/blob/master/src/mqtt/ssl_options.h#L305)
     verify:               # verify the client should conduct post-connect checks.
     alpn_protos:          # list of ALPN protocols (https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_alpn_protos.html)
+    server_cert_auth:     # [true] whether to verify the server certificate
 ```
 
 #### Bridge Parameters
