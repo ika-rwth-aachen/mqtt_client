@@ -2,6 +2,9 @@
 Changelog for package mqtt_client_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.4.1 (2025-08-18)
+------------------
+
 2.4.0 (2025-06-18)
 ------------------
 * Merge pull request `#83 <https://github.com/ika-rwth-aachen/mqtt_client/issues/83>`_ from ika-rwth-aachen/codex/deprecate-ros-1-and-prepare-ros-2-for-kilted-release
