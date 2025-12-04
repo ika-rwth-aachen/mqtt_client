@@ -1315,7 +1315,6 @@ void MqttClient::connection_lost(const std::string& cause) {
   RCLCPP_ERROR(get_logger(),
                "Connection to broker lost, will try to reconnect...");
   is_connected_ = false;
-  connect();
 }
 
 
@@ -1531,3 +1530,4 @@ void MqttClient::on_failure(const mqtt::token& token) {
 }
 
 }  // namespace mqtt_client
+
