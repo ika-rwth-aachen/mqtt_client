@@ -35,6 +35,7 @@ SOFTWARE.
 
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <mqtt/async_client.h>
 #include <mqtt_client_interfaces/srv/is_connected.hpp>
 #include <mqtt_client_interfaces/srv/new_mqtt2_ros_bridge.hpp>
