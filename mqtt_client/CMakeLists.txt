@@ -35,12 +35,12 @@ target_link_libraries(${PROJECT_NAME}_lib
   ${PahoMqttCpp_LIBRARY}
 )
 
-ament_target_dependencies(${PROJECT_NAME}_lib
-  fmt
-  mqtt_client_interfaces
-  rclcpp
-  rclcpp_components
-  std_msgs
+target_link_libraries(${PROJECT_NAME}_lib
+  fmt::fmt
+  ${mqtt_client_interfaces_TARGETS}
+  rclcpp::rclcpp
+  rclcpp_components::component
+  ${std_msgs_TARGETS}
 )
 
 install(TARGETS ${PROJECT_NAME}_lib
