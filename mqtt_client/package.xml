@@ -24,6 +24,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>libpaho-mqtt-dev</depend>
   <depend>libpaho-mqttpp-dev</depend>
+  <depend>rosx_introspection</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>rcpputils</depend>

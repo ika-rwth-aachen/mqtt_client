@@ -50,6 +50,8 @@ SOFTWARE.
 #include <std_msgs/msg/u_int8.hpp>
 #include <std_msgs/msg/u_int8_multi_array.hpp>
 
+#include "rosx_introspection/ros_parser.hpp"
+#include "rosx_introspection/ros_utils/ros2_helpers.hpp"
 #include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(mqtt_client::MqttClient)
 
@@ -1002,6 +1004,20 @@ void MqttClient::ros2mqtt(
                   ros_msg_type.name.c_str());
       return;
     }
+
+  } else if (ros2mqtt.json) {  // publish as json string
+
+    // resolve ROS messages to primitive strings if possible
+    RosMsgParser::Parser parser(ros_topic, RosMsgParser::ROSType(ros2mqtt.ros.msg_type), RosMsgParser::GetMessageDefinition(ros2mqtt.ros.msg_type));
+    RosMsgParser::NanoCDR_Deserializer deserializer;
+    RosMsgParser::Span<const unsigned char> data{
+        reinterpret_cast<const unsigned char*>(serialized_msg->get_rcl_serialized_message().buffer),
+        serialized_msg->size()
+    };
+
+    std::string payload;
+    parser.deserializeIntoJson(data, &payload, &deserializer);
+    payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
 
   } else {  // publish as complete ROS message incl. ROS message type
 
