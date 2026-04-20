@@ -331,6 +331,8 @@ void MqttClient::loadParameters() {
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.mqtt_topic", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "whether to publish as primitive message";
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.primitive", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "whether to publish as json string";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.json", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
     param_desc.description = "If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the publisher";
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)";
@@ -438,6 +440,18 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.primitive", ros_topic), primitive_param))
         ros2mqtt.primitive = primitive_param.as_bool();
 
+      // ros2mqtt[k]/json
+      rclcpp::Parameter json_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.json", ros_topic), json_param))
+        ros2mqtt.json = json_param.as_bool();
+      if (ros2mqtt.primitive && ros2mqtt.json) {
+        RCLCPP_WARN(
+          get_logger(),
+          "Primitive ROS topic '%s' will not be published as json string",
+          ros_topic.c_str());
+        ros2mqtt.json = false;
+      }
+
       // ros2mqtt[k]/ros_type
       rclcpp::Parameter ros_type_param;
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), ros_type_param)) {
@@ -454,6 +468,14 @@ void MqttClient::loadParameters() {
         RCLCPP_WARN(
           get_logger(),
           "Timestamp will not be injected into primitive messages on ROS "
+          "topic '%s'",
+          ros_topic.c_str());
+        ros2mqtt.stamped = false;
+      }
+      if (ros2mqtt.stamped && ros2mqtt.json) {
+        RCLCPP_WARN(
+          get_logger(),
+          "Timestamp will not be injected into json string messages on ROS "
           "topic '%s'",
           ros_topic.c_str());
         ros2mqtt.stamped = false;
@@ -509,9 +531,10 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.mqtt.retained", ros_topic), retained_param))
         ros2mqtt.mqtt.retained = retained_param.as_bool();
 
-      RCLCPP_INFO(get_logger(), "Bridging %sROS topic '%s' to MQTT topic '%s' %s",
+      RCLCPP_INFO(get_logger(), "Bridging %sROS topic '%s' to MQTT topic '%s' %s%s",
                   ros2mqtt.primitive ? "primitive " : "", ros_topic.c_str(),
                   ros2mqtt.mqtt.topic.c_str(),
+                  ros2mqtt.json ? "as json string" : "",
                   ros2mqtt.stamped ? "and measuring latency" : "");
     } else {
       RCLCPP_WARN(get_logger(),

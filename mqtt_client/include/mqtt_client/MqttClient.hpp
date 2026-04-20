@@ -452,6 +452,7 @@ class MqttClient : public rclcpp::Node,
     } mqtt;                   ///< MQTT-related variables
     bool fixed_type = false;  ///< whether the published message type is specified explicitly
     bool primitive = false;   ///< whether to publish as primitive message
+    bool json = false;        ///< whether to publish as json string
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
   };
 
