@@ -480,6 +480,8 @@ class MqttClient : public rclcpp::Node,
     bool fixed_type = false; ///< whether the published ros message type is specified explicitly
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
+    bool json = false;       ///< whether to parse as json message (if
+                             ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
   };
 

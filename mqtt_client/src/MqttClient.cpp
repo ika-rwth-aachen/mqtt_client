@@ -359,6 +359,8 @@ void MqttClient::loadParameters() {
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.ros_topic", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "whether to publish as primitive message (if coming from non-ROS MQTT client)";
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "whether to parse as json message (if coming from non-ROS MQTT client)";
+    declare_parameter(fmt::format("bridge.mqtt2ros.{}.json", mqtt_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
     param_desc.description = "If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the MQTT message";
     declare_parameter(fmt::format("bridge.mqtt2ros.{}.ros_type", mqtt_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "MQTT QoS value";
@@ -561,6 +563,17 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.primitive", mqtt_topic), primitive_param))
         mqtt2ros.primitive = primitive_param.as_bool();
 
+      // mqtt2ros[k]/json
+      rclcpp::Parameter json_param;
+      if (get_parameter(fmt::format("bridge.mqtt2ros.{}.json", mqtt_topic), json_param))
+        mqtt2ros.json = json_param.as_bool();
+      if (mqtt2ros.primitive && mqtt2ros.json) {
+        RCLCPP_WARN(
+          get_logger(),
+          "Primitive MQTT topic '%s' will not be parsed as json string",
+          mqtt_topic.c_str());
+        mqtt2ros.json = false;
+      }
 
       rclcpp::Parameter ros_type_param;
       if (get_parameter(fmt::format("bridge.mqtt2ros.{}.ros_type", mqtt_topic), ros_type_param)) {
@@ -620,8 +633,9 @@ void MqttClient::loadParameters() {
                     "since ROS 2 does not easily support latched topics.", mqtt_topic).c_str());
       }
 
-      RCLCPP_INFO(get_logger(), "Bridging MQTT topic '%s' to %sROS topic '%s'",
-                  mqtt_topic.c_str(), mqtt2ros.primitive ? "primitive " : "",
+      RCLCPP_INFO(get_logger(), "Bridging MQTT topic '%s' %sto %sROS topic '%s'",
+                  mqtt_topic.c_str(), mqtt2ros.json ? "containing json messages " : "",
+                  mqtt2ros.primitive ? "primitive " : "",
                   mqtt2ros.ros.topic.c_str());
     }
     else {
