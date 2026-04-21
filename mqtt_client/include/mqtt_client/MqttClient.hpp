@@ -271,6 +271,17 @@ class MqttClient : public rclcpp::Node,
                 const rclcpp::Time& arrival_stamp);
 
   /**
+   * @brief Publishes a ROS message received via MQTT in JSON format to ROS.
+   *
+   * This utilizes the generic publisher stored for the MQTT topic on which the
+   * message was received. The publisher has to be configured to the ROS message
+   * type of the message.
+   *
+   * @param   mqtt_msg       MQTT message
+   */
+  void mqttjson2ros(mqtt::const_message_ptr mqtt_msg);
+
+  /**
    * @brief Publishes a primitive message received via MQTT to ROS.
    *
    * @param   mqtt_msg     MQTT message

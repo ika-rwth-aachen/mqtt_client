@@ -1177,6 +1177,28 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
   mqtt2ros.ros.publisher->publish(serialized_msg);
 }
 
+void MqttClient::mqttjson2ros(mqtt::const_message_ptr mqtt_msg) {
+  std::string mqtt_topic = mqtt_msg->get_topic();
+  Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
+
+  RosMsgParser::Parser parser(mqtt2ros.ros.topic, RosMsgParser::ROSType(mqtt2ros.ros.msg_type), RosMsgParser::GetMessageDefinition(mqtt2ros.ros.msg_type));
+  RosMsgParser::ROS2_Serializer serializer;
+  parser.serializeFromJson(mqtt_msg->get_payload(), &serializer);
+  uint32_t msg_length = serializer.getBufferSize();
+
+  // copy ROS message from MQTT message to generic message buffer
+  rclcpp::SerializedMessage serialized_msg(msg_length);
+  std::memcpy(serialized_msg.get_rcl_serialized_message().buffer,
+              (serializer.getBufferData()), msg_length);
+  serialized_msg.get_rcl_serialized_message().buffer_length = msg_length;
+
+  // publish generic ROS message
+  RCLCPP_DEBUG(
+    get_logger(),
+    "Sending ROS message of type '%s' from MQTT broker to ROS topic '%s' ...",
+    mqtt2ros.ros.msg_type.c_str(), mqtt2ros.ros.topic.c_str());
+  mqtt2ros.ros.publisher->publish(serialized_msg);
+}
 
 void MqttClient::mqtt2primitive(mqtt::const_message_ptr mqtt_msg) {
 
@@ -1462,7 +1484,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
   RCLCPP_DEBUG(get_logger(), "Received MQTT message on topic '%s'",
                mqtt_topic.c_str());
 
-  // publish directly if primitive
+  // publish directly if format is primitive or json
   if (mqtt2ros_.count(mqtt_topic) > 0) {
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
 
@@ -1472,6 +1494,9 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
       } else {
         mqtt2primitive(mqtt_msg);
       }
+      return;
+    } else if (mqtt2ros.json) {
+      mqttjson2ros(mqtt_msg);
       return;
     }
   }
@@ -1489,15 +1514,19 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
                 &(payload[0]), payload_length);
     serialized_ros_msg_type.get_rcl_serialized_message().buffer_length = payload_length;
 
-    // deserialize ROS message type
-    mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
-    deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
-
     // reconstruct corresponding MQTT data topic
     std::string mqtt_data_topic = mqtt_topic;
     mqtt_data_topic.erase(mqtt_data_topic.find(kRosMsgTypeMqttTopicPrefix),
                           kRosMsgTypeMqttTopicPrefix.length());
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
+
+    // deserialize ROS message type
+    mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
+    if (!mqtt2ros.json) {
+        deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
+    } else {
+        ros_msg_type.name = mqtt_msg->get_payload();
+    }
 
     // if ROS message type has changed or if mapping is stale
     if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
