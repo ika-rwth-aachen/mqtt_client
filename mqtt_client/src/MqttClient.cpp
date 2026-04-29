@@ -654,6 +654,11 @@ void MqttClient::setup() {
   // initialize MQTT client
   setupClient();
 
+  // create ROS publishers BEFORE connect() so the Paho callback thread
+  // does not fire message_arrived against half-constructed publishers.
+  // See https://github.com/ika-rwth-aachen/mqtt_client (v2.4.1) startup race.
+  setupPublishers();
+
   // connect to MQTT broker
   connect();
 
@@ -677,8 +682,6 @@ void MqttClient::setup() {
   check_subscriptions_timer_ =
     create_wall_timer(std::chrono::duration<double>(1.0),
                       std::bind(&MqttClient::setupSubscriptions, this));
-
-  setupPublishers ();
 }
 
 std::optional<rclcpp::QoS> MqttClient::getCompatibleQoS (const std::string &ros_topic, const rclcpp::TopicEndpointInfo &tei,
