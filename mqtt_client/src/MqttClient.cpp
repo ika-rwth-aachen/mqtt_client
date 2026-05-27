@@ -1021,8 +1021,11 @@ void MqttClient::ros2mqtt(
 
   } else if (ros2mqtt.json) {  // publish as json string
 
-    // resolve ROS messages to primitive strings if possible
-    RosMsgParser::Parser parser(ros_topic, RosMsgParser::ROSType(ros2mqtt.ros.msg_type), RosMsgParser::GetMessageDefinition(ros2mqtt.ros.msg_type));
+    if (!ros2mqtt.ros.parser) {
+      // initialise json message parser
+      ros2mqtt.ros.parser = std::make_shared<RosMsgParser::Parser>(ros_topic, RosMsgParser::ROSType(ros2mqtt.ros.msg_type), RosMsgParser::GetMessageDefinition(ros2mqtt.ros.msg_type));
+    }
+
     RosMsgParser::NanoCDR_Deserializer deserializer;
     RosMsgParser::Span<const unsigned char> data{
         reinterpret_cast<const unsigned char*>(serialized_msg->get_rcl_serialized_message().buffer),
@@ -1030,7 +1033,7 @@ void MqttClient::ros2mqtt(
     };
 
     std::string payload;
-    parser.deserializeIntoJson(data, &payload, &deserializer);
+    ros2mqtt.ros.parser->deserializeIntoJson(data, &payload, &deserializer);
     payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
 
   } else {  // publish as complete ROS message incl. ROS message type
@@ -1181,9 +1184,14 @@ void MqttClient::mqttjson2ros(mqtt::const_message_ptr mqtt_msg) {
   std::string mqtt_topic = mqtt_msg->get_topic();
   Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_topic];
 
-  RosMsgParser::Parser parser(mqtt2ros.ros.topic, RosMsgParser::ROSType(mqtt2ros.ros.msg_type), RosMsgParser::GetMessageDefinition(mqtt2ros.ros.msg_type));
+  if (!mqtt2ros.ros.parser) {
+    // initialise json message parser
+    mqtt2ros.ros.parser = std::make_shared<RosMsgParser::Parser>(mqtt2ros.ros.topic, RosMsgParser::ROSType(mqtt2ros.ros.msg_type), RosMsgParser::GetMessageDefinition(mqtt2ros.ros.msg_type));
+  }
+
+
   RosMsgParser::ROS2_Serializer serializer;
-  parser.serializeFromJson(mqtt_msg->get_payload(), &serializer);
+  mqtt2ros.ros.parser->serializeFromJson(mqtt_msg->get_payload(), &serializer);
   uint32_t msg_length = serializer.getBufferSize();
 
   // copy ROS message from MQTT message to generic message buffer

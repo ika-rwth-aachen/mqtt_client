@@ -44,6 +44,7 @@ SOFTWARE.
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/qos.hpp>
 #include <std_msgs/msg/float64.hpp>
+#include "rosx_introspection/ros_parser.hpp"
 
 
 /**
@@ -447,6 +448,7 @@ class MqttClient : public rclcpp::Node,
     struct {
       rclcpp::GenericSubscription::SharedPtr
         subscriber;          ///< generic ROS subscriber
+      std::shared_ptr<RosMsgParser::Parser> parser;   ///< Message parser for JSON conversion
       std::string msg_type;  ///< message type of subscriber
       int queue_size = 1;    ///< ROS subscriber queue size
       bool is_stale = false; ///< whether a new generic publisher/subscriber is required
@@ -480,6 +482,7 @@ class MqttClient : public rclcpp::Node,
       rclcpp::GenericPublisher::SharedPtr publisher;  ///< generic ROS publisher
       rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
         latency_publisher;   ///< ROS publisher for latency
+      std::shared_ptr<RosMsgParser::Parser> parser;   ///< Message parser for JSON conversion
       int queue_size = 1;    ///< ROS publisher queue size
       struct {
         rclcpp::ReliabilityPolicy reliability = rclcpp::ReliabilityPolicy::SystemDefault;
