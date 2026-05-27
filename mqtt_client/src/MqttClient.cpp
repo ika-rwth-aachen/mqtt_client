@@ -464,6 +464,13 @@ void MqttClient::loadParameters() {
         RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s'", ros2mqtt.ros.msg_type.c_str());
       }
 
+      if (ros2mqtt.json && !ros2mqtt.fixed_type) {
+        RCLCPP_ERROR(
+          get_logger(),
+          "ROS topic '%s' configured to publish as JSON must have a type configured", ros_topic.c_str());
+        exit(EXIT_FAILURE);
+      }
+
       // ros2mqtt[k]/inject_timestamp
       rclcpp::Parameter stamped_param;
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.inject_timestamp", ros_topic), stamped_param))
@@ -580,6 +587,13 @@ void MqttClient::loadParameters() {
         mqtt2ros.ros.msg_type = ros_type_param.as_string();
         mqtt2ros.fixed_type = true;
         RCLCPP_DEBUG(get_logger(), "Using explicit ROS message type '%s' for '%s'", mqtt2ros.ros.msg_type.c_str(), ros_topic.c_str());
+      }
+
+      if (mqtt2ros.json && !mqtt2ros.fixed_type) {
+        RCLCPP_ERROR(
+          get_logger(),
+          "MQTT topic '%s' configured to be read as JSON must have a type configured", mqtt_topic.c_str());
+        exit(EXIT_FAILURE);
       }
 
       // mqtt2ros[k]/advanced/mqtt/qos
@@ -1376,7 +1390,7 @@ void MqttClient::connected(const std::string& cause) {
 
   // subscribe MQTT topics
   for (const auto& [mqtt_topic, mqtt2ros] : mqtt2ros_) {
-    if (!mqtt2ros.primitive) {
+    if (!mqtt2ros.primitive && !mqtt2ros.json) {
       std::string const mqtt_topic_to_subscribe = kRosMsgTypeMqttTopicPrefix + mqtt_topic;
       client_->subscribe(mqtt_topic_to_subscribe, mqtt2ros.mqtt.qos);
       RCLCPP_INFO(get_logger(), "Subscribed MQTT topic '%s'", mqtt_topic_to_subscribe.c_str());
@@ -1530,11 +1544,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
     // deserialize ROS message type
     mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
-    if (!mqtt2ros.json) {
-        deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
-    } else {
-        ros_msg_type.name = mqtt_msg->get_payload();
-    }
+    deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
 
     // if ROS message type has changed or if mapping is stale
     if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
