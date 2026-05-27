@@ -1205,7 +1205,13 @@ void MqttClient::mqttjson2ros(mqtt::const_message_ptr mqtt_msg) {
 
 
   RosMsgParser::ROS2_Serializer serializer;
-  mqtt2ros.ros.parser->serializeFromJson(mqtt_msg->get_payload(), &serializer);
+  try {
+    mqtt2ros.ros.parser->serializeFromJson(mqtt_msg->get_payload(), &serializer);
+  } catch (const std::runtime_error& e) {
+    RCLCPP_ERROR(get_logger(), "Failed to parse MQTT message on topic '%s' configured as JSON string of type %s. Message received: '%s'", mqtt_topic.c_str(), mqtt2ros.ros.msg_type.c_str(), mqtt_msg->get_payload().c_str());
+    return;
+  }
+
   uint32_t msg_length = serializer.getBufferSize();
 
   // copy ROS message from MQTT message to generic message buffer
