@@ -28,6 +28,7 @@
   <depend>rclcpp_components</depend>
   <depend>rcpputils</depend>
   <depend>tracetools</depend>
+  <exec_depend>tracetools_launch</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
