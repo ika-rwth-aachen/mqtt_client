@@ -14,6 +14,7 @@ find_package(mqtt_client_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tracetools REQUIRED)
 
 # Paho MQTT C++ apt package doesn't include CMake config
 find_library(PahoMqttC_LIBRARY libpaho-mqtt3as.so.1 REQUIRED)
@@ -41,6 +42,7 @@ target_link_libraries(${PROJECT_NAME}_lib
   rclcpp::rclcpp
   rclcpp_components::component
   ${std_msgs_TARGETS}
+  tracetools::tracetools
 )
 
 install(TARGETS ${PROJECT_NAME}_lib

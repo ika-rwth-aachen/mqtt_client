@@ -239,17 +239,22 @@ class MqttClient : public rclcpp::Node,
    * is extracted. This type information is also sent to the MQTT broker on a
    * separate topic.
    *
-   * The MQTT payload for the actual ROS message carries the following:
-   * - 0 or 1 (indicating if timestamp is injected (=1))
-   * - serialized timestamp (optional)
+   * The MQTT payload for the actual ROS message carries the following, in order
+   * (each optional part is only present when its feature is enabled and is
+   * negotiated to the receiver via the RosMsgType side-channel):
+   * - serialized correlation ID (optional, if traced)
+   * - serialized timestamp (optional, if stamped)
    * - serialized ROS message
    *
    * @param   serialized_msg  generic serialized ROS message
    * @param   ros_topic       ROS topic where the message was published
+   * @param   msg_info        message info carrying the rmw source timestamp used
+   *                          as the ros2_tracing correlation ID
    */
   void ros2mqtt(
     const std::shared_ptr<rclcpp::SerializedMessage>& serialized_msg,
-    const std::string& ros_topic);
+    const std::string& ros_topic,
+    const rclcpp::MessageInfo& msg_info);
 
   /**
    * @brief Publishes a ROS message received via MQTT to ROS.
@@ -453,6 +458,7 @@ class MqttClient : public rclcpp::Node,
     bool fixed_type = false;  ///< whether the published message type is specified explicitly
     bool primitive = false;   ///< whether to publish as primitive message
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
+    bool traced = false;      ///< whether to inject a correlation ID for ros2_tracing
   };
 
   /**
@@ -480,6 +486,7 @@ class MqttClient : public rclcpp::Node,
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
+    bool traced = false;     ///< whether a correlation ID is injected for ros2_tracing
   };
 
  protected:

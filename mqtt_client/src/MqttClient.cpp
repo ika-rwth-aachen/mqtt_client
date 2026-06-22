@@ -35,6 +35,7 @@ SOFTWARE.
 #include <mqtt_client/MqttClient.hpp>
 #include <mqtt_client_interfaces/msg/ros_msg_type.hpp>
 #include <rcpputils/env.hpp>
+#include <tracetools/tracetools.h>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/char.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -335,6 +336,8 @@ void MqttClient::loadParameters() {
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.ros_type", ros_topic), rclcpp::ParameterType::PARAMETER_STRING, param_desc);
     param_desc.description = "whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)";
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.inject_timestamp", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
+    param_desc.description = "whether to attach a correlation ID to a ROS2MQTT payload (for ros2_tracing message-flow tracking across the broker)";
+    declare_parameter(fmt::format("bridge.ros2mqtt.{}.traced", ros_topic), rclcpp::ParameterType::PARAMETER_BOOL, param_desc);
     param_desc.description = "ROS subscriber queue size";
     declare_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.ros.queue_size", ros_topic), rclcpp::ParameterType::PARAMETER_INTEGER, param_desc);
     param_desc.description = "ROS subscriber QoS reliability";
@@ -457,6 +460,19 @@ void MqttClient::loadParameters() {
           "topic '%s'",
           ros_topic.c_str());
         ros2mqtt.stamped = false;
+      }
+
+      // ros2mqtt[k]/traced
+      rclcpp::Parameter traced_param;
+      if (get_parameter(fmt::format("bridge.ros2mqtt.{}.traced", ros_topic), traced_param))
+        ros2mqtt.traced = traced_param.as_bool();
+      if (ros2mqtt.traced && ros2mqtt.primitive) {
+        RCLCPP_WARN(
+          get_logger(),
+          "Correlation ID will not be injected into primitive messages on ROS "
+          "topic '%s'",
+          ros_topic.c_str());
+        ros2mqtt.traced = false;
       }
 
       // ros2mqtt[k]/advanced/ros/queue_size
@@ -786,8 +802,11 @@ void MqttClient::setupSubscriptions() {
 
   for (auto& [ros_topic, ros2mqtt] : ros2mqtt_) {
 
-    std::function<void(const std::shared_ptr<rclcpp::SerializedMessage> msg)> bound_callback_func =
-      std::bind(&MqttClient::ros2mqtt, this, std::placeholders::_1, ros_topic);
+    std::function<void(std::shared_ptr<rclcpp::SerializedMessage>,
+                       const rclcpp::MessageInfo&)>
+      bound_callback_func = std::bind(&MqttClient::ros2mqtt, this,
+                                      std::placeholders::_1, ros_topic,
+                                      std::placeholders::_2);
 
     if (! requires_lazy_subscription (ros2mqtt))
     {
@@ -953,7 +972,8 @@ void MqttClient::connect() {
 
 void MqttClient::ros2mqtt(
   const std::shared_ptr<rclcpp::SerializedMessage>& serialized_msg,
-  const std::string& ros_topic) {
+  const std::string& ros_topic,
+  const rclcpp::MessageInfo& msg_info) {
 
   Ros2MqttInterface& ros2mqtt = ros2mqtt_[ros_topic];
   std::string mqtt_topic = ros2mqtt.mqtt.topic;
@@ -963,6 +983,12 @@ void MqttClient::ros2mqtt(
   mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
   ros_msg_type.name = ros2mqtt.ros.msg_type;
   ros_msg_type.stamped = ros2mqtt.stamped;
+  ros_msg_type.traced = ros2mqtt.traced;
+
+  // use the rmw source timestamp of the incoming ROS message as correlation ID;
+  // this is the same value ros2_tracing records for this message's publication,
+  // allowing the upstream ROS message flow to be linked to this bridge event
+  const int64_t correlation_id = msg_info.get_rmw_message_info().source_timestamp;
 
   RCLCPP_DEBUG(get_logger(), "Received ROS message of type '%s' on topic '%s'",
                ros_msg_type.name.c_str(), ros_topic.c_str());
@@ -1010,43 +1036,68 @@ void MqttClient::ros2mqtt(
         mqtt_topic.c_str(), e.what());
     }
 
-    // build MQTT payload for ROS message (R) as [R]
-    // or [S, R] if timestamp (S) is included
+    // build MQTT payload for ROS message (R) as [R], prepending an optional
+    // correlation ID (C) and/or latency timestamp (S) to form [C, S, R]; both
+    // C and S are serialized builtin_interfaces/msg/Time of length stamp_length_
     uint32_t msg_length = serialized_msg->size();
-    uint32_t payload_length = msg_length;
-    uint32_t msg_offset = 0;
-    if (ros2mqtt.stamped) {
+    const uint32_t correlation_length = ros2mqtt.traced ? stamp_length_ : 0;
+    const uint32_t stamp_offset = correlation_length;
+    const uint32_t stamp_size = ros2mqtt.stamped ? stamp_length_ : 0;
+    const uint32_t msg_offset = correlation_length + stamp_size;
+    const uint32_t payload_length = msg_offset + msg_length;
 
-      // allocate buffer with appropriate size to hold [S, R]
-      msg_offset += stamp_length_;
-      payload_length += stamp_length_;
-      payload_buffer.resize(payload_length);
-
-      // copy serialized ROS message to payload [-, R]
-      std::copy(serialized_msg->get_rcl_serialized_message().buffer,
-                serialized_msg->get_rcl_serialized_message().buffer + msg_length,
-                payload_buffer.begin() + msg_offset);
-    } else {
+    if (msg_offset == 0) {
 
       // directly build payload buffer on top of serialized message
       payload_buffer = std::vector<uint8_t>(
         serialized_msg->get_rcl_serialized_message().buffer,
         serialized_msg->get_rcl_serialized_message().buffer + msg_length);
+    } else {
+
+      // allocate buffer with appropriate size to hold [C, S, R]
+      payload_buffer.resize(payload_length);
+
+      // copy serialized ROS message to payload [-, -, R]
+      std::copy(serialized_msg->get_rcl_serialized_message().buffer,
+                serialized_msg->get_rcl_serialized_message().buffer + msg_length,
+                payload_buffer.begin() + msg_offset);
     }
 
-    // inject timestamp as final step
+    // inject correlation ID [C, -, R]
+    if (ros2mqtt.traced) {
+
+      // carry the source timestamp as a serialized Time (endianness-safe via CDR)
+      builtin_interfaces::msg::Time correlation_stamp(
+        rclcpp::Time(correlation_id, RCL_SYSTEM_TIME));
+      rclcpp::SerializedMessage serialized_correlation;
+      serializeRosMessage(correlation_stamp, serialized_correlation);
+      std::copy(
+        serialized_correlation.get_rcl_serialized_message().buffer,
+        serialized_correlation.get_rcl_serialized_message().buffer + stamp_length_,
+        payload_buffer.begin());
+    }
+
+    // inject timestamp [C, S, R]
     if (ros2mqtt.stamped) {
 
       // take current timestamp
       builtin_interfaces::msg::Time stamp(rclcpp::Clock(RCL_SYSTEM_TIME).now());
 
-      // copy serialized timestamp to payload [S, R]
+      // copy serialized timestamp to payload
       rclcpp::SerializedMessage serialized_stamp;
       serializeRosMessage(stamp, serialized_stamp);
       std::copy(
         serialized_stamp.get_rcl_serialized_message().buffer,
         serialized_stamp.get_rcl_serialized_message().buffer + stamp_length_,
-        payload_buffer.begin());
+        payload_buffer.begin() + stamp_offset);
+    }
+
+    // emit message-flow tracepoint binding the correlation ID to this message
+    if (ros2mqtt.traced) {
+      TRACETOOLS_TRACEPOINT(
+        mqtt_client_ros2mqtt,
+        ros_topic.c_str(), ros2mqtt.mqtt.topic.c_str(), correlation_id,
+        serialized_msg->get_rcl_serialized_message().buffer, msg_length);
     }
   }
 
@@ -1077,10 +1128,30 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
   auto& payload = mqtt_msg->get_payload_ref();
   uint32_t payload_length = static_cast<uint32_t>(payload.size());
 
-  // read MQTT payload for ROS message (R) as [R]
-  // or [S, R] if timestamp (S) is included
+  // read MQTT payload for ROS message (R) as [R], stripping an optional
+  // correlation ID (C) and/or latency timestamp (S) prepended as [C, S, R]
   uint32_t msg_length = payload_length;
   uint32_t msg_offset = 0;
+
+  // if traced, extract correlation ID for message-flow tracking
+  int64_t correlation_id = 0;
+  if (mqtt2ros.traced) {
+
+    // copy correlation ID to generic message buffer
+    rclcpp::SerializedMessage serialized_correlation(stamp_length_);
+    std::memcpy(serialized_correlation.get_rcl_serialized_message().buffer,
+                &(payload[msg_offset]), stamp_length_);
+    serialized_correlation.get_rcl_serialized_message().buffer_length =
+      stamp_length_;
+
+    // deserialize correlation ID (carried as a Time)
+    builtin_interfaces::msg::Time correlation_stamp;
+    deserializeRosMessage(serialized_correlation, correlation_stamp);
+    correlation_id = rclcpp::Time(correlation_stamp).nanoseconds();
+
+    msg_length -= stamp_length_;
+    msg_offset += stamp_length_;
+  }
 
   // if stamped, compute latency
   if (mqtt2ros.stamped) {
@@ -1118,6 +1189,15 @@ void MqttClient::mqtt2ros(mqtt::const_message_ptr mqtt_msg,
   std::memcpy(serialized_msg.get_rcl_serialized_message().buffer,
               &(payload[msg_offset]), msg_length);
   serialized_msg.get_rcl_serialized_message().buffer_length = msg_length;
+
+  // emit message-flow tracepoint binding the correlation ID to the message
+  // about to be published, closing the trace across the MQTT broker
+  if (mqtt2ros.traced) {
+    TRACETOOLS_TRACEPOINT(
+      mqtt_client_mqtt2ros,
+      mqtt_topic.c_str(), mqtt2ros.ros.topic.c_str(), correlation_id,
+      serialized_msg.get_rcl_serialized_message().buffer, msg_length);
+  }
 
   // publish generic ROS message
   RCLCPP_DEBUG(
@@ -1469,6 +1549,7 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
 
       mqtt2ros.ros.msg_type = ros_msg_type.name;
       mqtt2ros.stamped = ros_msg_type.stamped;
+      mqtt2ros.traced = ros_msg_type.traced;
       RCLCPP_INFO(get_logger(),
                   "ROS publisher message type on topic '%s' set to '%s'",
                   mqtt2ros.ros.topic.c_str(), ros_msg_type.name.c_str());
