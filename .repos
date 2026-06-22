@@ -1,0 +1,5 @@
+repositories:
+  ros2_tracing:
+    type: git
+    url: https://github.com/RaphvK/ros2_tracing.git
+    version: jazzy-ika
