@@ -9,7 +9,7 @@
   <a href="https://github.com/ika-rwth-aachen/mqtt_client"><img src="https://img.shields.io/github/stars/ika-rwth-aachen/mqtt_client?style=social"/></a>
 </p>
 
-The *mqtt_client* package provides a ROS 2 component node that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types. The *mqtt_client* can also exchange primitive messages with MQTT clients running on devices not based on ROS.
+The *mqtt_client* package provides a ROS 2 component node that enables connected ROS-based and non-ROS-based devices or robots to exchange ROS messages via an MQTT broker using the [MQTT](http://mqtt.org) protocol. This works generically for arbitrary ROS message types. The *mqtt_client* can also exchange primitive messages or messages formatted as JSON with MQTT clients running on devices not based on ROS.
 
 > [!IMPORTANT]  
 > This repository is open-sourced and maintained by the [**Institute for Automotive Engineering (ika) at RWTH Aachen University**](https://www.ika.rwth-aachen.de/).  
@@ -23,6 +23,7 @@ The *mqtt_client* package provides a ROS 2 component node that enables connected
   - [Quick Start](#quick-start)
   - [Launch](#launch)
   - [Configuration](#configuration)
+- [JSON Messages](#json-messages)
 - [Primitive Messages](#primitive-messages)
 - [Latency Computation](#latency-computation)
 - [Package Summary](#package-summary)
@@ -84,6 +85,8 @@ The *mqtt_client* is best configured with a ROS parameter *yaml* file. The confi
 - MQTT messages received from the broker on MQTT topic `pingpong/ros` are published locally on ROS topic `/pong/ros`;
 - primitive ROS messages received locally on ROS topic `/ping/primitive` are sent as primitive (string) messages to the broker on MQTT topic `pingpong/primitive`;
 - MQTT messages received from the broker on MQTT topic `pingpong/primitive` are published locally as primitive ROS messages on ROS topic `/pong/primitive`.
+- ROS messages received locally on ROS topic `/ping/json` are sent to the broker in JSON format on MQTT topic `pingpong/json`;
+- MQTT messages received from the broker on MQTT topic `pingpong/json` are received as JSON and published locally as a ROS message on ROS topic `/pong/json`;
 
 ```yaml
 broker:
@@ -96,12 +99,18 @@ bridge:
     - ros_topic: /ping/primitive
       mqtt_topic: pingpong/primitive
       primitive: true
+    - ros_topic: /ping/json
+      mqtt_topic: pingpong/json
+      json: true
   mqtt2ros:
     - mqtt_topic: pingpong/ros
       ros_topic: /pong/ros
     - mqtt_topic: pingpong/primitive
       ros_topic: /pong/primitive
       primitive: true
+    - mqtt_topic: pingpong/json
+      ros_topic: /pong/json
+      json: true
 ```
 
 #### Demo Client Launch
@@ -234,6 +243,7 @@ bridge:
     {{ ros_topic_name }}:
       mqtt_topic:          # MQTT topic on which the corresponding ROS messages are sent to the broker
       primitive:           # [false] whether to publish as primitive message
+      json:                # [false] whether message exchanging is in JSON format
       ros_type:            # [*empty*] If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the publisher
       inject_timestamp:    # [false] whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)
       advanced:
@@ -252,6 +262,7 @@ bridge:
       ros_topic:           # ROS topic on which corresponding MQTT messages are published
       ros_type:            # [*empty*] If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the MQTT message
       primitive:           # [false] whether to publish as primitive message (if coming from non-ROS MQTT client)
+      json:                # [false] whether message exchanging is in JSON format
       advanced:
         mqtt:
           qos:             # [0] MQTT QoS value
@@ -263,9 +274,21 @@ bridge:
             durability:    # [system_default] One of "system_default", "volatile", "transient_local". 
 ```
 
+
+## JSON Messages
+
+As seen in the [Quick Start](#quick-start), the *mqtt_client* can not only exchange arbitrary ROS messages with other *mqtt_clients*, but it can also exchange arbitrary messages with other non-*mqtt_client* MQTT clients using JSON. This allows ROS-based devices to exchange ROS messages with devices not based on ROS.
+Non-*mqtt_client* MQTT clients can send a JSON string with a format that matches the needed ROS message to be cast into. The `json` parameter can be set for both ROS-to-MQTT (`bridge/ros2mqtt`) and for MQTT-to-ROS (`bridge/mqtt2ros`) transmissions.
+
+If a ROS-to-MQTT transmission is configured as `json`, the message is published as a serialized JSON string.
+
+If an MQTT-to-ROS transmission is configured as `json`, the MQTT message is interpreted as a JSON string and transformed into a ROS message to be published.
+
+The `json` property of both Ros-to-MQTT and MQTT-to-ROS should be equal.
+
 ## Primitive Messages
 
-As seen in the [Quick Start](#quick-start), the *mqtt_client* can not only exchange arbitrary ROS messages with other *mqtt_clients*, but it can also exchange primitive message data with other non-*mqtt_client* MQTT clients. This allows ROS-based devices to exchange primitive messages with devices not based on ROS. The `primitive` parameter can be set for both ROS-to-MQTT (`bridge/ros2mqtt`) and for MQTT-to-ROS (`bridge/mqtt2ros`) transmissions.
+Additionally, the *mqtt_client* can also exchange primitive message data with other non-*mqtt_client* MQTT clients. This allows ROS-based devices to exchange primitive messages with devices not based on ROS. The `primitive` parameter can be set for both ROS-to-MQTT (`bridge/ros2mqtt`) and for MQTT-to-ROS (`bridge/mqtt2ros`) transmissions.
 
 If a ROS-to-MQTT transmission is configured as `primitive` and the ROS message type is one of the supported primitive ROS message types, the raw data is published as a string. The supported primitive ROS message types are [`std_msgs/String`](http://docs.ros.org/en/api/std_msgs/html/msg/String.html), [`std_msgs/Bool`](http://docs.ros.org/en/api/std_msgs/html/msg/Bool.html), [`std_msgs/Char`](http://docs.ros.org/en/api/std_msgs/html/msg/Char.html), [`std_msgs/UInt8`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt8.html), [`std_msgs/UInt16`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt16.html), [`std_msgs/UInt32`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt32.html), [`std_msgs/UInt64`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt64.html), [`std_msgs/Int8`](http://docs.ros.org/en/api/std_msgs/html/msg/Int8.html), [`std_msgs/Int16`](http://docs.ros.org/en/api/std_msgs/html/msg/Int16.html), [`std_msgs/Int32`](http://docs.ros.org/en/api/std_msgs/html/msg/Int32.html), [`std_msgs/Int64`](http://docs.ros.org/en/api/std_msgs/html/msg/Int64.html), [`std_msgs/Float32`](http://docs.ros.org/en/api/std_msgs/html/msg/Float32.html), [`std_msgs/Float64`](http://docs.ros.org/en/api/std_msgs/html/msg/Float64.html), [`std_msgs/UInt8MultiArray`](http://docs.ros.org/en/api/std_msgs/html/msg/UInt8MultiArray.html).
 

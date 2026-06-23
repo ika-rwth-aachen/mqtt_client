@@ -13,6 +13,7 @@ find_package(fmt REQUIRED)
 find_package(mqtt_client_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(rosx_introspection REQUIRED)
 find_package(std_msgs REQUIRED)
 
 # Paho MQTT C++ apt package doesn't include CMake config
@@ -41,6 +42,7 @@ target_link_libraries(${PROJECT_NAME}_lib
   rclcpp::rclcpp
   rclcpp_components::component
   ${std_msgs_TARGETS}
+  ${rosx_introspection_TARGETS}
 )
 
 install(TARGETS ${PROJECT_NAME}_lib
