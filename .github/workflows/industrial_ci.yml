@@ -4,7 +4,7 @@ on: pull_request
 
 jobs:
   industrial_ci:
-    name: ROS ${{ matrix.ROS_DISTRO }} (${{ matrix.ROS_REPO }})
+    name: ros2-${{ matrix.ROS_DISTRO }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -13,9 +13,12 @@ jobs:
           - jazzy
           - kilted
           - lyrical
-          - rolling
         ROS_REPO:
           - main
+        include:
+          - ROS_DISTRO: rolling
+            ROS_REPO: main
+            DOCKER_IMAGE: ros:rolling-ros-base # default image does not work with rolling
     steps:
       - uses: actions/checkout@v3
       - uses: ros-industrial/industrial_ci@master
