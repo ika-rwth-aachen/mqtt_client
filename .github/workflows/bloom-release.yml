@@ -16,7 +16,7 @@
 #       - name: Release
 #         uses: at-wat/bloom-release-action@v0
 #         with:
-#           ros_distro: humble jazzy kilted rolling
+#           ros_distro: humble jazzy kilted lyrical rolling
 #           github_token_bloom: ${{ secrets.GH_TOKEN_FOR_BLOOM_RELEASE }}
 #           github_user: lreiher
 #           git_user: Lennart Reiher
