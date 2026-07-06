@@ -35,7 +35,6 @@ jobs:
           base-image: rwthika/ros2:jazzy
           command: ros2 launch mqtt_client standalone.launch.xml
           image-tag: jazzy
-          enable-push-as-latest: 'true'
           rmw-implementation: rmw_zenoh_cpp
 
   ros2-kilted:
@@ -50,6 +49,19 @@ jobs:
           image-tag: kilted
           rmw-implementation: rmw_zenoh_cpp
 
+  ros2-lyrical:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ika-rwth-aachen/docker-ros@main
+        with:
+          platform: amd64
+          target: run
+          base-image: ros:lyrical-ros-base # TODO: rwthika/ros2:lyrical
+          command: ros2 launch mqtt_client standalone.launch.xml
+          image-tag: lyrical
+          enable-push-as-latest: 'true'
+          rmw-implementation: rmw_zenoh_cpp
+
   ros2-rolling:
     runs-on: ubuntu-latest
     steps:
@@ -57,7 +69,7 @@ jobs:
         with:
           platform: amd64
           target: run
-          base-image: rwthika/ros2:rolling
+          base-image: ros:rolling-ros-base
           command: ros2 launch mqtt_client standalone.launch.xml
           image-tag: rolling
           rmw-implementation: rmw_zenoh_cpp
