@@ -2,6 +2,14 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.4.2 (2026-07-06)
+------------------
+* Merge pull request `#96 <https://github.com/ika-rwth-aachen/mqtt_client/issues/96>`_ from Eternal-Robotics/eternal/v2.4.1
+* Merge pull request `#93 <https://github.com/ika-rwth-aachen/mqtt_client/issues/93>`_ from nim65s/main
+* Merge pull request `#94 <https://github.com/ika-rwth-aachen/mqtt_client/issues/94>`_ from nim65s/ament_target_dependencies
+* Merge pull request `#91 <https://github.com/ika-rwth-aachen/mqtt_client/issues/91>`_ from martfra/main
+* Merge pull request `#89 <https://github.com/ika-rwth-aachen/mqtt_client/issues/89>`_ from zouri/main
+
 2.4.1 (2025-08-18)
 ------------------
 * Merge pull request `#87 <https://github.com/ika-rwth-aachen/mqtt_client/issues/87>`_ from martfra/main
