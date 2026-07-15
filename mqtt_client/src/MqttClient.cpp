@@ -542,11 +542,11 @@ void MqttClient::loadParameters() {
       if (get_parameter(fmt::format("bridge.ros2mqtt.{}.advanced.mqtt.retained", ros_topic), retained_param))
         ros2mqtt.mqtt.retained = retained_param.as_bool();
 
-      RCLCPP_INFO(get_logger(), "Bridging %sROS topic '%s' to MQTT topic '%s' %s%s",
+      RCLCPP_INFO(get_logger(), "Bridging %sROS topic '%s' to MQTT topic '%s'%s%s",
                   ros2mqtt.primitive ? "primitive " : "", ros_topic.c_str(),
                   ros2mqtt.mqtt.topic.c_str(),
-                  ros2mqtt.json ? "as json string" : "",
-                  ros2mqtt.stamped ? "and measuring latency" : "");
+                  ros2mqtt.json ? " as json string" : "",
+                  ros2mqtt.stamped ? " and measuring latency" : "");
     } else {
       RCLCPP_WARN(get_logger(),
                   fmt::format("Parameter 'bridge.ros2mqtt.{}' is missing subparameter "
