@@ -1542,15 +1542,15 @@ void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
                 &(payload[0]), payload_length);
     serialized_ros_msg_type.get_rcl_serialized_message().buffer_length = payload_length;
 
+    // deserialize ROS message type
+    mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
+    deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
+
     // reconstruct corresponding MQTT data topic
     std::string mqtt_data_topic = mqtt_topic;
     mqtt_data_topic.erase(mqtt_data_topic.find(kRosMsgTypeMqttTopicPrefix),
                           kRosMsgTypeMqttTopicPrefix.length());
     Mqtt2RosInterface& mqtt2ros = mqtt2ros_[mqtt_data_topic];
-
-    // deserialize ROS message type
-    mqtt_client_interfaces::msg::RosMsgType ros_msg_type;
-    deserializeRosMessage(serialized_ros_msg_type, ros_msg_type);
 
     // if ROS message type has changed or if mapping is stale
     if (ros_msg_type.name != mqtt2ros.ros.msg_type || mqtt2ros.ros.is_stale) {
