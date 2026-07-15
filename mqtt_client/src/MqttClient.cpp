@@ -467,7 +467,7 @@ void MqttClient::loadParameters() {
       if (ros2mqtt.json && !ros2mqtt.fixed_type) {
         RCLCPP_ERROR(
           get_logger(),
-          "ROS topic '%s' configured to publish as JSON must have a type configured", ros_topic.c_str());
+          "ROS topic '%s' configured to publish as JSON must have a 'ros_type' configured", ros_topic.c_str());
         exit(EXIT_FAILURE);
       }
 
@@ -592,7 +592,7 @@ void MqttClient::loadParameters() {
       if (mqtt2ros.json && !mqtt2ros.fixed_type) {
         RCLCPP_ERROR(
           get_logger(),
-          "MQTT topic '%s' configured to be read as JSON must have a type configured", mqtt_topic.c_str());
+          "MQTT topic '%s' configured to be read as JSON must have a 'ros_type' configured", mqtt_topic.c_str());
         exit(EXIT_FAILURE);
       }
 
