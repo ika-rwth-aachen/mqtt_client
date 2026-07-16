@@ -1,0 +1,20 @@
+/**/*:
+  ros__parameters:
+    broker:
+      host: localhost
+      port: 1883
+    bridge:
+      ros2mqtt:
+        ros_topics:
+          - /ping/json
+        /ping/json:
+          mqtt_topic: pingpong/json
+          ros_type: std_msgs/msg/Header
+          json: true
+      mqtt2ros:
+        mqtt_topics:
+          - pingpong/json
+        pingpong/json:
+          ros_topic: /pong/json
+          ros_type: std_msgs/msg/Header
+          json: true

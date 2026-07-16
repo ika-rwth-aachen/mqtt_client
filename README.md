@@ -89,28 +89,40 @@ The *mqtt_client* is best configured with a ROS parameter *yaml* file. The confi
 - MQTT messages received from the broker on MQTT topic `pingpong/json` are received as JSON and published locally as a ROS message on ROS topic `/pong/json`;
 
 ```yaml
-broker:
-  host: localhost
-  port: 1883
-bridge:
-  ros2mqtt:
-    - ros_topic: /ping/ros
-      mqtt_topic: pingpong/ros
-    - ros_topic: /ping/primitive
-      mqtt_topic: pingpong/primitive
-      primitive: true
-    - ros_topic: /ping/json
-      mqtt_topic: pingpong/json
-      json: true
-  mqtt2ros:
-    - mqtt_topic: pingpong/ros
-      ros_topic: /pong/ros
-    - mqtt_topic: pingpong/primitive
-      ros_topic: /pong/primitive
-      primitive: true
-    - mqtt_topic: pingpong/json
-      ros_topic: /pong/json
-      json: true
+/**/*:
+  ros__parameters:
+    broker:
+      host: localhost
+      port: 1883
+    bridge:
+      ros2mqtt:
+        ros_topics:
+          - /ping/ros
+          - /ping/primitive
+          - /ping/json
+        /ping/ros:
+          mqtt_topic: pingpong/ros
+        /ping/primitive:
+          mqtt_topic: pingpong/primitive
+          primitive: true
+        /ping/json:
+          mqtt_topic: pingpong/json
+          ros_type: std_msgs/msg/Header
+          json: true
+      mqtt2ros:
+        mqtt_topics:
+          - pingpong/ros
+          - pingpong/primitive
+          - pingpong/json
+        pingpong/ros:
+          ros_topic: /pong/ros
+        pingpong/primitive:
+          ros_topic: /pingpong/primitive
+          primitive: true
+        pingpong/json:
+          ros_topic: /pingpong/json
+          ros_type: std_msgs/msg/Header
+          json: true
 ```
 
 #### Demo Client Launch
@@ -122,18 +134,23 @@ ros2 launch mqtt_client standalone.launch.xml
 ```
 
 ```txt
-[ WARN] [1665575657.358869079]: Parameter 'broker/tls/enabled' not set, defaulting to '0'
-[ WARN] [1665575657.359798329]: Parameter 'client/id' not set, defaulting to ''
-[ WARN] [1665575657.359810889]: Client buffer can not be enabled when client ID is empty
-[ WARN] [1665575657.360300703]: Parameter 'client/clean_session' not set, defaulting to '1'
-[ WARN] [1665575657.360576344]: Parameter 'client/keep_alive_interval' not set, defaulting to '60.000000'
-[ WARN] [1665575657.360847295]: Parameter 'client/max_inflight' not set, defaulting to '65535'
-[ INFO] [1665575657.361281461]: Bridging ROS topic '/ping/ros' to MQTT topic 'pingpong/ros'
-[ INFO] [1665575657.361303380]: Bridging primitive ROS topic '/ping/primitive' to MQTT topic 'pingpong/primitive'
-[ INFO] [1665575657.361352809]: Bridging MQTT topic 'pingpong/ros' to ROS topic '/pong/ros'
-[ INFO] [1665575657.361370558]: Bridging MQTT topic 'pingpong/primitive' to primitive ROS topic '/pong/primitive'
-[ INFO] [1665575657.362153083]: Connecting to broker at 'tcp://localhost:1883' ...
-[ INFO] [1665575657.462622065]: Connected to broker at 'tcp://localhost:1883'
+[WARN] [1784177470.554584791] [mqtt_client]: Parameter 'broker.tls.enabled' not set, defaulting to '0'
+[WARN] [1784177470.554598993] [mqtt_client]: Parameter 'client.id' not set, defaulting to ''
+[WARN] [1784177470.554601539] [mqtt_client]: Client buffer can not be enabled when client ID is empty
+[WARN] [1784177470.554603583] [mqtt_client]: Parameter 'client.clean_session' not set, defaulting to '1'
+[WARN] [1784177470.554608214] [mqtt_client]: Parameter 'client.keep_alive_interval' not set, defaulting to '60.000000'
+[WARN] [1784177470.554614310] [mqtt_client]: Parameter 'client.max_inflight' not set, defaulting to '65535'
+[INFO] [1784177470.554618910] [mqtt_client]: Bridging ROS topic '/ping/ros' to MQTT topic 'pingpong/ros'
+[INFO] [1784177470.554624122] [mqtt_client]: Bridging primitive ROS topic '/ping/primitive' to MQTT topic 'pingpong/primitive'
+[INFO] [1784177470.554628131] [mqtt_client]: Bridging ROS topic '/ping/json' to MQTT topic 'pingpong/json' as json string
+[INFO] [1784177470.554631865] [mqtt_client]: Bridging MQTT topic '/pong/ros' to ROS topic 'pingpong/ros'
+[INFO] [1784177470.554635680] [mqtt_client]: Bridging MQTT topic '/pong/primitive' to primitive ROS topic 'pingpong/primitive'
+[INFO] [1784177470.554639351] [mqtt_client]: Bridging MQTT topic '/pong/json' containing json messages to ROS topic 'pingpong/json'
+[INFO] [1784177470.555223971] [mqtt_client]: Connecting to broker at 'tcp://localhost:1883' ...
+[INFO] [1784177470.555884138] [mqtt_client]: Connected to broker at 'tcp://localhost:1883'
+[INFO] [1784177470.555922224] [mqtt_client]: Subscribed MQTT topic '/pong/json'
+[INFO] [1784177470.555938736] [mqtt_client]: Subscribed MQTT topic '/pong/primitive'
+[INFO] [1784177470.555955462] [mqtt_client]: Subscribed MQTT topic 'mqtt_client/ros_msg_type//pong/ros'
 ```
 
 Note that the *mqtt_client* successfully connected to the broker and also echoed which ROS/MQTT topics are being bridged. For testing the communication between *mqtt_client*, itself, and other MQTT clients, open five new terminals.
@@ -170,6 +187,30 @@ ros2 topic echo /pong/primitive
 ```bash
 # 5th terminal: publish primitive MQTT message to pingpong/primitive directly using mosquitto_pub
 docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "pingpong/primitive" --repeat 20 --repeat-delay 1 -m 69
+```
+
+If everything works as expected, the second terminal should print a message at 1Hz, while the fourth terminal should print two different messages at 1Hz.
+
+In order to test the communication between *mqtt_client* and other MQTT clients over JSON, publish a ROS message on ROS topic `/ping/json`, publish a json formatted MQTT message on MQTT topic `pingpong/json` and wait for responses on ROS topic `/pong/json`. Note that you need to restart the ROS 2 *mqtt_client* with a different config file. This example uses [`std_msgs/Header`](http://docs.ros.org/en/api/std_msgs/html/msg/Header.html), it can be any locally available message type, but a ros_type must be set in the parameter file or similar.
+
+```bash
+# mqtt_client$
+ros2 launch mqtt_client standalone.launch.xml params_file:=$(ros2 pkg prefix mqtt_client)/share/mqtt_client/config/params.json.yaml
+```
+
+```bash
+# 3rd terminal: publish ROS header message to /ping/json
+ros2 topic pub /ping/json std_msgs/msg/Header "{stamp: \"now\", frame_id: \"ros\"}"
+```
+
+```bash
+# 4th terminal: listen for ROS messages on /pong/json
+ros2 topic echo /pong/json
+```
+
+```bash
+# 5th terminal: publish json MQTT message to pingpong/json directly using mosquitto_pub
+docker run --rm --network host eclipse-mosquitto mosquitto_pub -h localhost -t "pingpong/json" --repeat 20 --repeat-delay 1 -m '{"stamp":{"sec":123,"nanosec":456789},"frame_id":"mqtt"}'
 ```
 
 If everything works as expected, the second terminal should print a message at 1Hz, while the fourth terminal should print two different messages at 1Hz.
@@ -284,7 +325,7 @@ If a ROS-to-MQTT transmission is configured as `json`, the message is published 
 
 If an MQTT-to-ROS transmission is configured as `json`, the MQTT message is interpreted as a JSON string and transformed into a ROS message to be published.
 
-The `json` property of both Ros-to-MQTT and MQTT-to-ROS should be equal.
+The `json` property of both ROS-to-MQTT and MQTT-to-ROS bridges require that the 'ros_type' property is also defined as it does not support dynamic type deduction.
 
 ## Primitive Messages
 
