@@ -1,0 +1,29 @@
+services:
+
+  broker:
+    image: eclipse-mosquitto:2.0.15
+    command: mosquitto -c /mosquitto-no-auth.conf
+
+  mqtt-client-a:
+    depends_on:
+      - broker
+    image: gitlab.ika.rwth-aachen.de:5050/fb-fi/its-modules/communication/mqtt-client-interfaces:latest_traffic-twin-tracing_ci-amd64
+    command: ros2 launch mqtt_client standalone.launch.py params_file:=/params_a.yaml ros_tracing:=true ping_node:=true
+    environment:
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+    volumes:
+      - ./standalone.launch.py:/docker-ros/ws/install/mqtt_client/share/mqtt_client/launch/standalone.launch.py
+      - ./params_a.yaml:/params_a.yaml
+      - ./trace/mqtt-client-a:/root/.ros/tracing
+
+  mqtt-client-b:
+    depends_on:
+      - broker
+    image: gitlab.ika.rwth-aachen.de:5050/fb-fi/its-modules/communication/mqtt-client-interfaces:latest_traffic-twin-tracing_ci-amd64
+    command: ros2 launch mqtt_client standalone.launch.py params_file:=/params_b.yaml ros_tracing:=true
+    environment:
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+    volumes:
+      - ./standalone.launch.py:/docker-ros/ws/install/mqtt_client/share/mqtt_client/launch/standalone.launch.py
+      - ./params_b.yaml:/params_b.yaml
+      - ./trace/mqtt-client-b:/root/.ros/tracing

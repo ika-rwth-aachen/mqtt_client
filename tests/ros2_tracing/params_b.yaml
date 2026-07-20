@@ -1,0 +1,12 @@
+/**/*:
+  ros__parameters:
+    broker:
+      host: broker
+      port: 1883
+    bridge:
+      mqtt2ros:
+        mqtt_topics: 
+          - pingpong/ros
+        pingpong/ros:
+          ros_topic: /pong/ros
+          traced: true
