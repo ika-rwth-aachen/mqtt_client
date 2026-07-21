@@ -1307,6 +1307,8 @@ void MqttClient::traceMqtt2RosTake(Mqtt2RosInterface& mqtt2ros,
                           subscription);
     TRACETOOLS_TRACEPOINT(rclcpp_subscription_callback_added, subscription,
                           callback_handle);
+    TRACETOOLS_TRACEPOINT(rclcpp_callback_register, callback_handle, 
+                          "virtual callback for MQTT subscription");
     mqtt2ros.tracing.initialized = true;
   }
 
