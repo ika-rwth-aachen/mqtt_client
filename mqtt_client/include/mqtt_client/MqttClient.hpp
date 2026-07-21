@@ -27,6 +27,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -239,10 +241,19 @@ class MqttClient : public rclcpp::Node,
    * is extracted. This type information is also sent to the MQTT broker on a
    * separate topic.
    *
-   * The MQTT payload for the actual ROS message carries the following:
-   * - 0 or 1 (indicating if timestamp is injected (=1))
-   * - serialized timestamp (optional)
+   * The MQTT payload for the actual ROS message carries the following, in order
+   * (each optional part is only present when its feature is enabled and is
+   * negotiated to the receiver via the RosMsgType side-channel):
+   * - serialized correlation ID (optional, if traced)
+   * - serialized timestamp (optional, if stamped)
    * - serialized ROS message
+   *
+   * If the bridge is `traced`, this also emulates a local ROS publisher into a
+   * virtual "/mqtt/..." topic by emitting the standard rclcpp/rcl/rmw publish
+   * tracepoints (see traceRos2MqttPublish()), so that ros2_tracing analysis
+   * tools treat the MQTT transport as an ordinary publish/subscribe hop. The
+   * unique correlation ID carried in the payload is used as the rmw publish
+   * timestamp and matches the rmw take source timestamp emitted on the receiver.
    *
    * @param   serialized_msg  generic serialized ROS message
    * @param   ros_topic       ROS topic where the message was published
@@ -283,6 +294,52 @@ class MqttClient : public rclcpp::Node,
    * @param   mqtt_msg     MQTT message
    */
   void mqtt2fixed(mqtt::const_message_ptr mqtt_msg);
+
+  /**
+   * @brief Emulates a local ROS publisher for a `traced` ROS2MQTT bridge.
+   *
+   * Treats the MQTT broker as if it were the ROS middleware: emits the standard
+   * `rclcpp_publish`/`rcl_publish`/`rmw_publish` tracepoints for a virtual
+   * publisher on a "/mqtt/..." topic, using fabricated-but-stable handles. The
+   * one-time `rcl_publisher_init`/`rmw_publisher_init` tracepoints are emitted on
+   * first use. `correlation_id` is recorded as the rmw publish timestamp and is
+   * carried through the broker so the receiver can emit a matching `rmw_take`.
+   *
+   * @param   ros2mqtt        the ROS2MQTT bridge interface
+   * @param   message         address of the serialized message buffer
+   * @param   correlation_id  unique ID used as the rmw publish timestamp
+   */
+  void traceRos2MqttPublish(Ros2MqttInterface& ros2mqtt, const void* message,
+                            int64_t correlation_id);
+
+  /**
+   * @brief Emulates a local ROS subscription for a `traced` MQTT2ROS bridge.
+   *
+   * Counterpart to traceRos2MqttPublish(): emits the standard
+   * `rmw_take`/`rcl_take`/`rclcpp_take` and `callback_start` tracepoints for a
+   * virtual subscription on the same "/mqtt/..." topic, with `correlation_id` as
+   * the rmw take source timestamp (matching the sender's rmw publish timestamp).
+   * The one-time subscription `*_init` tracepoints are emitted on first use. The
+   * matching `callback_end` must be emitted via traceMqtt2RosCallbackEnd() after
+   * the real republish, so the republish is nested within the virtual callback.
+   *
+   * @param   mqtt2ros        the MQTT2ROS bridge interface
+   * @param   mqtt_topic      source MQTT topic (used to name the virtual topic so
+   *                          it matches the sender's virtual publisher)
+   * @param   message         address of the serialized message buffer
+   * @param   correlation_id  ID extracted from the payload (rmw take source stamp)
+   */
+  void traceMqtt2RosTake(Mqtt2RosInterface& mqtt2ros,
+                         const std::string& mqtt_topic, const void* message,
+                         int64_t correlation_id);
+
+  /**
+   * @brief Emits the `callback_end` closing a virtual MQTT2ROS subscription
+   * callback opened by traceMqtt2RosTake().
+   *
+   * @param   mqtt2ros        the MQTT2ROS bridge interface
+   */
+  void traceMqtt2RosCallbackEnd(Mqtt2RosInterface& mqtt2ros);
 
   /**
    * @brief Callback for when the client has successfully connected to the
@@ -453,6 +510,18 @@ class MqttClient : public rclcpp::Node,
     bool fixed_type = false;  ///< whether the published message type is specified explicitly
     bool primitive = false;   ///< whether to publish as primitive message
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
+    bool traced = false;      ///< whether to inject a correlation ID for ros2_tracing
+    /// ros2_tracing emulation state: handles for the virtual ROS publisher that
+    /// represents the MQTT transport. The single-byte members exist only so that
+    /// their (stable, unique) addresses can serve as fabricated tracepoint
+    /// handles; std::map guarantees element address stability.
+    struct {
+      bool initialized = false;          ///< whether the `*_init` tracepoints were emitted
+      std::string topic;                 ///< virtual "/mqtt/..." ROS topic name
+      uint8_t publisher_handle = 0;      ///< address used as rcl publisher handle
+      uint8_t rmw_publisher_handle = 0;  ///< address used as rmw publisher handle
+      std::array<uint8_t, 24> gid{};     ///< fabricated publisher GID
+    } tracing;
   };
 
   /**
@@ -480,6 +549,20 @@ class MqttClient : public rclcpp::Node,
     bool primitive = false;  ///< whether to publish as primitive message (if
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
+    bool traced = false;     ///< whether a correlation ID is injected for ros2_tracing
+    /// ros2_tracing emulation state: handles for the virtual ROS subscription
+    /// that represents the MQTT transport. The single-byte members exist only so
+    /// that their (stable, unique) addresses can serve as fabricated tracepoint
+    /// handles; std::map guarantees element address stability.
+    struct {
+      bool initialized = false;             ///< whether the `*_init` tracepoints were emitted
+      std::string topic;                    ///< virtual "/mqtt/..." ROS topic name
+      uint8_t subscription_handle = 0;      ///< address used as rcl subscription handle
+      uint8_t rmw_subscription_handle = 0;  ///< address used as rmw subscription handle
+      uint8_t subscription = 0;             ///< address used as rclcpp subscription
+      uint8_t callback_handle = 0;          ///< address used as callback handle
+      std::array<uint8_t, 24> gid{};        ///< fabricated subscription GID
+    } tracing;
   };
 
  protected:

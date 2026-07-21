@@ -235,6 +235,7 @@ bridge:
       primitive:           # [false] whether to publish as primitive message
       ros_type:            # [*empty*] If set, the ROS msg type provided will be used. If empty, the type is automatically deduced via the publisher
       inject_timestamp:    # [false] whether to attach a timestamp to a ROS2MQTT payload (for latency computation on receiver side)
+      traced:              # [false] whether correlation id for message flow analysis with ros2_tracing across MQTT broker shall be injected
       advanced:
         ros:
           queue_size:      # [1] ROS subscriber queue size
