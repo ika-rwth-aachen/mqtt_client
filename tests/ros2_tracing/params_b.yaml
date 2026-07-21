@@ -9,4 +9,3 @@
           - pingpong/ros
         pingpong/ros:
           ros_topic: /pong/ros
-          traced: true
