@@ -1,3 +1,5 @@
+# source install/setup.bash && ros2 trace -s trace --dual-session
+
 services:
 
   broker:
@@ -7,23 +9,27 @@ services:
   mqtt-client-a:
     depends_on:
       - broker
-    image: gitlab.ika.rwth-aachen.de:5050/fb-fi/its-modules/communication/mqtt-client-interfaces:latest_traffic-twin-tracing_ci-amd64
-    command: ros2 launch mqtt_client standalone.launch.py params_file:=/params_a.yaml ros_tracing:=true ping_node:=true
+    build:
+      context: ../../..
+      dockerfile: mqtt_client/tests/ros2_tracing/Dockerfile
+    command: /bin/bash -ic "source /ws/install/setup.bash && ros2 launch mqtt_client standalone.launch.py params_file:=/params_a.yaml ros_tracing:=true ping_node:=true"
     environment:
       RMW_IMPLEMENTATION: rmw_fastrtps_cpp
     volumes:
-      - ./standalone.launch.py:/docker-ros/ws/install/mqtt_client/share/mqtt_client/launch/standalone.launch.py
+      - ./standalone.launch.py:/ws/install/mqtt_client/share/mqtt_client/launch/standalone.launch.py
       - ./params_a.yaml:/params_a.yaml
       - ./trace/mqtt-client-a:/root/.ros/tracing
 
   mqtt-client-b:
     depends_on:
       - broker
-    image: gitlab.ika.rwth-aachen.de:5050/fb-fi/its-modules/communication/mqtt-client-interfaces:latest_traffic-twin-tracing_ci-amd64
-    command: ros2 launch mqtt_client standalone.launch.py params_file:=/params_b.yaml ros_tracing:=true
+    build:
+      context: ../../..
+      dockerfile: mqtt_client/tests/ros2_tracing/Dockerfile
+    command: /bin/bash -ic "source /ws/install/setup.bash && ros2 launch mqtt_client standalone.launch.py params_file:=/params_b.yaml ros_tracing:=true"
     environment:
       RMW_IMPLEMENTATION: rmw_fastrtps_cpp
     volumes:
-      - ./standalone.launch.py:/docker-ros/ws/install/mqtt_client/share/mqtt_client/launch/standalone.launch.py
+      - ./standalone.launch.py:/ws/install/mqtt_client/share/mqtt_client/launch/standalone.launch.py
       - ./params_b.yaml:/params_b.yaml
       - ./trace/mqtt-client-b:/root/.ros/tracing
