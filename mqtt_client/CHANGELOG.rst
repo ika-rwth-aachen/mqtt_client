@@ -2,6 +2,11 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.5.0 (2026-07-22)
+------------------
+* Merge pull request `#95 <https://github.com/ika-rwth-aachen/mqtt_client/issues/95>`_ from Pumpkin-Engineering/json-message-bridge
+  JSON message bridging
+
 2.4.2 (2026-07-06)
 ------------------
 * Merge pull request `#96 <https://github.com/ika-rwth-aachen/mqtt_client/issues/96>`_ from Eternal-Robotics/eternal/v2.4.1
