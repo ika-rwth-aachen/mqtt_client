@@ -27,6 +27,7 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>rcpputils</depend>
+  <depend>rosx_introspection</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

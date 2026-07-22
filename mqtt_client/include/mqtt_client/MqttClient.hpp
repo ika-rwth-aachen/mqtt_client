@@ -43,6 +43,7 @@ SOFTWARE.
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/qos.hpp>
+#include <rosx_introspection/ros_parser.hpp>
 #include <std_msgs/msg/float64.hpp>
 
 
@@ -271,6 +272,17 @@ class MqttClient : public rclcpp::Node,
                 const rclcpp::Time& arrival_stamp);
 
   /**
+   * @brief Publishes a ROS message received via MQTT in JSON format to ROS.
+   *
+   * This utilizes the generic publisher stored for the MQTT topic on which the
+   * message was received. The publisher has to be configured to the ROS message
+   * type of the message.
+   *
+   * @param   mqtt_msg       MQTT message
+   */
+  void mqttjson2ros(mqtt::const_message_ptr mqtt_msg);
+
+  /**
    * @brief Publishes a primitive message received via MQTT to ROS.
    *
    * @param   mqtt_msg     MQTT message
@@ -436,6 +448,7 @@ class MqttClient : public rclcpp::Node,
     struct {
       rclcpp::GenericSubscription::SharedPtr
         subscriber;          ///< generic ROS subscriber
+      std::shared_ptr<RosMsgParser::Parser> parser;   ///< Message parser for JSON conversion
       std::string msg_type;  ///< message type of subscriber
       int queue_size = 1;    ///< ROS subscriber queue size
       bool is_stale = false; ///< whether a new generic publisher/subscriber is required
@@ -452,6 +465,7 @@ class MqttClient : public rclcpp::Node,
     } mqtt;                   ///< MQTT-related variables
     bool fixed_type = false;  ///< whether the published message type is specified explicitly
     bool primitive = false;   ///< whether to publish as primitive message
+    bool json = false;        ///< whether to publish as json string
     bool stamped = false;     ///< whether to inject timestamp in MQTT message
   };
 
@@ -468,6 +482,7 @@ class MqttClient : public rclcpp::Node,
       rclcpp::GenericPublisher::SharedPtr publisher;  ///< generic ROS publisher
       rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
         latency_publisher;   ///< ROS publisher for latency
+      std::shared_ptr<RosMsgParser::Parser> parser;   ///< Message parser for JSON conversion
       int queue_size = 1;    ///< ROS publisher queue size
       struct {
         rclcpp::ReliabilityPolicy reliability = rclcpp::ReliabilityPolicy::SystemDefault;
@@ -478,6 +493,8 @@ class MqttClient : public rclcpp::Node,
     } ros;      ///< ROS-related variables
     bool fixed_type = false; ///< whether the published ros message type is specified explicitly
     bool primitive = false;  ///< whether to publish as primitive message (if
+                             ///< coming from non-ROS MQTT client)
+    bool json = false;       ///< whether to parse as json message (if
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
   };
