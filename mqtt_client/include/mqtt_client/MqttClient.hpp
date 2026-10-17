@@ -30,6 +30,7 @@ SOFTWARE.
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 
@@ -73,6 +74,12 @@ class MqttClient : public rclcpp::Node,
    * @param[in]   options   ROS node options
    */
   explicit MqttClient(const rclcpp::NodeOptions& options);
+
+  /**
+   * @brief Stops message_arrived() before the members it publishes through
+   * are destroyed.
+   */
+  ~MqttClient() override;
 
  protected:
    struct Ros2MqttInterface;
@@ -552,6 +559,23 @@ class MqttClient : public rclcpp::Node,
    * @brief Client parameters
    */
   ClientConfig client_config_;
+
+  /**
+   * @brief Guards shutting_down_; held by message_arrived() for the whole
+   * delivery. Declared before client_ so it outlives Paho's callback thread.
+   */
+  std::mutex shutdown_mutex_;
+
+  /**
+   * @brief Set at context shutdown or destruction; message_arrived() then
+   * drops the message
+   */
+  bool shutting_down_ = false;
+
+  /**
+   * @brief Sets shutting_down_ before the context is shut down
+   */
+  rclcpp::PreShutdownCallbackHandle pre_shutdown_callback_;
 
   /**
    * @brief MQTT client variable

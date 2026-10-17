@@ -274,8 +274,40 @@ bool primitiveRosMessageToString(
 
 MqttClient::MqttClient(const rclcpp::NodeOptions& options) : Node("mqtt_client", options) {
 
-  loadParameters();
-  setup();
+  // Paho delivers messages on its own thread until client_ is destroyed. On
+  // SIGINT the context shuts down first, and a publish after that throws on
+  // Paho's thread, where nothing catches it. Waits for a delivery in flight;
+  // later ones return without publishing. Registered before setup() connects,
+  // so a SIGINT during startup is covered too.
+  pre_shutdown_callback_ =
+    get_node_base_interface()->get_context()->add_pre_shutdown_callback([this]() {
+      std::lock_guard<std::mutex> lock(shutdown_mutex_);
+      shutting_down_ = true;
+    });
+  try {
+    loadParameters();
+    setup();
+  } catch (...) {
+    // The destructor does not run for a constructor that throws, and member
+    // unwinding destroys the bridge maps while Paho may still deliver.
+    get_node_base_interface()->get_context()->remove_pre_shutdown_callback(
+      pre_shutdown_callback_);
+    {
+      std::lock_guard<std::mutex> lock(shutdown_mutex_);
+      shutting_down_ = true;
+    }
+    throw;
+  }
+}
+
+
+MqttClient::~MqttClient() {
+  get_node_base_interface()->get_context()->remove_pre_shutdown_callback(
+    pre_shutdown_callback_);
+  // Destruction without a shutdown (component unload): client_ is destroyed
+  // after the bridge maps holding the ROS publishers.
+  std::lock_guard<std::mutex> lock(shutdown_mutex_);
+  shutting_down_ = true;
 }
 
 
@@ -1387,6 +1419,10 @@ void MqttClient::mqtt2fixed(mqtt::const_message_ptr mqtt_msg) {
 
 void MqttClient::connected(const std::string& cause) {
 
+  // An automatic reconnect can complete during teardown; this iterates mqtt2ros_.
+  std::lock_guard<std::mutex> lock(shutdown_mutex_);
+  if (shutting_down_) return;
+
   (void) cause; // Avoid compiler warning for unused parameter.
 
   is_connected_ = true;
@@ -1506,6 +1542,9 @@ void MqttClient::newMqtt2RosBridge(
 }
 
 void MqttClient::message_arrived(mqtt::const_message_ptr mqtt_msg) {
+
+  std::lock_guard<std::mutex> lock(shutdown_mutex_);
+  if (shutting_down_) return;
 
   // instantly take arrival timestamp
   rclcpp::Time arrival_stamp(
