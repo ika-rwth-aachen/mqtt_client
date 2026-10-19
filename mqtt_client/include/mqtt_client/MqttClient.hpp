@@ -210,6 +210,7 @@ class MqttClient : public rclcpp::Node,
   /**
    * @brief Get the candidate topic endpoints for subscription matching
    *
+   * @param ros_topic the ROS topic we are looking on
    * @param ros2mqtt the ROS to MQTT interface spec
    *
    * @returns The compatible QoS or nullopt if no compatible combination is found
@@ -403,6 +404,7 @@ class MqttClient : public rclcpp::Node,
   void on_failure(const mqtt::token& token) override;
 
  protected:
+  /// @cond INTERNAL
   /**
    * @brief Struct containing broker parameters
    */
@@ -505,6 +507,8 @@ class MqttClient : public rclcpp::Node,
                              ///< coming from non-ROS MQTT client)
     bool stamped = false;    ///< whether timestamp is injected
   };
+
+  /// @endcond
 
  protected:
   /**
