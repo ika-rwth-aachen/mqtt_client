@@ -1,6 +1,10 @@
 name: industrial_ci
 
-on: pull_request
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   industrial_ci:
