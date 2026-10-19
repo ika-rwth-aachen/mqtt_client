@@ -14,6 +14,7 @@ on:
 jobs:
 
   ros2-humble:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
@@ -26,6 +27,7 @@ jobs:
           rmw-implementation: rmw_zenoh_cpp
 
   ros2-jazzy:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
@@ -38,6 +40,7 @@ jobs:
           rmw-implementation: rmw_zenoh_cpp
 
   ros2-kilted:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
@@ -50,6 +53,7 @@ jobs:
           rmw-implementation: rmw_zenoh_cpp
 
   ros2-lyrical:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
@@ -63,6 +67,7 @@ jobs:
           rmw-implementation: rmw_zenoh_cpp
 
   ros2-rolling:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: ika-rwth-aachen/docker-ros@main
