@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 project(mqtt_client)
 
-## Compile as C++17
-add_compile_options(-std=c++17)
 link_libraries("$<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:-lstdc++fs>")
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -21,6 +19,7 @@ find_library(PahoMqttC_LIBRARY libpaho-mqtt3as.so.1 REQUIRED)
 find_library(PahoMqttCpp_LIBRARY libpaho-mqttpp3.so.1 REQUIRED)
 
 add_library(${PROJECT_NAME}_lib SHARED src/MqttClient.cpp)
+target_compile_features(${PROJECT_NAME}_lib PUBLIC cxx_std_17)
 
 rclcpp_components_register_node(${PROJECT_NAME}_lib
   PLUGIN "mqtt_client::MqttClient"
