@@ -64,6 +64,24 @@ const std::string MqttClient::kRosMsgTypeMqttTopicPrefix =
 
 const std::string MqttClient::kLatencyRosTopicPrefix = "~/latencies/";
 
+/**
+ * @brief ROS 2 serializer that encodes strings with their null terminator.
+ *
+ * The CDR encoder of rosx_introspection writes strings without the
+ * terminating null character and with a length that excludes it. Fast-CDR
+ * tolerates this, but strict CDR readers (e.g. Foxglove, Lichtblick) always
+ * strip the last byte and thus lose the last character of every string.
+ */
+class NullTerminatedStringSerializer : public RosMsgParser::NanoCDR_Serializer {
+ public:
+  void serializeString(const std::string& str) override {
+    // CDR string length includes the terminating null character
+    _cdr_encoder->encode(static_cast<uint32_t>(str.size() + 1));
+    for (const char c : str) _cdr_encoder->encode(c);
+    _cdr_encoder->encode('\0');
+  }
+};
+
 template <typename T>
 T mqtt2float(mqtt::const_message_ptr mqtt_msg) {
   auto str_msg = mqtt_msg->to_string ();
@@ -1239,7 +1257,7 @@ void MqttClient::mqttjson2ros(mqtt::const_message_ptr mqtt_msg) {
   }
 
 
-  RosMsgParser::ROS2_Serializer serializer;
+  NullTerminatedStringSerializer serializer;
   try {
     mqtt2ros.ros.parser->serializeFromJson(mqtt_msg->get_payload(), &serializer);
   } catch (const std::runtime_error& e) {
