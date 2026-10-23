@@ -2,6 +2,16 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.5.1 (2026-10-23)
+------------------
+* Merge pull request `#104 <https://github.com/ika-rwth-aachen/mqtt_client/issues/104>`_ from JakubHazik/fix/json-cdr-string-null-terminator
+* Merge pull request `#103 <https://github.com/ika-rwth-aachen/mqtt_client/issues/103>`_ from ika-rwth-aachen/fix/docs-duplicate-declarations
+* Merge pull request `#102 <https://github.com/ika-rwth-aachen/mqtt_client/issues/102>`_ from ika-rwth-aachen/fix-ci
+  Fix CI by disabling docker-ros on external PRs and allowing C++20 for Rolling
+* Merge pull request `#101 <https://github.com/ika-rwth-aachen/mqtt_client/issues/101>`_ from Eternal-Robotics/fix/shutdown-crash
+  Fix crash on shutdown while MQTT messages arrive
+* Contributors: Lennart Reiher
+
 2.5.0 (2026-07-22)
 ------------------
 * Merge pull request `#95 <https://github.com/ika-rwth-aachen/mqtt_client/issues/95>`_ from Pumpkin-Engineering/json-message-bridge
