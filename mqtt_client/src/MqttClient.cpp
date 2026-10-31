@@ -1100,7 +1100,9 @@ void MqttClient::ros2mqtt(
     };
 
     std::string payload;
-    ros2mqtt.ros.parser->deserializeIntoJson(data, &payload, &deserializer);
+    const int indent = 0;
+    const bool ignore_constants = true;
+    ros2mqtt.ros.parser->deserializeIntoJson(data, &payload, &deserializer, indent, ignore_constants);
     payload_buffer = std::vector<uint8_t>(payload.begin(), payload.end());
 
   } else {  // publish as complete ROS message incl. ROS message type
