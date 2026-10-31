@@ -2,6 +2,11 @@
 Changelog for package mqtt_client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.5.2 (2026-10-31)
+------------------
+* Fix ROS-to-MQTT JSON decoding of message constants (`#106 <https://github.com/ika-rwth-aachen/mqtt_client/issues/106>`_)
+* Contributors: Lennart Reiher
+
 2.5.1 (2026-10-23)
 ------------------
 * Merge pull request `#104 <https://github.com/ika-rwth-aachen/mqtt_client/issues/104>`_ from JakubHazik/fix/json-cdr-string-null-terminator
