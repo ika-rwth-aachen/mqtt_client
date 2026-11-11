@@ -2,7 +2,7 @@ apiVersion: v2
 name: mqtt-client
 version: 2.5.2
 appVersion: 2.5.2
-description: Node that enables connected ROS-based devices or robots to exchange ROS messages via an MQTT broker using the MQTT protocol.
+description: ROS 2 C++ Node for bi-directionally bridging messages between ROS and MQTT
 dependencies:
   - repository: oci://ghcr.io/openads-project/openads-helm
     name: openadservice
