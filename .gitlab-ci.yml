@@ -1,4 +1,9 @@
-ros2:
+stages:
+  - docker-ros
+  - helm-oci
+
+docker-ros:
+  stage: docker-ros
   trigger:
     include:
       - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
@@ -9,3 +14,38 @@ ros2:
     BASE_IMAGE: rwthika/ros2:jazzy
     COMMAND: ros2 launch mqtt_client standalone.launch.xml
     RMW_IMPLEMENTATION: rmw_zenoh_cpp
+    ENABLE_RECURSIVE_VCS_IMPORT: false
+
+helm-oci:
+  stage: helm-oci
+  image:
+    name: alpine/helm:3.18.4
+    entrypoint: [""]
+  rules:
+    - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG'
+      exists:
+        - deployment/helm/Chart.yaml
+  variables:
+    CHART_FOLDER: deployment/helm
+    HELM_OCI_REGISTRY: $CI_REGISTRY_IMAGE/helm
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | helm registry login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - test -f "$CHART_FOLDER/Chart.yaml"
+    - |
+      if [ -z "$CI_COMMIT_TAG" ]; then
+        chart_file="$CHART_FOLDER/Chart.yaml"
+        base_version=$(sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*$/\1/p' "$chart_file")
+        ref_name=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-$CI_COMMIT_REF_NAME}
+        ref_slug=$(echo "$ref_name" | sed -E 's/[^a-zA-Z0-9-]+/-/g; s/^-+//; s/-+$//')
+        if [ -z "$base_version" ] || [ -z "$ref_slug" ]; then
+          echo "Could not determine a valid chart version or Git ref slug" >&2
+          exit 1
+        fi
+        chart_version="$base_version-$ref_slug"
+        sed -i -E "s/^version:.*$/version: $chart_version/" "$chart_file"
+        echo "Publishing chart version $chart_version"
+      fi
+    - helm dependency update "$CHART_FOLDER"
+    - helm package "$CHART_FOLDER" --destination .
+    - helm push *.tgz "oci://$HELM_OCI_REGISTRY"

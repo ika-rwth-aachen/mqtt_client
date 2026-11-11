@@ -1,0 +1,74 @@
+name: helm-oci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  helm-oci:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+      - name: Publish Helm charts as OCI artifacts
+        shell: bash
+        env:
+          CHART_FOLDER: deployment/helm
+          REF_NAME: ${{ github.head_ref || github.ref_name }}
+          IS_TAG: ${{ github.ref_type == 'tag' }}
+          HELM_OCI_REGISTRY: ghcr.io/${{ github.repository }}/helm
+          HELM_REGISTRY_USERNAME: ${{ github.actor }}
+          HELM_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ -f "${CHART_FOLDER}/Chart.yaml" ]]; then
+            chart_folders="${CHART_FOLDER}"
+          elif [[ "${CHART_FOLDER}" == "deployment/helm" ]]; then
+            chart_folders=$(find deployment/helm -mindepth 2 -maxdepth 2 -type f -name Chart.yaml 2>/dev/null | sed 's#/Chart.yaml$##' | sort)
+            if [[ -z "${chart_folders}" ]]; then
+              echo "No Helm charts found below ${CHART_FOLDER}" >&2
+              exit 1
+            fi
+          else
+            echo "Helm chart not found: ${CHART_FOLDER}/Chart.yaml" >&2
+            exit 1
+          fi
+          printf '%s' "${HELM_REGISTRY_PASSWORD}" | helm registry login ghcr.io --username "${HELM_REGISTRY_USERNAME}" --password-stdin
+          HELM_OCI_REGISTRY="${HELM_OCI_REGISTRY,,}"
+          mkdir -p /tmp/helm-packages
+          while IFS= read -r chart_folder; do
+            if [[ "${IS_TAG}" != "true" ]]; then
+              chart_file="${chart_folder}/Chart.yaml"
+              base_version=$(sed -nE "s/^version:[[:space:]]*([^[:space:]#]+).*$/\1/p" "${chart_file}")
+              ref_slug=$(echo "${REF_NAME}" | sed -E "s/[^a-zA-Z0-9-]+/-/g; s/^-+//; s/-+$//")
+              if [[ -z "${base_version}" || -z "${ref_slug}" ]]; then
+                echo "Could not determine a valid chart version or Git ref slug" >&2
+                exit 1
+              fi
+              chart_version="${base_version}-${ref_slug}"
+              sed -i -E "s/^version:.*$/version: ${chart_version}/" "${chart_file}"
+              echo "Publishing chart version ${chart_version}"
+            fi
+            helm dependency update "${chart_folder}"
+            helm package "${chart_folder}" --destination /tmp/helm-packages
+          done <<< "${chart_folders}"
+          shopt -s nullglob
+          chart_packages=(/tmp/helm-packages/*.tgz)
+          if (( ${#chart_packages[@]} == 0 )); then
+            echo "No Helm chart packages were created" >&2
+            exit 1
+          fi
+          for chart_package in "${chart_packages[@]}"; do
+            helm push "${chart_package}" "oci://${HELM_OCI_REGISTRY}"
+          done

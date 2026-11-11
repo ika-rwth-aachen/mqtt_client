@@ -1,0 +1,20 @@
+openadservice:
+  name: mqtt-client
+  image: ghcr.io/ika-rwth-aachen/mqtt_client:v2.5.2
+  env:
+    # --- name ------
+    NAMESPACE: /
+    NAME: mqtt_client
+    # --- other -----
+    LOG_LEVEL: info
+    USE_SIM_TIME: false
+    NODE_NAME: mqtt_client
+    PARAMS_FILE: /docker-ros/ws/install/mqtt_client/share/mqtt_client/config/params.yaml
+  args:
+  - /bin/bash
+  - -ic
+  - |
+    ros2 launch mqtt_client standalone.launch.xml \
+      namespace:=${NAMESPACE} \
+      node_name:=${NODE_NAME} \
+      params_file:=${PARAMS_FILE}
