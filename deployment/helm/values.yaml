@@ -4,16 +4,16 @@ openadservice:
   env:
     # --- name ------
     NAMESPACE: /
-    NODE_NAME: mqtt_client
+    NAME: mqtt_client
     # --- other -----
-    PARAMS_FILE: /docker-ros/ws/install/mqtt_client/share/mqtt_client/config/params.yaml
+    PARAMS: /docker-ros/ws/install/mqtt_client/share/mqtt_client/config/params.yaml
   args:
   - /bin/bash
   - -ic
   - |
     ros2 launch mqtt_client standalone.launch.xml \
       namespace:=${NAMESPACE} \
-      node_name:=${NODE_NAME} \
-      params_file:=${PARAMS_FILE}
+      node_name:=${NAME} \
+      params_file:=${PARAMS}
   rosParamFileMountPath: /docker-ros/ws/install/mqtt_client/share/mqtt_client/config/params.yaml
   rosParamFileData: null
