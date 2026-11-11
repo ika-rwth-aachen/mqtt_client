@@ -1,0 +1,9 @@
+apiVersion: v2
+name: mqtt-client
+version: 2.5.2
+appVersion: 2.5.2
+description: ROS 2 C++ Node for bi-directionally bridging messages between ROS and MQTT
+dependencies:
+  - repository: oci://ghcr.io/openads-project/openads-helm
+    name: openadservice
+    version: 1.2.0
