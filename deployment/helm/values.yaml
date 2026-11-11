@@ -18,3 +18,5 @@ openadservice:
       namespace:=${NAMESPACE} \
       node_name:=${NODE_NAME} \
       params_file:=${PARAMS_FILE}
+  rosParamFileMountPath: /docker-ros/ws/install/mqtt_client/share/mqtt_client/config/params.yaml
+  rosParamFileData: null
