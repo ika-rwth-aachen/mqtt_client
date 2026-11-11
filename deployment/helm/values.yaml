@@ -4,11 +4,8 @@ openadservice:
   env:
     # --- name ------
     NAMESPACE: /
-    NAME: mqtt_client
-    # --- other -----
-    LOG_LEVEL: info
-    USE_SIM_TIME: false
     NODE_NAME: mqtt_client
+    # --- other -----
     PARAMS_FILE: /docker-ros/ws/install/mqtt_client/share/mqtt_client/config/params.yaml
   args:
   - /bin/bash
